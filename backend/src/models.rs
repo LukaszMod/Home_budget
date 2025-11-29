@@ -20,29 +20,30 @@ pub struct CreateUser {
 pub struct Category {
     pub id: i32,
     pub name: String,
-    pub main_category: Option<String>,
     pub parent_id: Option<i32>,
+    #[sqlx(rename = "type")]
+    pub r#type: String,
 }
 
 #[derive(Deserialize)]
 pub struct CreateCategory {
     pub name: String,
-    pub main_category: Option<String>,
     pub parent_id: Option<i32>,
+    pub r#type: String,
 }
 
 #[derive(Serialize, FromRow)]
 pub struct Account {
     pub id: i32,
+    pub user_id: i32,
     pub name: String,
-    pub owner: i32,
     pub account_number: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct CreateAccount {
+    pub user_id: i32,
     pub name: String,
-    pub owner: i32,
     pub account_number: Option<String>,
 }
 
@@ -50,39 +51,61 @@ pub struct CreateAccount {
 pub struct Operation {
     pub id: i32,
     pub creation_date: Option<NaiveDateTime>,
-    pub category: Option<i32>,
+    pub category_id: Option<i32>,
     pub description: Option<String>,
-    pub user_id: i32,
-    pub parent_operation: Option<i32>,
     pub account_id: i32,
-    pub amount: f64, // mapujemy NUMERIC do f64 dla prostoty
-    pub r#type: String, // 'income' lub 'expense'
+    pub amount: f64,
+    pub operation_type: String,
+    pub operation_date: NaiveDate,
 }
 
 #[derive(Deserialize)]
 pub struct CreateOperation {
-    pub category: Option<i32>,
+    pub creation_date: Option<String>,
+    pub category_id: Option<i32>,
     pub description: Option<String>,
-    pub user_id: i32,
-    pub parent_operation: Option<i32>,
     pub account_id: i32,
     pub amount: f64,
-    pub r#type: String,
+    pub operation_type: String,
+    pub operation_date: String,
 }
 
 #[derive(Serialize, FromRow)]
 pub struct Budget {
     pub id: i32,
-    pub user_id: i32,
+    pub account_id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
-    pub limit_amount: f64,
+    pub planned_amount: f64,
 }
 
 #[derive(Deserialize)]
 pub struct CreateBudget {
-    pub user_id: i32,
+    pub account_id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
-    pub limit_amount: f64,
+    pub planned_amount: f64,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct Goal {
+    pub id: i32,
+    pub user_id: i32,
+    pub account_id: i32,
+    pub name: String,
+    pub target_amount: f64,
+    pub current_amount: f64,
+    pub target_date: NaiveDate,
+    pub created_date: NaiveDateTime,
+    pub completed_date: Option<NaiveDateTime>,
+    pub is_completed: bool,
+}
+
+#[derive(Deserialize)]
+pub struct CreateGoal {
+    pub user_id: i32,
+    pub account_id: i32,
+    pub name: String,
+    pub target_amount: f64,
+    pub target_date: String,
 }

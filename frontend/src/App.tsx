@@ -5,6 +5,7 @@ import Budget from './pages/Budget'
 import Accounts from './pages/Accounts'
 import Operations from './pages/Operations'
 import Categories from './pages/Categories'
+import Goals from './pages/Goals'
 import useStore from './store'
 import { getTheme } from './theme'
 import i18n from './i18n'
@@ -25,11 +26,12 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <NavBar />
-      <Container sx={{ mt: 4 }}>
+      <Container maxWidth={false} disableGutters sx={{ mt: 4, display: 'flex', flexDirection: 'column', flex: 1, height: 'calc(100vh - 64px)' }}>
         {tab === 'budget' && <Budget />}
         {tab === 'accounts' && <Accounts />}
         {tab === 'operations' && <Operations />}
         {tab === 'categories' && <Categories />}
+        {tab === 'goals' && <Goals />}
       </Container>
     </ThemeProvider>
   )

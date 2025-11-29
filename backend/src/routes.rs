@@ -22,8 +22,11 @@ pub fn router() -> Router<AppState> {
         // Operations
         .route("/operations", post(create_operation).get(list_operations))
         .route("/operations/:id", get(get_operation).put(update_operation).delete(delete_operation))
-        .route("/operations/:id/children", get(list_child_operations))
         // Budgets
         .route("/budgets", post(create_budget).get(list_budgets))
         .route("/budgets/:id", get(get_budget).put(update_budget).delete(delete_budget))
+        // Goals
+        .route("/goals", post(create_goal).get(list_goals))
+        .route("/goals/:id", get(get_goal).put(update_goal).delete(delete_goal))
+        .route("/goals/:id/complete", post(complete_goal))
 }
