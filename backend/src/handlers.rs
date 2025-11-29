@@ -87,21 +87,21 @@ pub async fn delete_category(State(state): State<AppState>, Path(id): Path<i32>)
 pub async fn create_account(State(state): State<AppState>, Json(payload): Json<CreateAccount>) -> Result<Json<Account>, (axum::http::StatusCode, String)> {
     let acc = sqlx::query_as::<_, Account>(
         "INSERT INTO accounts (user_id, name, account_number) VALUES ($1, $2, $3)
-         RETURNING id, user_id, name, account_number"
+         RETURNING id, user_id, name, account_number, is_closed"
     ).bind(payload.user_id).bind(&payload.name).bind(&payload.account_number).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(acc))
 }
 
 pub async fn list_accounts(State(state): State<AppState>) -> Result<Json<Vec<Account>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Account>(
-        "SELECT id, user_id, name, account_number FROM accounts ORDER BY id"
+        "SELECT id, user_id, name, account_number, is_closed FROM accounts ORDER BY id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
 }
 
 pub async fn get_account(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Account>, (axum::http::StatusCode, String)> {
     let acc = sqlx::query_as::<_, Account>(
-        "SELECT id, user_id, name, account_number FROM accounts WHERE id = $1"
+        "SELECT id, user_id, name, account_number, is_closed FROM accounts WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(acc))
 }
@@ -109,7 +109,7 @@ pub async fn get_account(State(state): State<AppState>, Path(id): Path<i32>) -> 
 pub async fn update_account(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateAccount>) -> Result<Json<Account>, (axum::http::StatusCode, String)> {
     let acc = sqlx::query_as::<_, Account>(
         "UPDATE accounts SET user_id = $1, name = $2, account_number = $3 WHERE id = $4
-         RETURNING id, user_id, name, account_number"
+         RETURNING id, user_id, name, account_number, is_closed"
     ).bind(payload.user_id).bind(&payload.name).bind(&payload.account_number).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(acc))
 }
@@ -117,6 +117,14 @@ pub async fn update_account(State(state): State<AppState>, Path(id): Path<i32>, 
 pub async fn delete_account(State(state): State<AppState>, Path(id): Path<i32>) -> Result<(), (axum::http::StatusCode, String)> {
     sqlx::query("DELETE FROM accounts WHERE id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
     Ok(())
+}
+
+pub async fn toggle_account_closed(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Account>, (axum::http::StatusCode, String)> {
+    let acc = sqlx::query_as::<_, Account>(
+        "UPDATE accounts SET is_closed = NOT is_closed WHERE id = $1
+         RETURNING id, user_id, name, account_number, is_closed"
+    ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
+    Ok(Json(acc))
 }
 
 // OPERATIONS

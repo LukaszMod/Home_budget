@@ -17,6 +17,10 @@ const resources = {
         title: 'Accounts',
         addButton: 'Add account',
         confirmDelete: 'Delete account?',
+        activeAccounts: 'Active Accounts',
+        closedAccounts: 'Closed Accounts',
+        closeAccount: 'Close account',
+        reopenAccount: 'Reopen account',
         table: {
           id: 'ID',
           name: 'Name',
@@ -37,6 +41,10 @@ const resources = {
         created: 'Account created',
         updated: 'Account updated',
         deleted: 'Account deleted'
+      },
+      users: {
+        title: 'Users',
+        add: 'Add user'
       }
       },
       actions: {
@@ -114,7 +122,8 @@ const resources = {
         },
         filters: {
           all: 'All',
-          none: 'None'
+          none: 'None',
+          selected: 'selected'
         },
         summary: {
           totalIncome: 'Total Income',
@@ -147,12 +156,16 @@ const resources = {
           remaining: 'Remaining'
         },
         statistics: {
+          title: 'Statistics',
           plannedIncome: 'Planned Income',
           realIncome: 'Real Income',
           plannedExpense: 'Planned Expense',
           realExpense: 'Real Expense',
           plannedCashFlow: 'Planned Cash Flow',
-          realCashFlow: 'Real Cash Flow'
+          realCashFlow: 'Real Cash Flow',
+          income: 'Income',
+          expenses: 'Expenses',
+          cashFlow: 'Cash Flow'
         },
         messages: {
           created: 'Budget created',
@@ -198,6 +211,10 @@ const resources = {
         title: 'Konta',
         addButton: 'Dodaj konto',
         confirmDelete: 'Usuń konto?',
+        activeAccounts: 'Aktywne konta',
+        closedAccounts: 'Zamknięte konta',
+        closeAccount: 'Zamknij konto',
+        reopenAccount: 'Otwórz konto',
         table: {
           id: 'ID',
           name: 'Nazwa',
@@ -218,6 +235,10 @@ const resources = {
         created: 'Konto utworzone',
         updated: 'Konto zaktualizowane',
         deleted: 'Konto usunięte'
+      },
+      users: {
+        title: 'Użytkownicy',
+        add: 'Dodaj użytkownika'
       }
       },
       actions: {
@@ -295,7 +316,8 @@ const resources = {
         },
         filters: {
           all: 'Wszystkie',
-          none: 'Brak'
+          none: 'Brak',
+          selected: 'wybrane'
         },
         summary: {
           totalIncome: 'Przychody',
@@ -328,12 +350,16 @@ const resources = {
           remaining: 'Pozostało'
         },
         statistics: {
+          title: 'Statystyki',
           plannedIncome: 'Planowany Przychód',
           realIncome: 'Rzeczywisty Przychód',
           plannedExpense: 'Planowane Wydatki',
           realExpense: 'Rzeczywiste Wydatki',
           plannedCashFlow: 'Planowany Cash Flow',
-          realCashFlow: 'Rzeczywisty Cash Flow'
+          realCashFlow: 'Rzeczywisty Cash Flow',
+          income: 'Przychody',
+          expenses: 'Wydatki',
+          cashFlow: 'Cash Flow'
         },
         messages: {
           created: 'Budżet utworzony',

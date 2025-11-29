@@ -2,7 +2,7 @@ import React from 'react'
 import type { Category as APICategory, CreateCategoryPayload } from '../lib/api'
 import { useCategories } from '../hooks/useCategories'
 import StyledModal from '../components/StyledModal'
-import CategoriesDataGrid from '../components/CategoriesDataGrid'
+import CategoriesTable from '../components/CategoriesTable'
 import { Typography, Paper, Stack, Button, TextField } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
@@ -19,7 +19,6 @@ const Categories: React.FC = () => {
   const [name, setName] = React.useState('')
   const [parentId, setParentId] = React.useState<number | null>(null)
   const [type, setType] = React.useState<'income' | 'expense'>('expense')
-  const [expanded, setExpanded] = React.useState<Record<number, boolean>>({})
 
   React.useEffect(() => {
     if (!modalOpen) {
@@ -53,45 +52,6 @@ const Categories: React.FC = () => {
     }
     return res
   }, [categories, editing])
-
-  const tree = React.useMemo(() => {
-    const map = new Map<number, APICategory & { children: APICategory[] }>()
-    for (const c of categories) map.set(c.id, { ...c, children: [] })
-    const roots: (APICategory & { children: APICategory[] })[] = []
-    for (const node of map.values()) {
-      if (node.parent_id == null) roots.push(node)
-      else {
-        const parent = map.get(node.parent_id)
-        if (parent) parent.children.push(node)
-        else roots.push(node)
-      }
-    }
-    return roots
-  }, [categories])
-
-  const rows = React.useMemo(() => {
-    const result: Array<{ id: number; name: string; parent_id: number | null; type: string; level: number }> = []
-    const walk = (nodes: any[], level = 0) => {
-      for (const n of nodes) {
-        result.push({ id: n.id, name: n.name, parent_id: n.parent_id ?? null, type: n.type, level })
-        if (Array.isArray(n.children) && n.children.length > 0) walk(n.children, level + 1)
-      }
-    }
-    walk(tree as any[])
-    return result
-  }, [tree])
-
-  const visibleRows = React.useMemo(() => {
-    const parentMap = new Map<number, number | null>(rows.map(r => [r.id, r.parent_id ?? null]))
-    return rows.filter(row => {
-      let p = row.parent_id ?? null
-      while (p != null) {
-        if (!expanded[p]) return false
-        p = parentMap.get(p) ?? null
-      }
-      return true
-    })
-  }, [rows, expanded])
 
   const openNew = () => {
     setEditing(null)
@@ -134,11 +94,8 @@ const Categories: React.FC = () => {
         <Button startIcon={<AddIcon />} variant="contained" onClick={openNew}>{t('categories.addButton')}</Button>
       </Stack>
 
-      <CategoriesDataGrid
+      <CategoriesTable
         categories={categories}
-        visibleRows={visibleRows}
-        expanded={expanded}
-        onToggleExpand={(id) => setExpanded(s => ({ ...s, [id]: !s[id] }))}
         onEdit={openEdit}
         onDelete={handleDelete}
         canDelete={canDelete}

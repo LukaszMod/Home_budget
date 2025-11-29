@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations } from '../lib/api'
+import { getAccounts, createAccount, updateAccount, deleteAccount, toggleAccountClosed, getUsers, createUser, deleteUser, getOperations } from '../lib/api'
 import type { Account as APIAccount, AccountPayload, User as APIUser, Operation as APIOperation } from '../lib/api'
 import { useNotifier } from '../components/Notifier'
 
@@ -52,6 +52,15 @@ export const useAccountsData = () => {
     onError: (err: any) => notifier.notify(String(err), 'error'),
   })
 
+  const toggleAccountClosedMut = useMutation<APIAccount, Error, number>({
+    mutationFn: (id: number) => toggleAccountClosed(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      notifier.notify('Account updated', 'success')
+    },
+    onError: (err: any) => notifier.notify(String(err), 'error'),
+  })
+
   // User mutations
   const createUserMut = useMutation<APIUser, Error, { full_name: string; nick: string }>({
     mutationFn: (payload) => createUser(payload),
@@ -70,6 +79,7 @@ export const useAccountsData = () => {
     createAccountMut,
     updateAccountMut,
     deleteAccountMut,
+    toggleAccountClosedMut,
     createUserMut,
     deleteUserMut,
   }

@@ -14,10 +14,13 @@ import {
   Button,
   TextField,
   IconButton,
-  Stack
+  Stack,
+  Box
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import LockIcon from '@mui/icons-material/Lock'
+import LockOpenIcon from '@mui/icons-material/LockOpen'
 import StyledModal from '../components/StyledModal'
 import AddAccountModal from '../components/AddAccountModal'
 import UsersPanel from '../components/UsersPanel'
@@ -36,15 +39,20 @@ const Accounts: React.FC = () => {
     createAccountMut, 
     updateAccountMut, 
     deleteAccountMut,
+    toggleAccountClosedMut,
     createUserMut,
     deleteUserMut
   } = useAccountsData()
 
-  const rows = accountsQuery.data ?? []
+  const allAccounts = accountsQuery.data ?? []
   const users = usersQuery.data ?? []
   const operations = operationsQuery.data ?? []
   const isError = accountsQuery.isError
   const error = accountsQuery.error
+
+  // Separate active and closed accounts
+  const activeAccounts = allAccounts.filter(acc => !acc.is_closed)
+  const closedAccounts = allAccounts.filter(acc => acc.is_closed)
 
   // dialog state
   const [open, setOpen] = React.useState(false)
@@ -88,6 +96,10 @@ const Accounts: React.FC = () => {
     await deleteAccountMut.mutateAsync(id)
   }
 
+  const handleToggleClosed = async (id: number) => {
+    await toggleAccountClosedMut.mutateAsync(id)
+  }
+
   const handleDeleteUser = async (id: number) => {
     if (!confirm('Usuń użytkownika?')) return
     await deleteUserMut.mutateAsync(id)
@@ -111,6 +123,44 @@ const Accounts: React.FC = () => {
 
   if (isError) return <Paper sx={{ p: 2 }}><div>Error: {String(error)}</div></Paper>
 
+  const AccountTable: React.FC<{ accounts: Account[]; showCloseBtn?: boolean }> = ({ accounts, showCloseBtn = true }) => (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>{t('accounts.table.id')}</TableCell>
+          <TableCell>{t('accounts.table.name')}</TableCell>
+          <TableCell>{t('accounts.table.owner')}</TableCell>
+          <TableCell>{t('accounts.table.accountNumber')}</TableCell>
+          <TableCell></TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {accounts.map((r) => {
+          const hasOps = operations.some(op => op.account_id === r.id)
+          return (
+            <TableRow key={r.id}>
+              <TableCell>{r.id}</TableCell>
+              <TableCell>{r.name}</TableCell>
+              <TableCell>{(users.find(u => u.id === r.user_id)?.full_name) ?? r.user_id}</TableCell>
+              <TableCell>{r.account_number ?? ''}</TableCell>
+              <TableCell>
+                <IconButton size="small" onClick={() => handleOpenEdit(r)}><EditIcon /></IconButton>
+                {showCloseBtn && (
+                  <IconButton size="small" onClick={() => handleToggleClosed(r.id)} title={r.is_closed ? t('accounts.reopenAccount') : t('accounts.closeAccount')}>
+                    {r.is_closed ? <LockOpenIcon /> : <LockIcon />}
+                  </IconButton>
+                )}
+                {showCloseBtn && !hasOps && (
+                  <IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton>
+                )}
+              </TableCell>
+            </TableRow>
+          )
+        })}
+      </TableBody>
+    </Table>
+  )
+
   return (
     <Paper sx={{ p: 2 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -120,43 +170,35 @@ const Accounts: React.FC = () => {
 
       <Grid container spacing={2} sx={{ mt: 2 }}>
         <Grid item xs={12} md={8}>
-          <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('accounts.table.id')}</TableCell>
-              <TableCell>{t('accounts.table.name')}</TableCell>
-              <TableCell>{t('accounts.table.owner')}</TableCell>
-              <TableCell>{t('accounts.table.accountNumber')}</TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell>{r.id}</TableCell>
-                <TableCell>{r.name}</TableCell>
-                <TableCell>{(users.find(u => u.id === r.user_id)?.full_name) ?? r.user_id}</TableCell>
-                <TableCell>{r.account_number ?? ''}</TableCell>
-                <TableCell>
-                  <IconButton size="small" onClick={() => handleOpenEdit(r)}><EditIcon /></IconButton>
-                  <IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+          {/* Active Accounts Section */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+              {t('accounts.activeAccounts') ?? 'Active Accounts'}
+            </Typography>
+            <AccountTable accounts={activeAccounts} showCloseBtn={true} />
+          </Box>
+
+          {/* Closed Accounts Section */}
+          {closedAccounts.length > 0 && (
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                {t('accounts.closedAccounts') ?? 'Closed Accounts'}
+              </Typography>
+              <AccountTable accounts={closedAccounts} showCloseBtn={true} />
+            </Box>
+          )}
         </Grid>
 
         <Grid item xs={12} md={4}>
           <AccountsSummary operations={operations ?? []} />
           <UsersPanel
             users={users}
-            accounts={rows}
+            accounts={allAccounts}
             onAddUserClick={() => setUserModalOpen(true)}
             onDeleteUser={handleDeleteUser}
           />
         </Grid>
-  </Grid>
+      </Grid>
 
       <StyledModal
         open={userModalOpen}

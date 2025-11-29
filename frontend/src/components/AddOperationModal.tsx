@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useMemo } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createOperation,
@@ -18,6 +19,11 @@ import {
   FormControl,
   InputLabel,
   Button,
+  FormControlLabel,
+  Switch,
+  Box,
+  Typography,
+  Autocomplete,
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
@@ -27,6 +33,15 @@ interface AddOperationModalProps {
   accounts: Account[]
   categories: Category[]
   editing?: APIOperation | null
+}
+
+interface FormData {
+  operationDate: string
+  amount: string
+  description: string
+  accountId: number | ''
+  categoryId: number | ''
+  operationType: OperationType | ''
 }
 
 const AddOperationModal: React.FC<AddOperationModalProps> = ({
@@ -40,43 +55,84 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
   const notifier = useNotifier()
   const { t } = useTranslation()
 
+  const { control, handleSubmit, reset, watch, setValue } = useForm<FormData>({
+    defaultValues: {
+      operationDate: new Date().toISOString().split('T')[0],
+      amount: '',
+      description: '',
+      accountId: '',
+      categoryId: '',
+      operationType: '',
+    },
+  })
+
   const createMut = useMutation<APIOperation, Error, CreateOperationPayload>({
     mutationFn: (p) => createOperation(p),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['operations'] }),
   })
 
-  const [operationDate, setOperationDate] = React.useState<string>('')
-  const [amount, setAmount] = React.useState<number | string>('')
-  const [description, setDescription] = React.useState('')
-  const [accountId, setAccountId] = React.useState<number | ''>('')
-  const [categoryId, setCategoryId] = React.useState<number | ''>('')
-  const [operationType, setOperationType] = React.useState<OperationType | ''>('')
+  // Obserwuj zmianę categoryId aby automatycznie ustawić typ
+  const watchedCategoryId = watch('categoryId')
+
+  // Kategorie główne (parent_id === null)
+  const mainCategories = useMemo(
+    () => categories.filter(c => c.parent_id === null),
+    [categories]
+  )
+
+  // Mapa: parent_id -> [subkategorie]
+  const subcategoriesByParent = useMemo(() => {
+    const map = new Map<number, Category[]>()
+    mainCategories.forEach(main => {
+      map.set(main.id, categories.filter(c => c.parent_id === main.id))
+    })
+    return map
+  }, [mainCategories, categories])
+
+  // Subkategorie z grupy (format: { id, name, group: mainCat.name })
+  const subcategoriesForAutocomplete = useMemo(() => {
+    const result: Array<Category & { group: string }> = []
+    mainCategories.forEach((mainCat) => {
+      const subs = subcategoriesByParent.get(mainCat.id) || []
+      subs.forEach((sub: Category) => {
+        result.push({ ...sub, group: mainCat.name })
+      })
+    })
+    return result
+  }, [mainCategories, subcategoriesByParent])
+
+  // Auto-ustaw typ na podstawie wybranej subkategorii
+  React.useEffect(() => {
+    if (watchedCategoryId) {
+      const selectedCategory = categories.find(c => c.id === watchedCategoryId)
+      if (selectedCategory && selectedCategory.type) {
+        setValue('operationType', selectedCategory.type as OperationType)
+      }
+    }
+  }, [watchedCategoryId, categories, setValue])
 
   React.useEffect(() => {
     if (!open) {
-      setOperationDate('')
-      setAmount('')
-      setDescription('')
-      setAccountId('')
-      setCategoryId('')
-      setOperationType('')
+      reset()
     }
-  }, [open])
+  }, [open, reset])
 
   React.useEffect(() => {
     if (editing) {
-      setOperationDate(editing.operation_date ?? '')
-      setAmount(editing.amount)
-      setDescription(editing.description ?? '')
-      setAccountId(editing.account_id ?? '')
-      setCategoryId(editing.category_id ?? '')
-      setOperationType(editing.operation_type ?? '')
+      reset({
+        operationDate: editing.operation_date ?? new Date().toISOString().split('T')[0],
+        amount: String(editing.amount),
+        description: editing.description ?? '',
+        accountId: editing.account_id ?? '',
+        categoryId: editing.category_id ?? '',
+        operationType: editing.operation_type ?? '',
+      })
     }
-  }, [editing])
+  }, [editing, reset])
 
-  const handleSave = async (keepOpen = false) => {
-    // basic validation
-    if (!accountId || !amount) {
+  const handleSave = async (data: FormData, keepOpen = false) => {
+    // Walidacja
+    if (!data.accountId || !data.amount) {
       return notifier.notify(
         t('operations.messages.fillRequired') ?? 'Uzupełnij wymagane pola',
         'error'
@@ -84,12 +140,12 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     }
 
     const payload: CreateOperationPayload = {
-      account_id: Number(accountId),
-      amount: Number(amount),
-      description: description || null,
-      category_id: categoryId === '' ? null : Number(categoryId),
-      operation_type: (operationType as OperationType) || 'expense',
-      operation_date: operationDate || new Date().toISOString().split('T')[0],
+      account_id: Number(data.accountId),
+      amount: Number(data.amount),
+      description: data.description || null,
+      category_id: data.categoryId === '' ? null : Number(data.categoryId),
+      operation_type: (data.operationType as OperationType) || 'expense',
+      operation_date: data.operationDate || new Date().toISOString().split('T')[0],
     }
 
     try {
@@ -98,14 +154,17 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
         t('operations.messages.saved') ?? 'Operacja zapisana',
         'success'
       )
-      if (!keepOpen) onClose()
-      else {
-        // reset fields for next entry but keep modal open
-        setAmount('')
-        setDescription('')
-        setAccountId('')
-        setCategoryId('')
-        setOperationType('')
+      if (!keepOpen) {
+        onClose()
+      } else {
+        reset({
+          operationDate: new Date().toISOString().split('T')[0],
+          amount: '',
+          description: '',
+          accountId: '',
+          categoryId: '',
+          operationType: '',
+        })
       }
     } catch (e: any) {
       notifier.notify(String(e), 'error')
@@ -122,104 +181,146 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
           : t('operations.add') ?? 'Dodaj operację'
       }
     >
-      <Stack spacing={2}>
-        <TextField
-          label={t('operations.fields.date') ?? 'Data'}
-          type="date"
-          value={operationDate}
-          onChange={(e) => setOperationDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-        />
+      <form onSubmit={handleSubmit((data) => handleSave(data, false))}>
+        <Stack spacing={2}>
+          <Controller
+            name="operationDate"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label={t('operations.fields.date') ?? 'Data'}
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+            )}
+          />
 
-        <FormControl fullWidth>
-          <InputLabel>
-            {t('operations.fields.account') ?? 'Konto'}
-          </InputLabel>
-          <Select
-            value={accountId}
-            onChange={(e) => setAccountId(Number(e.target.value))}
-            label={t('operations.fields.account') ?? 'Konto'}
-          >
-            {accounts.map((a) => (
-              <MenuItem key={a.id} value={a.id}>
-                {a.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          <Controller
+            name="accountId"
+            control={control}
+            render={({ field }) => (
+              <FormControl fullWidth>
+                <InputLabel>
+                  {t('operations.fields.account') ?? 'Konto'}
+                </InputLabel>
+                <Select
+                  {...field}
+                  label={t('operations.fields.account') ?? 'Konto'}
+                >
+                  {accounts.filter(a => !a.is_closed).map((a) => (
+                    <MenuItem key={a.id} value={a.id}>
+                      {a.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          />
 
-        <TextField
-          label={t('operations.fields.amount') ?? 'Kwota'}
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          fullWidth
-          inputProps={{ step: '0.01' }}
-        />
+          <Controller
+            name="amount"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label={t('operations.fields.amount') ?? 'Kwota'}
+                type="number"
+                fullWidth
+                inputProps={{ step: '0.01' }}
+              />
+            )}
+          />
 
-        <TextField
-          label={t('operations.fields.description') ?? 'Opis'}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          fullWidth
-        />
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label={t('operations.fields.description') ?? 'Opis'}
+                fullWidth
+              />
+            )}
+          />
 
-        <FormControl fullWidth>
-          <InputLabel>
-            {t('operations.fields.category') ?? 'Kategoria'}
-          </InputLabel>
-          <Select
-            value={categoryId}
-            onChange={(e) =>
-              setCategoryId(Number(e.target.value) || '')
-            }
-            label={t('operations.fields.category') ?? 'Kategoria'}
-          >
-            <MenuItem value="">
-              <em>{t('operations.filters.none') ?? 'Brak'}</em>
-            </MenuItem>
-            {categories.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          <Controller
+            name="categoryId"
+            control={control}
+            render={({ field }) => {
+              const selectedCategory = field.value ? subcategoriesForAutocomplete.find(c => c.id === field.value) : null
+              return (
+                <Autocomplete
+                  options={subcategoriesForAutocomplete}
+                  groupBy={(option) => option.group}
+                  getOptionLabel={(option) => option.name}
+                  value={selectedCategory || null}
+                  onChange={(_, newValue) => {
+                    field.onChange(newValue ? newValue.id : '')
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('operations.fields.category') ?? 'Kategoria'}
+                    />
+                  )}
+                  noOptionsText={t('operations.filters.none') ?? 'Brak'}
+                  fullWidth
+                  disableClearable={false}
+                />
+              )
+            }}
+          />
 
-        <FormControl fullWidth>
-          <InputLabel>{t('operations.fields.type') ?? 'Typ'}</InputLabel>
-          <Select
-            value={operationType}
-            onChange={(e) =>
-              setOperationType(e.target.value as OperationType)
-            }
-            label={t('operations.fields.type') ?? 'Typ'}
-          >
-            <MenuItem value="expense">
-              {t('operations.type.expense') ?? 'Wydatek'}
-            </MenuItem>
-            <MenuItem value="income">
-              {t('operations.type.income') ?? 'Przychód'}
-            </MenuItem>
-          </Select>
-        </FormControl>
+          <Controller
+            name="operationType"
+            control={control}
+            render={({ field }) => {
+              const isExpense = field.value === 'expense'
+              return (
+                <FormControl fullWidth>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, backgroundColor: '#f9f9f9', borderRadius: 1 }}>
+                    <Stack>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
+                        {t('operations.fields.type') ?? 'Typ'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        {isExpense ? (t('operations.type.expense') ?? 'Wydatek') : (t('operations.type.income') ?? 'Przychód')}
+                      </Typography>
+                    </Stack>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={isExpense}
+                          onChange={(e) => field.onChange(e.target.checked ? 'expense' : 'income')}
+                        />
+                      }
+                      label=""
+                    />
+                  </Box>
+                </FormControl>
+              )
+            }}
+          />
 
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-          <Button variant="contained" onClick={() => handleSave(false)}>
-            {t('common.save') ?? 'Zapisz'}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleSave(true)}
-          >
-            {t('operations.addAnother') ?? 'Dodaj kolejną'}
-          </Button>
-          <Button onClick={onClose}>
-            {t('common.cancel') ?? 'Anuluj'}
-          </Button>
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Button type="submit" variant="contained">
+              {t('common.save') ?? 'Zapisz'}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleSubmit((data) => handleSave(data, true))}
+            >
+              {t('operations.addAnother') ?? 'Dodaj kolejną'}
+            </Button>
+            <Button onClick={onClose}>
+              {t('common.cancel') ?? 'Anuluj'}
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
+      </form>
     </StyledModal>
   )
 }

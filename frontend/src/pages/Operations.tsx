@@ -5,7 +5,7 @@ import { useOperations } from '../hooks/useOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
 import AddOperationModal from '../components/AddOperationModal'
-import { Typography, Paper, Box, IconButton, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel } from '@mui/material'
+import { Typography, Paper, Box, IconButton, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import AddIcon from '@mui/icons-material/Add'
@@ -41,12 +41,41 @@ const Operations: React.FC = () => {
   const [datePreset, setDatePreset] = React.useState<string>('thisMonth')
   const [customDateFrom, setCustomDateFrom] = React.useState<string>('')
   const [customDateTo, setCustomDateTo] = React.useState<string>('')
-  const [filterAccountId, setFilterAccountId] = React.useState<number | ''>('')
-  const [filterCategoryId, setFilterCategoryId] = React.useState<number | ''>('')
+  const [filterAccountIds, setFilterAccountIds] = React.useState<number[]>([])
+  const [filterCategoryIds, setFilterCategoryIds] = React.useState<number[]>([])
   const [filterOperationType, setFilterOperationType] = React.useState<OperationType | ''>('')
 
   const openNew = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (op: APIOperation) => { setEditing(op); setModalOpen(true) }
+
+  // Grupowanie kategorii - główne i podkategorie
+  const mainCategories = React.useMemo(() => 
+    categories.filter(c => c.parent_id === null),
+    [categories]
+  )
+  
+  const getSubcategories = React.useCallback((parentId: number) => 
+    categories.filter(c => c.parent_id === parentId),
+    [categories]
+  )
+
+  // Handler dla zaznaczania głównej kategorii razem z podkategoriami
+  const handleCategoryChange = React.useCallback((e: any) => {
+    const newValue = typeof e.target.value === 'string' ? [] : e.target.value
+    const selectedId = newValue.find((id: number) => !filterCategoryIds.includes(id))
+    
+    // Jeśli zaznaczono główną kategorię
+    if (selectedId !== undefined) {
+      const mainCat = categories.find(c => c.id === selectedId && c.parent_id === null)
+      if (mainCat) {
+        const subcats = getSubcategories(mainCat.id).map(c => c.id)
+        setFilterCategoryIds([...new Set([...newValue, ...subcats])])
+        return
+      }
+    }
+    
+    setFilterCategoryIds(newValue)
+  }, [filterCategoryIds, categories, getSubcategories])
 
   const datePresets = React.useMemo(() => [
     { key: 'all', label: t('operations.dateFilter.all') ?? 'Wszystko' },
@@ -85,11 +114,11 @@ const Operations: React.FC = () => {
         return true
       })
     }
-    if (filterAccountId !== '') filtered = filtered.filter(r => r.account_id === filterAccountId)
-    if (filterCategoryId !== '') filtered = filtered.filter(r => r.category_id === filterCategoryId)
+    if (filterAccountIds.length > 0) filtered = filtered.filter(r => filterAccountIds.includes(r.account_id))
+    if (filterCategoryIds.length > 0) filtered = filtered.filter(r => r.category_id && filterCategoryIds.includes(r.category_id))
     if (filterOperationType !== '') filtered = filtered.filter(r => r.operation_type === filterOperationType)
     return filtered
-  }, [rows, datePreset, customDateFrom, customDateTo, filterAccountId, filterCategoryId, filterOperationType])
+  }, [rows, datePreset, customDateFrom, customDateTo, filterAccountIds, filterCategoryIds, filterOperationType])
 
   const columns: GridColDef[] = [
     { field: 'operation_date', headerName: t('operations.fields.date'), width: 150, valueGetter: (p: any) => p.row.operation_date ? new Date(p.row.operation_date).toLocaleString() : '', sortable: true },
@@ -132,19 +161,90 @@ const Operations: React.FC = () => {
               </>
             )}
 
-            <FormControl sx={{ minWidth: 180 }}>
+            <FormControl sx={{ width: 200, flex: '0 0 auto' }}>
               <InputLabel>{t('operations.fields.account') ?? 'Konto'}</InputLabel>
-              <Select value={filterAccountId} onChange={e => setFilterAccountId(e.target.value === '' ? '' : Number(e.target.value))} label={t('operations.fields.account') ?? 'Konto'}>
-                <MenuItem value=""><em>{t('operations.filters.all') ?? 'Wszystkie'}</em></MenuItem>
-                {accounts.map(a => (<MenuItem key={a.id} value={a.id}>{a.name}</MenuItem>))}
+              <Select 
+                multiple
+                value={filterAccountIds} 
+                onChange={e => setFilterAccountIds(typeof e.target.value === 'string' ? [] : e.target.value)}
+                label={t('operations.fields.account') ?? 'Konto'}
+                renderValue={(selected) => {
+                  if (selected.length === 0) return <em>{t('operations.filters.all') ?? 'Wszystkie'}</em>
+                  if (selected.length <= 2) {
+                    return (
+                      <Box sx={{ display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden' }}>
+                        {selected.map((id) => (
+                          <Chip key={id} label={accounts.find(a => a.id === id)?.name || id} size="small" />
+                        ))}
+                      </Box>
+                    )
+                  }
+                  return <Chip label={`${selected.length} ${t('operations.filters.selected') ?? 'wybrane'} ...`} size="small" />
+                }}
+              >
+                {accounts.filter(a => !a.is_closed).map(a => (
+                  <MenuItem key={a.id} value={a.id}>
+                    <Checkbox checked={filterAccountIds.includes(a.id)} />
+                    <ListItemText primary={a.name} />
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
-            <FormControl sx={{ minWidth: 180 }}>
+            <FormControl sx={{ width: 200, flex: '0 0 auto' }}>
               <InputLabel>{t('operations.fields.category') ?? 'Kategoria'}</InputLabel>
-              <Select value={filterCategoryId} onChange={e => setFilterCategoryId(e.target.value === '' ? '' : Number(e.target.value))} label={t('operations.fields.category') ?? 'Kategoria'}>
-                <MenuItem value=""><em>{t('operations.filters.all') ?? 'Wszystkie'}</em></MenuItem>
-                {categories.map(c => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
+              <Select 
+                multiple
+                value={filterCategoryIds} 
+                onChange={handleCategoryChange}
+                label={t('operations.fields.category') ?? 'Kategoria'}
+                renderValue={(selected) => {
+                  if (selected.length === 0) return <em>{t('operations.filters.all') ?? 'Wszystkie'}</em>
+                  if (selected.length <= 2) {
+                    return (
+                      <Box sx={{ display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden' }}>
+                        {selected.map((id) => (
+                          <Chip key={id} label={categories.find(c => c.id === id)?.name || id} size="small" />
+                        ))}
+                      </Box>
+                    )
+                  }
+                  return <Chip label={`${selected.length} ${t('operations.filters.selected') ?? 'wybrane'} ...`} size="small" />
+                }}
+              >
+                {mainCategories.map(mainCat => (
+                  <React.Fragment key={mainCat.id}>
+                    <MenuItem value={mainCat.id} onClick={(e) => {
+                      e.stopPropagation()
+                      handleCategoryChange({target: {value: filterCategoryIds.includes(mainCat.id) 
+                        ? filterCategoryIds.filter(id => id !== mainCat.id && !getSubcategories(mainCat.id).map(c => c.id).includes(id))
+                        : [...filterCategoryIds, mainCat.id, ...getSubcategories(mainCat.id).map(c => c.id)]
+                      }})
+                    }}>
+                      <Checkbox 
+                        checked={filterCategoryIds.includes(mainCat.id)} 
+                        indeterminate={getSubcategories(mainCat.id).some(c => filterCategoryIds.includes(c.id)) && !getSubcategories(mainCat.id).every(c => filterCategoryIds.includes(c.id))}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <ListItemText primary={<strong>{mainCat.name}</strong>} />
+                    </MenuItem>
+                    {getSubcategories(mainCat.id).map(subCat => (
+                      <MenuItem key={subCat.id} value={subCat.id} sx={{ pl: 4 }} onClick={(e) => {
+                        e.stopPropagation()
+                        handleCategoryChange({target: {value: filterCategoryIds.includes(subCat.id)
+                          ? filterCategoryIds.filter(id => id !== subCat.id)
+                          : [...filterCategoryIds, subCat.id]
+                        }})
+                      }}>
+                        <Checkbox 
+                          checked={filterCategoryIds.includes(subCat.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <ListItemText primary={subCat.name} />
+                      </MenuItem>
+                    ))}
+                  </React.Fragment>
+                ))}
               </Select>
             </FormControl>
 

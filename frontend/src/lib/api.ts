@@ -12,7 +12,7 @@ async function fetchJson(input: RequestInfo, init?: RequestInit) {
 }
 
 export type AccountPayload = { name: string; user_id: number; account_number?: string | null }
-export type Account = { id: number; name: string; user_id: number; account_number?: string | null }
+export type Account = { id: number; name: string; user_id: number; account_number?: string | null; is_closed: boolean }
 
 export const getAccounts = async (): Promise<Account[]> => {
   return fetchJson(`${API}/accounts`)
@@ -36,6 +36,10 @@ export const updateAccount = async ({ id, payload }: { id: number; payload: Acco
 
 export const deleteAccount = async (id: number): Promise<void> => {
   await fetchJson(`${API}/accounts/${id}`, { method: 'DELETE' })
+}
+
+export const toggleAccountClosed = async (id: number): Promise<Account> => {
+  return fetchJson(`${API}/accounts/${id}/toggle-closed`, { method: 'POST' })
 }
 
 // (named exports below; single default exported at the bottom)
@@ -131,17 +135,17 @@ export const deleteCategory = async (id: number): Promise<void> => {
 // --- Budgets
 export type Budget = {
   id: number
-  user_id: number
+  account_id: number
   category_id: number
   month: string // YYYY-MM-DD
-  limit_amount: number
+  planned_amount: number
 }
 
 export type CreateBudgetPayload = {
-  user_id: number
+  account_id: number
   category_id: number
   month: string // YYYY-MM-DD
-  limit_amount: number
+  planned_amount: number
 }
 
 export const getBudgets = async (): Promise<Budget[]> => {

@@ -38,6 +38,7 @@ pub struct Account {
     pub user_id: i32,
     pub name: String,
     pub account_number: Option<String>,
+    pub is_closed: bool,
 }
 
 #[derive(Deserialize)]

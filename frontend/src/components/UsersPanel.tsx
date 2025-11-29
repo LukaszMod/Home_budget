@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Paper, Typography, Box, Button } from '@mui/material'
+import { Paper, Typography, Box, Button, IconButton } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 import type { User as APIUser, Account as APIAccount } from '../lib/api'
 
 interface UsersPanelProps {
@@ -38,13 +39,14 @@ const UsersPanel: React.FC<UsersPanelProps> = ({
                 {u.full_name} {u.nick ? `(${u.nick})` : ''}
               </div>
               <div>
-                <Button
+                <IconButton
                   size="small"
                   disabled={hasAccounts}
                   onClick={() => onDeleteUser(u.id)}
+                  title={t('actions.delete') ?? 'Delete'}
                 >
-                  {t('actions.delete') ?? 'Usuń'}
-                </Button>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
               </div>
             </Box>
           )

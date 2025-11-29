@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         // Accounts
         .route("/accounts", post(create_account).get(list_accounts))
         .route("/accounts/:id", get(get_account).put(update_account).delete(delete_account))
+        .route("/accounts/:id/toggle-closed", post(toggle_account_closed))
         // Operations
         .route("/operations", post(create_operation).get(list_operations))
         .route("/operations/:id", get(get_operation).put(update_operation).delete(delete_operation))

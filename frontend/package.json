@@ -12,11 +12,12 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^5.18.0",
-  "@mui/x-data-grid": "^6.0.0",
+    "@mui/x-data-grid": "^6.0.0",
     "@tanstack/react-query": "^5.90.11",
     "i18next": "^23.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.67.0",
     "react-i18next": "^12.0.0",
     "zustand": "^4.4.0"
   },

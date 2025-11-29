@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { Box, Button, Paper, IconButton } from '@mui/material'
+import { Box, Button, Paper, IconButton, Grid } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -7,7 +7,7 @@ import FileCopyIcon from '@mui/icons-material/FileCopy'
 import SaveIcon from '@mui/icons-material/Save'
 import { useBudgetData } from '../hooks/useBudgetData'
 import type { Category, Budget as BudgetType, Operation } from '../lib/api'
-import BudgetStatistics from '../components/BudgetStatistics'
+import BudgetStatisticsBar from '../components/BudgetStatisticsBar'
 import BudgetTable from '../components/BudgetTable'
 import type { BudgetRow } from '../components/BudgetTable'
 import BudgetCalendar from '../components/BudgetCalendar'
@@ -53,8 +53,8 @@ const Budget: React.FC = () => {
         else realExpense += amount
       })
       if (budget) {
-        if (cat.type === 'income') plannedIncome += budget.limit_amount
-        else plannedExpense += budget.limit_amount
+        if (cat.type === 'income') plannedIncome += budget.planned_amount
+        else plannedExpense += budget.planned_amount
       }
     })
     return { plannedIncome, plannedExpense, realIncome, realExpense, plannedCashFlow: plannedIncome - plannedExpense, realCashFlow: realIncome - realExpense }
@@ -78,7 +78,7 @@ const Budget: React.FC = () => {
       let mainCatPlan = 0, mainCatSpending = 0
       subCategories.forEach((subCat: Category) => {
         const budget = budgets.find((b: BudgetType) => b.category_id === subCat.id && b.month.startsWith(selectedMonth))
-        const plan = budget?.limit_amount ?? 0
+        const plan = budget?.planned_amount ?? 0
         const spending = categorySpending[subCat.id] ?? 0
         mainCatPlan += plan
         mainCatSpending += spending
@@ -86,7 +86,7 @@ const Budget: React.FC = () => {
       result.push({ id: `parent-${mainCat.id}`, category_name: mainCat.name, plan: mainCatPlan, spending: mainCatSpending, remaining: mainCatPlan - mainCatSpending, isParent: true, parentId: undefined })
       subCategories.sort((a: Category, b: Category) => a.id - b.id).forEach((subCat: Category) => {
         const budget = budgets.find((b: BudgetType) => b.category_id === subCat.id && b.month.startsWith(selectedMonth))
-        const plan = budget?.limit_amount ?? 0
+        const plan = budget?.planned_amount ?? 0
         const spending = categorySpending[subCat.id] ?? 0
         result.push({ id: `sub-${subCat.id}`, category_id: subCat.id, category_name: subCat.name, plan, spending, remaining: plan - spending, isParent: false, parentId: `parent-${mainCat.id}` })
       })
@@ -95,13 +95,13 @@ const Budget: React.FC = () => {
   }, [categories, budgets, categorySpending, mainCategories, selectedMonth])
 
   const handleSavePlan = async () => {
-    const updates = Array.from(editedRows.entries()).map(([id, row]) => ({ category_id: parseInt(id.split('-')[1]), limit_amount: row.plan || 0 }))
+    const updates = Array.from(editedRows.entries()).map(([id, row]) => ({ category_id: parseInt(id.split('-')[1]), planned_amount: row.plan || 0 }))
     if (updates.length > 0) {
       try {
         for (const update of updates) {
           const existingBudget = budgets.find((b: BudgetType) => b.category_id === update.category_id && b.month.startsWith(selectedMonth))
-          if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, limit_amount: update.limit_amount } })
-          else await createMutation.mutateAsync({ user_id: 1, category_id: update.category_id, month: selectedMonth + '-01', limit_amount: update.limit_amount })
+          if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: update.planned_amount } })
+          else await createMutation.mutateAsync({ account_id: 1, category_id: update.category_id, month: selectedMonth + '-01', planned_amount: update.planned_amount })
         }
         setEditedRows(new Map())
       } catch (error) { console.error('Failed to save budgets:', error) }
@@ -150,8 +150,8 @@ const Budget: React.FC = () => {
     try {
       for (const budget of previousMonthBudgets) {
         const existingBudget = budgets.find((b) => b.category_id === budget.category_id && b.month.startsWith(selectedMonth))
-        if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, limit_amount: budget.limit_amount } })
-        else await createMutation.mutateAsync({ user_id: 1, category_id: budget.category_id, month: selectedMonth + '-01', limit_amount: budget.limit_amount })
+        if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: budget.planned_amount } })
+        else await createMutation.mutateAsync({ account_id: 1, category_id: budget.category_id, month: selectedMonth + '-01', planned_amount: budget.planned_amount })
       }
       setEditedRows(new Map())
     } catch (error) { console.error('Failed to copy previous month plan:', error) }
@@ -172,8 +172,8 @@ const Budget: React.FC = () => {
       for (const categoryId in spendingByCategory) {
         const spending = spendingByCategory[categoryId]
         const existingBudget = budgets.find((b) => b.category_id === parseInt(categoryId) && b.month.startsWith(selectedMonth))
-        if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, limit_amount: spending } })
-        else await createMutation.mutateAsync({ user_id: 1, category_id: parseInt(categoryId), month: selectedMonth + '-01', limit_amount: spending })
+        if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: spending } })
+        else await createMutation.mutateAsync({ account_id: 1, category_id: parseInt(categoryId), month: selectedMonth + '-01', planned_amount: spending })
       }
       setEditedRows(new Map())
     } catch (error) { console.error('Failed to copy previous month spending:', error) }
@@ -194,8 +194,16 @@ const Budget: React.FC = () => {
           <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSavePlan} disabled={editedRows.size === 0}>{t('budget.saveButton')}</Button>
         </Box>
       </Box>
-      <BudgetStatistics stats={budgetStats} />
-      <BudgetTable rows={rows} expanded={expandedParents} onToggleExpanded={toggleExpandParent} editedRows={editedRows} onEditPlan={handleEditPlan} />
+      
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={9}>
+          <BudgetTable rows={rows} expanded={expandedParents} onToggleExpanded={toggleExpandParent} editedRows={editedRows} onEditPlan={handleEditPlan} />
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <BudgetStatisticsBar stats={budgetStats} />
+        </Grid>
+      </Grid>
+      
       <BudgetCalendar open={Boolean(calendarAnchor)} anchorEl={calendarAnchor} onClose={() => setCalendarAnchor(null)} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
     </Paper>
   )
