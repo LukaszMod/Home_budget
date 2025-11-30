@@ -11,6 +11,8 @@ import {
 } from '../lib/api'
 import { useNotifier } from './Notifier'
 import StyledModal from './StyledModal'
+import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions'
+import { useHashtags } from '../hooks/useHashtags'
 import {
   TextField,
   Stack,
@@ -54,6 +56,12 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
   const qc = useQueryClient()
   const notifier = useNotifier()
   const { t } = useTranslation()
+  const { hashtags } = useHashtags()
+
+  // Debug log
+  React.useEffect(() => {
+    console.log('AddOperationModal - hashtags from hook:', hashtags)
+  }, [hashtags])
 
   const { control, handleSubmit, reset, watch, setValue } = useForm<FormData>({
     defaultValues: {
@@ -68,7 +76,10 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
 
   const createMut = useMutation<APIOperation, Error, CreateOperationPayload>({
     mutationFn: (p) => createOperation(p),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['operations'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['operations'] })
+      qc.invalidateQueries({ queryKey: ['hashtags'] })
+    },
   })
 
   // Obserwuj zmianę categoryId aby automatycznie ustawić typ
@@ -237,10 +248,15 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
             name="description"
             control={control}
             render={({ field }) => (
-              <TextField
-                {...field}
+              <TextFieldWithHashtagSuggestions
+                value={field.value || ''}
+                onChange={(newValue) => field.onChange(newValue)}
+                allHashtags={hashtags.map(h => h.name)}
                 label={t('operations.fields.description') ?? 'Opis'}
+                placeholder={t('operations.fields.description') ?? 'Opis'}
                 fullWidth
+                multiline
+                rows={3}
               />
             )}
           />

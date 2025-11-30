@@ -30,4 +30,8 @@ pub fn router() -> Router<AppState> {
         .route("/goals", post(create_goal).get(list_goals))
         .route("/goals/:id", get(get_goal).put(update_goal).delete(delete_goal))
         .route("/goals/:id/complete", post(complete_goal))
+        // Hashtags
+        .route("/hashtags", post(create_hashtag).get(get_hashtags))
+        .route("/hashtags/:id", delete(delete_hashtag))
+        .route("/hashtags/extract", post(extract_hashtags_from_text))
 }

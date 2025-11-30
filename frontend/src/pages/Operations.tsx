@@ -4,6 +4,7 @@ import type { Operation as APIOperation } from '../lib/api'
 import { useOperations } from '../hooks/useOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
+import { useHashtags } from '../hooks/useHashtags'
 import AddOperationModal from '../components/AddOperationModal'
 import { Typography, Paper, Box, IconButton, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
@@ -31,6 +32,7 @@ const Operations: React.FC = () => {
   const { operationsQuery, deleteMutation } = useOperations()
   const { accountsQuery } = useAccountsData()
   const { categoriesQuery } = useCategories()
+  const { hashtags } = useHashtags()
 
   const operations = operationsQuery.data ?? []
   const accounts = accountsQuery.data ?? []
@@ -44,6 +46,7 @@ const Operations: React.FC = () => {
   const [filterAccountIds, setFilterAccountIds] = React.useState<number[]>([])
   const [filterCategoryIds, setFilterCategoryIds] = React.useState<number[]>([])
   const [filterOperationType, setFilterOperationType] = React.useState<OperationType | ''>('')
+  const [filterHashtagIds, setFilterHashtagIds] = React.useState<number[]>([])
 
   const openNew = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (op: APIOperation) => { setEditing(op); setModalOpen(true) }
@@ -117,8 +120,17 @@ const Operations: React.FC = () => {
     if (filterAccountIds.length > 0) filtered = filtered.filter(r => filterAccountIds.includes(r.account_id))
     if (filterCategoryIds.length > 0) filtered = filtered.filter(r => r.category_id && filterCategoryIds.includes(r.category_id))
     if (filterOperationType !== '') filtered = filtered.filter(r => r.operation_type === filterOperationType)
+    if (filterHashtagIds.length > 0) {
+      const selectedHashtagNames = hashtags
+        .filter(h => filterHashtagIds.includes(h.id))
+        .map(h => h.name)
+      filtered = filtered.filter(r => {
+        const description = r.description?.toLowerCase() || ''
+        return selectedHashtagNames.some(tag => description.includes(`#${tag.toLowerCase()}`))
+      })
+    }
     return filtered
-  }, [rows, datePreset, customDateFrom, customDateTo, filterAccountIds, filterCategoryIds, filterOperationType])
+  }, [rows, datePreset, customDateFrom, customDateTo, filterAccountIds, filterCategoryIds, filterOperationType, filterHashtagIds, hashtags])
 
   const columns: GridColDef[] = [
     { field: 'operation_date', headerName: t('operations.fields.date'), width: 150, valueGetter: (p: any) => p.row.operation_date ? new Date(p.row.operation_date).toLocaleString() : '', sortable: true },
@@ -254,6 +266,36 @@ const Operations: React.FC = () => {
                 <MenuItem value=""><em>{t('operations.filters.all') ?? 'Wszystkie'}</em></MenuItem>
                 <MenuItem value="income">{t('operations.type.income') ?? 'Przychód'}</MenuItem>
                 <MenuItem value="expense">{t('operations.type.expense') ?? 'Wydatek'}</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ width: 200, flex: '0 0 auto' }}>
+              <InputLabel>{t('operations.fields.hashtags') ?? 'Hashtagi'}</InputLabel>
+              <Select 
+                multiple
+                value={filterHashtagIds} 
+                onChange={e => setFilterHashtagIds(typeof e.target.value === 'string' ? [] : e.target.value)}
+                label={t('operations.fields.hashtags') ?? 'Hashtagi'}
+                renderValue={(selected) => {
+                  if (selected.length === 0) return <em>{t('operations.filters.all') ?? 'Wszystkie'}</em>
+                  if (selected.length <= 2) {
+                    return (
+                      <Box sx={{ display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden' }}>
+                        {selected.map((id) => (
+                          <Chip key={id} label={`#${hashtags.find(h => h.id === id)?.name || id}`} size="small" />
+                        ))}
+                      </Box>
+                    )
+                  }
+                  return <Chip label={`${selected.length} ${t('operations.filters.selected') ?? 'wybrane'} ...`} size="small" />
+                }}
+              >
+                {hashtags.map(h => (
+                  <MenuItem key={h.id} value={h.id}>
+                    <Checkbox checked={filterHashtagIds.includes(h.id)} />
+                    <ListItemText primary={`#${h.name}`} />
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>

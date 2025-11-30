@@ -38,6 +38,7 @@ const NavBar: React.FC = () => {
           <Tab label={t('Operations')} value="operations" />
           <Tab label={t('Categories')} value="categories" />
           <Tab label={t('Goals')} value="goals" />
+          <Tab label={t('Hashtags')} value="hashtags" />
         </Tabs>
 
         <Box sx={{ flexGrow: 1 }} />

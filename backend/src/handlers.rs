@@ -1,5 +1,6 @@
 use axum::{extract::{State, Path}, Json};
 use crate::{AppState, models::*};
+use serde_json::json;
 
 
 // USERS
@@ -140,7 +141,55 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
      .bind(&payload.operation_type)
      .bind(&payload.operation_date)
      .fetch_one(&state.pool).await.map_err(db_err)?;
+    
+    // Extract and link hashtags from description
+    if let Some(desc) = &payload.description {
+        let hashtags = extract_hashtags(desc);
+        for hashtag in hashtags {
+            // Get or create hashtag
+            let hashtag_id: (i32,) = sqlx::query_as(
+                "INSERT INTO hashtags (name) VALUES ($1)
+                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                 RETURNING id"
+            )
+            .bind(&hashtag)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(db_err)?;
+            
+            // Link operation and hashtag
+            sqlx::query("INSERT INTO operation_hashtags (operation_id, hashtag_id) VALUES ($1, $2)")
+                .bind(op.id)
+                .bind(hashtag_id.0)
+                .execute(&state.pool)
+                .await
+                .map_err(db_err)?;
+        }
+    }
+    
     Ok(Json(op))
+}
+
+// Helper function to extract hashtags from text
+fn extract_hashtags(text: &str) -> Vec<String> {
+    let mut hashtags: Vec<String> = Vec::new();
+    let words: Vec<&str> = text.split_whitespace().collect();
+    
+    for word in words {
+        if word.starts_with('#') {
+            let hashtag = word.trim_start_matches('#')
+                .chars()
+                .filter(|c| c.is_alphanumeric() || *c == '_')
+                .collect::<String>()
+                .to_lowercase();
+            
+            if !hashtag.is_empty() && !hashtags.contains(&hashtag) {
+                hashtags.push(hashtag);
+            }
+        }
+    }
+    
+    hashtags
 }
 
 pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<Operation>>, (axum::http::StatusCode, String)> {
@@ -270,6 +319,69 @@ pub async fn complete_goal(State(state): State<AppState>, Path(id): Path<i32>) -
          RETURNING id, user_id, account_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
+}
+
+// HASHTAGS
+// Validation: hashtag can only contain alphanumeric and underscore characters
+fn is_valid_hashtag(name: &str) -> bool {
+    !name.is_empty() && name.len() <= 50 && name.chars().all(|c| c.is_alphanumeric() || c == '_')
+}
+
+pub async fn get_hashtags(State(state): State<AppState>) -> Result<Json<Vec<Hashtag>>, (axum::http::StatusCode, String)> {
+    let rows = sqlx::query_as::<_, Hashtag>(
+        "SELECT id, name, created_date FROM hashtags ORDER BY name"
+    ).fetch_all(&state.pool).await.map_err(db_err)?;
+    Ok(Json(rows))
+}
+
+pub async fn create_hashtag(State(state): State<AppState>, Json(payload): Json<CreateHashtag>) -> Result<Json<Hashtag>, (axum::http::StatusCode, String)> {
+    // Validate hashtag format
+    if !is_valid_hashtag(&payload.name) {
+        return Err((axum::http::StatusCode::BAD_REQUEST, 
+            "Hashtag can only contain alphanumeric characters and underscore, max 50 chars".to_string()));
+    }
+
+    let name_lower = payload.name.to_lowercase();
+    
+    let hashtag = sqlx::query_as::<_, Hashtag>(
+        "INSERT INTO hashtags (name) VALUES ($1)
+         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+         RETURNING id, name, created_date"
+    )
+    .bind(&name_lower)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+    
+    Ok(Json(hashtag))
+}
+
+pub async fn delete_hashtag(State(state): State<AppState>, Path(id): Path<i32>) -> Result<(), (axum::http::StatusCode, String)> {
+    // Check if hashtag is used in any operations
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM operation_hashtags WHERE hashtag_id = $1")
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(db_err)?;
+    
+    if count.0 > 0 {
+        return Err((axum::http::StatusCode::CONFLICT, 
+            "Cannot delete hashtag that is used in operations".to_string()));
+    }
+    
+    sqlx::query("DELETE FROM hashtags WHERE id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
+    Ok(())
+}
+
+pub async fn extract_hashtags_from_text(State(state): State<AppState>, Json(payload): Json<serde_json::Value>) -> Result<Json<Vec<String>>, (axum::http::StatusCode, String)> {
+    let text = payload.get("text")
+        .and_then(|v| v.as_str())
+        .ok_or((axum::http::StatusCode::BAD_REQUEST, "Missing 'text' field".to_string()))?;
+    
+    // Extract hashtags from text (words starting with #)
+    let hashtags = extract_hashtags(text);
+    
+    Ok(Json(hashtags))
 }
 
 // Prosty wrapper błędów

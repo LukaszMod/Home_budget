@@ -110,3 +110,15 @@ pub struct CreateGoal {
     pub target_amount: f64,
     pub target_date: String,
 }
+
+#[derive(Serialize, FromRow, Clone)]
+pub struct Hashtag {
+    pub id: i32,
+    pub name: String,
+    pub created_date: Option<NaiveDateTime>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateHashtag {
+    pub name: String,
+}

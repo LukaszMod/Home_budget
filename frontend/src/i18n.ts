@@ -193,6 +193,28 @@ const resources = {
         confirmComplete: 'Mark goal as completed?',
         noGoals: 'No savings goals yet',
         requiredFields: 'Fill in all required fields'
+      },
+      Hashtags: 'Hashtags',
+      hashtags: {
+        title: 'Hashtags',
+        addButton: 'Add hashtag',
+        addPlaceholder: 'Enter hashtag name (letters, numbers, underscore only)',
+        invalidFormat: 'Hashtag can only contain letters, numbers and underscores, max 50 characters',
+        deleteTitle: 'Delete Hashtag',
+        deleteConfirm: 'Delete this hashtag?',
+        deleteConfirmMessage: 'Can only delete if not used in operations',
+        deleteButton: 'Delete hashtag',
+        cannotDelete: 'Cannot delete hashtag that is used in operations',
+        searchPlaceholder: 'Search hashtags...',
+        noResults: 'No hashtags found matching your search.',
+        table: {
+          name: 'Hashtag',
+          created: 'Created',
+          actions: 'Actions'
+        },
+        empty: 'No hashtags yet. Create your first one!',
+        emptyState: 'No hashtags yet. Create one to organize your operations!',
+        suggestionHint: 'Tip: Use #hashtags in operation descriptions for quick tagging'
       }
     }
   },
@@ -291,11 +313,14 @@ const resources = {
           account: 'Konto',
           amount: 'Kwota',
           description: 'Opis',
+          descriptionHint: 'Wpisz #hashtagi aby kategoryzować operację',
           category: 'Kategoria',
           user: 'Użytkownik',
           type: 'Typ',
           type_income: 'Przychód',
-          type_expense: 'Wydatek'
+          type_expense: 'Wydatek',
+          hashtags: 'Hashtagi',
+          hashtagsPlaceholder: 'Filtruj po hashtagach'
         },
         dateFilter: {
           label: 'Zakres czasu',
@@ -387,6 +412,28 @@ const resources = {
         confirmComplete: 'Potwierdź ukończenie celu',
         noGoals: 'Brak celów oszczędzania',
         requiredFields: 'Uzupełnij wszystkie pola'
+      },
+      Hashtags: 'Hashtagi',
+      hashtags: {
+        title: 'Hashtagi',
+        addButton: 'Dodaj hashtag',
+        addPlaceholder: 'Wpisz nazwa hashtaga (tylko litery, cyfry i podkreślenie)',
+        invalidFormat: 'Hashtag może zawierać tylko litery, cyfry i podkreślenia, max 50 znaków',
+        deleteTitle: 'Usuń Hashtag',
+        deleteConfirm: 'Usunąć ten hashtag?',
+        deleteConfirmMessage: 'Można usunąć tylko jeśli nie jest używany w operacjach',
+        deleteButton: 'Usuń hashtag',
+        cannotDelete: 'Nie można usunąć hashtaga który jest używany w operacjach',
+        searchPlaceholder: 'Szukaj hashtagów...',
+        noResults: 'Nie znaleziono hashtagów pasujących do wyszukiwania.',
+        table: {
+          name: 'Hashtag',
+          created: 'Utworzony',
+          actions: 'Akcje'
+        },
+        empty: 'Brak hashtagów. Stwórz jeden aby organizować operacje!',
+        emptyState: 'Brak hashtagów. Stwórz jeden aby organizować operacje!',
+        suggestionHint: 'Wskazówka: Używaj #hashtagów w opisach operacji do szybkiej kategoryzacji'
       }
     }
   }

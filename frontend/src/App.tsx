@@ -6,6 +6,7 @@ import Accounts from './pages/Accounts'
 import Operations from './pages/Operations'
 import Categories from './pages/Categories'
 import Goals from './pages/Goals'
+import Hashtags from './pages/Hashtags'
 import useStore from './store'
 import { getTheme } from './theme'
 import i18n from './i18n'
@@ -32,6 +33,7 @@ const App: React.FC = () => {
         {tab === 'operations' && <Operations />}
         {tab === 'categories' && <Categories />}
         {tab === 'goals' && <Goals />}
+        {tab === 'hashtags' && <Hashtags />}
       </Container>
     </ThemeProvider>
   )

@@ -225,4 +225,31 @@ export const completeGoal = async (id: number): Promise<Goal> => {
   })
 }
 
-export default { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations, getCategories, createCategory, updateCategory, deleteCategory, getBudgets, createBudget, updateBudget, deleteBudget, getGoals, createGoal, updateGoal, deleteGoal, completeGoal }
+// --- Hashtags
+export type Hashtag = { id: number; name: string; created_date?: string }
+
+export const getHashtags = async (): Promise<Hashtag[]> => {
+  return fetchJson(`${API}/hashtags`)
+}
+
+export const createHashtag = async (name: string): Promise<Hashtag> => {
+  return fetchJson(`${API}/hashtags`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+}
+
+export const deleteHashtag = async (id: number): Promise<void> => {
+  await fetchJson(`${API}/hashtags/${id}`, { method: 'DELETE' })
+}
+
+export const extractHashtagsFromText = async (text: string): Promise<string[]> => {
+  return fetchJson(`${API}/hashtags/extract`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+}
+
+export default { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations, getCategories, createCategory, updateCategory, deleteCategory, getBudgets, createBudget, updateBudget, deleteBudget, getGoals, createGoal, updateGoal, deleteGoal, completeGoal, getHashtags, createHashtag, deleteHashtag, extractHashtagsFromText }
