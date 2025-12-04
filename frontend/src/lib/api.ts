@@ -11,6 +11,153 @@ async function fetchJson(input: RequestInfo, init?: RequestInit) {
   try { return JSON.parse(text) } catch { return text }
 }
 
+// --- Asset Types
+export type AssetCategory = 'liquid' | 'investment' | 'property' | 'vehicle' | 'valuable' | 'liability'
+
+export type AssetType = {
+  id: number
+  name: string
+  category: AssetCategory
+  icon?: string | null
+  allows_operations: boolean
+  created_date?: string | null
+}
+
+export const getAssetTypes = async (): Promise<AssetType[]> => {
+  return fetchJson(`${API}/asset-types`)
+}
+
+// --- Assets
+export type Asset = {
+  id: number
+  user_id: number
+  asset_type_id: number
+  name: string
+  description?: string | null
+  account_number?: string | null
+  quantity?: number | null
+  average_purchase_price?: number | null
+  current_valuation?: number | null
+  currency: string
+  is_active: boolean
+  created_date?: string | null
+}
+
+export type CreateAssetPayload = {
+  user_id: number
+  asset_type_id: number
+  name: string
+  description?: string | null
+  account_number?: string | null
+  quantity?: number | null
+  average_purchase_price?: number | null
+  current_valuation?: number | null
+  currency?: string
+}
+
+export const getAssets = async (): Promise<Asset[]> => {
+  return fetchJson(`${API}/assets`)
+}
+
+export const createAsset = async (payload: CreateAssetPayload): Promise<Asset> => {
+  return fetchJson(`${API}/assets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export const updateAsset = async ({ id, payload }: { id: number; payload: CreateAssetPayload }): Promise<Asset> => {
+  return fetchJson(`${API}/assets/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export const deleteAsset = async (id: number): Promise<void> => {
+  await fetchJson(`${API}/assets/${id}`, { method: 'DELETE' })
+}
+
+export const toggleAssetActive = async (id: number): Promise<Asset> => {
+  return fetchJson(`${API}/assets/${id}/toggle-active`, { method: 'POST' })
+}
+
+// --- Investment Transactions
+export type InvestmentTransactionType = 'buy' | 'sell' | 'value_increase' | 'value_decrease'
+
+export type InvestmentTransaction = {
+  id: number
+  asset_id: number
+  transaction_type: InvestmentTransactionType
+  quantity?: number | null
+  price_per_unit?: number | null
+  total_value: number
+  transaction_date: string
+  notes?: string | null
+  created_date?: string | null
+}
+
+export type CreateInvestmentTransactionPayload = {
+  asset_id: number
+  transaction_type: InvestmentTransactionType
+  quantity?: number | null
+  price_per_unit?: number | null
+  total_value: number
+  transaction_date: string
+  notes?: string | null
+}
+
+export const createInvestmentTransaction = async (payload: CreateInvestmentTransactionPayload): Promise<InvestmentTransaction> => {
+  return fetchJson(`${API}/investment-transactions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export const getInvestmentTransactions = async (assetId: number): Promise<InvestmentTransaction[]> => {
+  return fetchJson(`${API}/assets/${assetId}/investment-transactions`)
+}
+
+export const deleteInvestmentTransaction = async (id: number): Promise<void> => {
+  await fetchJson(`${API}/investment-transactions/${id}`, { method: 'DELETE' })
+}
+
+// --- Asset Valuations
+export type AssetValuation = {
+  id: number
+  asset_id: number
+  valuation_date: string
+  value: number
+  notes?: string | null
+  created_date?: string | null
+}
+
+export type CreateAssetValuationPayload = {
+  asset_id: number
+  valuation_date: string
+  value: number
+  notes?: string | null
+}
+
+export const createAssetValuation = async (payload: CreateAssetValuationPayload): Promise<AssetValuation> => {
+  return fetchJson(`${API}/asset-valuations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export const getAssetValuations = async (assetId: number): Promise<AssetValuation[]> => {
+  return fetchJson(`${API}/assets/${assetId}/valuations`)
+}
+
+export const deleteAssetValuation = async (id: number): Promise<void> => {
+  await fetchJson(`${API}/asset-valuations/${id}`, { method: 'DELETE' })
+}
+
+// --- Legacy Accounts (backward compatibility)
 export type AccountPayload = { name: string; user_id: number; account_number?: string | null }
 export type Account = { id: number; name: string; user_id: number; account_number?: string | null; is_closed: boolean }
 
@@ -72,10 +219,11 @@ export type Operation = {
   creation_date?: string | null
   category_id?: number | null
   description?: string | null
-  account_id: number
+  asset_id: number
   amount: number
   operation_type: OperationType
   operation_date: string
+  hashtags?: Hashtag[]
 }
 
 export const getOperations = async (): Promise<Operation[]> => {
@@ -86,7 +234,7 @@ export type CreateOperationPayload = {
   creation_date?: string | null
   category_id?: number | null
   description?: string | null
-  account_id: number
+  asset_id: number
   amount: number
   operation_type: OperationType
   operation_date: string
@@ -135,14 +283,14 @@ export const deleteCategory = async (id: number): Promise<void> => {
 // --- Budgets
 export type Budget = {
   id: number
-  account_id: number
+  asset_id: number
   category_id: number
   month: string // YYYY-MM-DD
   planned_amount: number
 }
 
 export type CreateBudgetPayload = {
-  account_id: number
+  asset_id: number
   category_id: number
   month: string // YYYY-MM-DD
   planned_amount: number
@@ -176,7 +324,7 @@ export const deleteBudget = async (id: number): Promise<void> => {
 export type Goal = {
   id: number
   user_id: number
-  account_id: number
+  asset_id: number
   name: string
   target_amount: number
   current_amount: number
@@ -188,7 +336,7 @@ export type Goal = {
 
 export type CreateGoalPayload = {
   user_id: number
-  account_id: number
+  asset_id: number
   name: string
   target_amount: number
   target_date: string // YYYY-MM-DD

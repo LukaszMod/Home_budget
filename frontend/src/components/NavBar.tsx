@@ -35,10 +35,13 @@ const NavBar: React.FC = () => {
         <Tabs value={tab} onChange={handleChange} textColor="inherit" indicatorColor="secondary">
           <Tab label={t('Budget')} value="budget" />
           <Tab label={t('Accounts')} value="accounts" />
+          <Tab label={t('Assets')} value="assets" />
           <Tab label={t('Operations')} value="operations" />
           <Tab label={t('Categories')} value="categories" />
           <Tab label={t('Goals')} value="goals" />
           <Tab label={t('Hashtags')} value="hashtags" />
+          <Tab label={t('RecurringOperations')} value="recurring" />
+          <Tab label={t('Statistics')} value="statistics" />
         </Tabs>
 
         <Box sx={{ flexGrow: 1 }} />

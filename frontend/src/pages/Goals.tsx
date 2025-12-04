@@ -65,7 +65,7 @@ const Goals: React.FC = () => {
     setEditing(goal)
     setName(goal.name)
     setUserId(goal.user_id)
-    setAccountId(goal.account_id)
+    setAccountId(goal.asset_id)
     setTargetAmount(String(goal.target_amount))
     setTargetDate(goal.target_date)
     setOpen(true)
@@ -83,7 +83,7 @@ const Goals: React.FC = () => {
 
     const payload: CreateGoalPayload = {
       user_id: Number(userId),
-      account_id: Number(accountId),
+      asset_id: Number(accountId),
       name,
       target_amount: parseFloat(targetAmount),
       target_date: targetDate,
@@ -158,7 +158,7 @@ const Goals: React.FC = () => {
             const progress = calculateProgress(goal)
             const monthlyNeeded = calculateMonthlyNeeded(goal)
             const daysRemaining = calculateDaysRemaining(goal)
-            const account = accounts.find((a) => a.id === goal.account_id)
+            const account = accounts.find((a) => a.id === goal.asset_id)
             const user = users.find((u) => u.id === goal.user_id)
 
             return (

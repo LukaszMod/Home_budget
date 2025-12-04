@@ -74,6 +74,16 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     },
   })
 
+  const watchedDate = watch('operationDate')
+  const isPlanned = React.useMemo(() => {
+    if (!watchedDate) return false
+    const selectedDate = new Date(watchedDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    selectedDate.setHours(0, 0, 0, 0)
+    return selectedDate > today
+  }, [watchedDate])
+
   const createMut = useMutation<APIOperation, Error, CreateOperationPayload>({
     mutationFn: (p) => createOperation(p),
     onSuccess: () => {
@@ -134,7 +144,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
         operationDate: editing.operation_date ?? new Date().toISOString().split('T')[0],
         amount: String(editing.amount),
         description: editing.description ?? '',
-        accountId: editing.account_id ?? '',
+        accountId: editing.asset_id ?? '',
         categoryId: editing.category_id ?? '',
         operationType: editing.operation_type ?? '',
       })
@@ -151,7 +161,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     }
 
     const payload: CreateOperationPayload = {
-      account_id: Number(data.accountId),
+      asset_id: Number(data.accountId),
       amount: Number(data.amount),
       description: data.description || null,
       category_id: data.categoryId === '' ? null : Number(data.categoryId),
@@ -194,6 +204,22 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     >
       <form onSubmit={handleSubmit((data) => handleSave(data, false))}>
         <Stack spacing={2}>
+          {isPlanned && (
+            <Box sx={{ 
+              p: 2, 
+              bgcolor: '#fff3cd', 
+              border: '1px solid #ffc107', 
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Typography variant="body2" sx={{ color: '#856404', fontWeight: 500 }}>
+                ⏰ {t('operations.plannedWarning') ?? 'Operacja zaplanowana na przyszłą datę'}
+              </Typography>
+            </Box>
+          )}
+
           <Controller
             name="operationDate"
             control={control}

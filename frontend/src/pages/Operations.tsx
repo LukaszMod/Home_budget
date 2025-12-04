@@ -88,15 +88,27 @@ const Operations: React.FC = () => {
     { key: 'thisQuarter', label: t('operations.dateFilter.thisQuarter') ?? 'Obecny kwartał' },
     { key: 'thisYear', label: t('operations.dateFilter.thisYear') ?? 'Obecny rok' },
     { key: 'prevYear', label: t('operations.dateFilter.prevYear') ?? 'Poprzedni rok' },
+    { key: 'planned', label: t('operations.dateFilter.planned') ?? 'Operacje zaplanowane' },
     { key: 'custom', label: t('operations.dateFilter.custom') ?? 'Zakres niestandardowy' },
   ], [t])
 
-  const rows = React.useMemo(() => operations.map(o => ({ id: o.id, operation_date: o.operation_date ?? '', amount: o.amount, description: o.description ?? '', account_id: o.account_id, category_id: o.category_id, operation_type: o.operation_type })), [operations])
+  const rows = React.useMemo(() => operations.map(o => ({ id: o.id, operation_date: o.operation_date ?? '', amount: o.amount, description: o.description ?? '', asset_id: o.asset_id, category_id: o.category_id, operation_type: o.operation_type })), [operations])
 
   const filteredRows = React.useMemo(() => {
     let filtered = rows
     let start: Date | null = null, end: Date | null = null
-    if (datePreset === 'custom') {
+    
+    if (datePreset === 'planned') {
+      // Show only future operations
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      filtered = filtered.filter(r => {
+        if (!r.operation_date) return false
+        const d = new Date(r.operation_date)
+        d.setHours(0, 0, 0, 0)
+        return d > today
+      })
+    } else if (datePreset === 'custom') {
       if (customDateFrom) start = new Date(customDateFrom)
       if (customDateTo) end = new Date(customDateTo)
     } else {
@@ -108,7 +120,8 @@ const Operations: React.FC = () => {
         end = new Date(y, 11, 31, 23, 59, 59)
       }
     }
-    if (start || end) {
+    
+    if ((start || end) && datePreset !== 'planned') {
       filtered = filtered.filter(r => {
         if (!r.operation_date) return false
         const d = new Date(r.operation_date).getTime()
@@ -117,7 +130,7 @@ const Operations: React.FC = () => {
         return true
       })
     }
-    if (filterAccountIds.length > 0) filtered = filtered.filter(r => filterAccountIds.includes(r.account_id))
+    if (filterAccountIds.length > 0) filtered = filtered.filter(r => filterAccountIds.includes(r.asset_id))
     if (filterCategoryIds.length > 0) filtered = filtered.filter(r => r.category_id && filterCategoryIds.includes(r.category_id))
     if (filterOperationType !== '') filtered = filtered.filter(r => r.operation_type === filterOperationType)
     if (filterHashtagIds.length > 0) {
@@ -134,7 +147,7 @@ const Operations: React.FC = () => {
 
   const columns: GridColDef[] = [
     { field: 'operation_date', headerName: t('operations.fields.date'), width: 150, valueGetter: (p: any) => p.row.operation_date ? new Date(p.row.operation_date).toLocaleString() : '', sortable: true },
-    { field: 'account_id', headerName: t('operations.fields.account'), width: 180, valueGetter: (p: any) => accounts.find(a => a.id === p.row.account_id)?.name ?? '' },
+    { field: 'account_id', headerName: t('operations.fields.account'), width: 180, valueGetter: (p: any) => accounts.find(a => a.id === p.row.asset_id)?.name ?? '' },
     { field: 'amount', headerName: t('operations.fields.amount'), width: 120 },
     { field: 'description', headerName: t('operations.fields.description'), flex: 1 },
     { field: 'category_id', headerName: t('operations.fields.category'), width: 180, valueGetter: (p: any) => categories.find(c => c.id === p.row.category_id)?.name ?? '' },

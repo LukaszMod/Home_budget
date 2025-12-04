@@ -136,7 +136,7 @@ const Accounts: React.FC = () => {
       </TableHead>
       <TableBody>
         {accounts.map((r) => {
-          const hasOps = operations.some(op => op.account_id === r.id)
+          const hasOps = operations.some(op => op.asset_id === r.id)
           return (
             <TableRow key={r.id}>
               <TableCell>{r.id}</TableCell>

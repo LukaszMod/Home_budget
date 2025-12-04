@@ -101,7 +101,7 @@ const Budget: React.FC = () => {
         for (const update of updates) {
           const existingBudget = budgets.find((b: BudgetType) => b.category_id === update.category_id && b.month.startsWith(selectedMonth))
           if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: update.planned_amount } })
-          else await createMutation.mutateAsync({ account_id: 1, category_id: update.category_id, month: selectedMonth + '-01', planned_amount: update.planned_amount })
+          else await createMutation.mutateAsync({ asset_id: 1, category_id: update.category_id, month: selectedMonth + '-01', planned_amount: update.planned_amount })
         }
         setEditedRows(new Map())
       } catch (error) { console.error('Failed to save budgets:', error) }
@@ -151,7 +151,7 @@ const Budget: React.FC = () => {
       for (const budget of previousMonthBudgets) {
         const existingBudget = budgets.find((b) => b.category_id === budget.category_id && b.month.startsWith(selectedMonth))
         if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: budget.planned_amount } })
-        else await createMutation.mutateAsync({ account_id: 1, category_id: budget.category_id, month: selectedMonth + '-01', planned_amount: budget.planned_amount })
+        else await createMutation.mutateAsync({ asset_id: 1, category_id: budget.category_id, month: selectedMonth + '-01', planned_amount: budget.planned_amount })
       }
       setEditedRows(new Map())
     } catch (error) { console.error('Failed to copy previous month plan:', error) }
@@ -173,7 +173,7 @@ const Budget: React.FC = () => {
         const spending = spendingByCategory[categoryId]
         const existingBudget = budgets.find((b) => b.category_id === parseInt(categoryId) && b.month.startsWith(selectedMonth))
         if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: spending } })
-        else await createMutation.mutateAsync({ account_id: 1, category_id: parseInt(categoryId), month: selectedMonth + '-01', planned_amount: spending })
+        else await createMutation.mutateAsync({ asset_id: 1, category_id: parseInt(categoryId), month: selectedMonth + '-01', planned_amount: spending })
       }
       setEditedRows(new Map())
     } catch (error) { console.error('Failed to copy previous month spending:', error) }

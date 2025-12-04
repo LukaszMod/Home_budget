@@ -13,6 +13,7 @@ const resources = {
       },
       Budget: 'Budget',
       Accounts: 'Accounts',
+      Assets: 'Assets',
       accounts: {
         title: 'Accounts',
         addButton: 'Add account',
@@ -112,6 +113,7 @@ const resources = {
           thisQuarter: 'This quarter',
           thisYear: 'This year',
           prevYear: 'Previous year',
+          planned: 'Planned operations',
           custom: 'Custom range',
           from: 'From',
           to: 'To'
@@ -134,7 +136,8 @@ const resources = {
           saved: 'Operation saved',
           deleted: 'Operation(s) deleted',
           fillRequired: 'Please fill required fields'
-        }
+        },
+        plannedWarning: 'Planned operation - scheduled for a future date'
       },
       Operations: 'Operations',
       Categories: 'Categories',
@@ -215,6 +218,83 @@ const resources = {
         empty: 'No hashtags yet. Create your first one!',
         emptyState: 'No hashtags yet. Create one to organize your operations!',
         suggestionHint: 'Tip: Use #hashtags in operation descriptions for quick tagging'
+      },
+      RecurringOperations: 'Recurring Operations',
+      recurringOperations: {
+        title: 'Recurring Operations',
+        add: 'Add Recurring',
+        edit: 'Edit Recurring',
+        addButton: 'Add Recurring Operation',
+        description: 'Create automatic recurring transactions',
+        confirmDelete: 'Delete recurring operation?',
+        table: {
+          description: 'Description',
+          account: 'Account',
+          amount: 'Amount',
+          type: 'Type',
+          frequency: 'Frequency',
+          startDate: 'Start Date',
+          endDate: 'End Date',
+          status: 'Status',
+          actions: 'Actions'
+        },
+        fields: {
+          account: 'Account',
+          amount: 'Amount',
+          description: 'Description',
+          category: 'Category',
+          type: 'Type',
+          frequency: 'Frequency',
+          startDate: 'Start Date',
+          endDate: 'End Date (optional)',
+          active: 'Active'
+        },
+        frequency: {
+          daily: 'Daily',
+          weekly: 'Weekly',
+          biweekly: 'Bi-weekly',
+          monthly: 'Monthly',
+          quarterly: 'Quarterly',
+          yearly: 'Yearly'
+        },
+        empty: 'No recurring operations yet',
+        messages: {
+          created: 'Recurring operation created',
+          updated: 'Recurring operation updated',
+          deleted: 'Recurring operation deleted',
+          fillRequired: 'Please fill in all required fields'
+        }
+      },
+      Statistics: 'Statistics',
+      statistics: {
+        thisMonth: 'This Month',
+        futureOperations: 'Future operations',
+        coverage: 'Coverage',
+        activeRecurring: 'Active',
+        monthlyRecurringIncome: 'Monthly Income',
+        monthlyRecurringExpense: 'Monthly Expense',
+        monthlyRecurringBalance: 'Balance',
+        expensesByCategory: 'Expenses by Category',
+        accountsBalance: 'Accounts Balance',
+        accountDetails: 'Account Details',
+        transactions: 'Transactions',
+        topExpenseCategories: 'Top Expense Categories',
+        filters: 'Filters',
+        period: 'Period',
+        period_currentMonth: 'Current Month',
+        period_lastMonth: 'Last Month',
+        period_lastQuarter: 'Last Quarter',
+        period_lastYear: 'Last Year',
+        selectAccounts: 'Select accounts...',
+        selectCategories: 'Select categories...',
+        resetFilters: 'Reset',
+        activeAccounts: 'Active',
+        noData: 'No data to display for selected filters',
+        activeFilters: 'Active Filters',
+        editFilters: 'Edit Filters',
+        comparison: 'Compare',
+        hashtags: 'Hashtags',
+        noHashtags: 'No hashtags available'
       }
     }
   },
@@ -229,6 +309,7 @@ const resources = {
       },
       Budget: 'Budżet',
       Accounts: 'Konta',
+      Assets: 'Majątek',
       accounts: {
         title: 'Konta',
         addButton: 'Dodaj konto',
@@ -331,6 +412,7 @@ const resources = {
           thisQuarter: 'Bieżący kwartał',
           thisYear: 'Bieżący rok',
           prevYear: 'Poprzedni rok',
+          planned: 'Operacje zaplanowane',
           custom: 'Zakres niestandardowy',
           from: 'Od',
           to: 'Do'
@@ -353,7 +435,8 @@ const resources = {
           saved: 'Operacja zapisana',
           deleted: 'Operacja/operacje usunięte',
           fillRequired: 'Uzupełnij wymagane pola'
-        }
+        },
+        plannedWarning: 'Operacja zaplanowana - przeznaczona na przyszłą datę'
       },
       Operations: 'Operacje',
       Categories: 'Kategorie',
@@ -434,6 +517,83 @@ const resources = {
         empty: 'Brak hashtagów. Stwórz jeden aby organizować operacje!',
         emptyState: 'Brak hashtagów. Stwórz jeden aby organizować operacje!',
         suggestionHint: 'Wskazówka: Używaj #hashtagów w opisach operacji do szybkiej kategoryzacji'
+      },
+      RecurringOperations: 'Operacje cykliczne',
+      recurringOperations: {
+        title: 'Operacje cykliczne',
+        add: 'Dodaj cykliczną',
+        edit: 'Edytuj cykliczną',
+        addButton: 'Dodaj operację cykliczną',
+        description: 'Utwórz automatyczne powtarzające się transakcje',
+        confirmDelete: 'Usunąć operację cykliczną?',
+        table: {
+          description: 'Opis',
+          account: 'Konto',
+          amount: 'Kwota',
+          type: 'Typ',
+          frequency: 'Częstotliwość',
+          startDate: 'Data rozpoczęcia',
+          endDate: 'Data zakończenia',
+          status: 'Status',
+          actions: 'Akcje'
+        },
+        fields: {
+          account: 'Konto',
+          amount: 'Kwota',
+          description: 'Opis',
+          category: 'Kategoria',
+          type: 'Typ',
+          frequency: 'Częstotliwość',
+          startDate: 'Data rozpoczęcia',
+          endDate: 'Data zakończenia (opcjonalna)',
+          active: 'Aktywna'
+        },
+        frequency: {
+          daily: 'Codziennie',
+          weekly: 'Co tydzień',
+          biweekly: 'Co dwa tygodnie',
+          monthly: 'Co miesiąc',
+          quarterly: 'Co kwartał',
+          yearly: 'Rocznie'
+        },
+        empty: 'Brak operacji cyklicznych',
+        messages: {
+          created: 'Operacja cykliczna utworzona',
+          updated: 'Operacja cykliczna zaktualizowana',
+          deleted: 'Operacja cykliczna usunięta',
+          fillRequired: 'Uzupełnij wszystkie wymagane pola'
+        }
+      },
+      Statistics: 'Statystyki',
+      statistics: {
+        thisMonth: 'Bieżący miesiąc',
+        futureOperations: 'Operacje przyszłe',
+        coverage: 'Pokrycie',
+        activeRecurring: 'Aktywne',
+        monthlyRecurringIncome: 'Przychody co miesiąc',
+        monthlyRecurringExpense: 'Wydatki co miesiąc',
+        monthlyRecurringBalance: 'Saldo',
+        expensesByCategory: 'Wydatki po kategoriach',
+        accountsBalance: 'Saldo kont',
+        accountDetails: 'Szczegóły kont',
+        transactions: 'Transakcje',
+        topExpenseCategories: 'Top kategorie wydatków',
+        filters: 'Filtry',
+        period: 'Okres',
+        period_currentMonth: 'Bieżący miesiąc',
+        period_lastMonth: 'Ostatni miesiąc',
+        period_lastQuarter: 'Ostatni kwartał',
+        period_lastYear: 'Ostatni rok',
+        selectAccounts: 'Wybierz konta...',
+        selectCategories: 'Wybierz kategorie...',
+        resetFilters: 'Resetuj',
+        activeAccounts: 'Aktywne',
+        noData: 'Brak danych do wyświetlenia dla wybranych filtrów',
+        activeFilters: 'Aktywne filtry',
+        editFilters: 'Edytuj filtry',
+        comparison: 'Porównaj',
+        hashtags: 'Hashtagi',
+        noHashtags: 'Brak dostępnych hashtagów'
       }
     }
   }
@@ -447,3 +607,4 @@ i18n.use(initReactI18next).init({
 })
 
 export default i18n
+

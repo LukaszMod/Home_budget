@@ -129,23 +129,24 @@ pub async fn toggle_account_closed(State(state): State<AppState>, Path(id): Path
 }
 
 // OPERATIONS
-pub async fn create_operation(State(state): State<AppState>, Json(payload): Json<CreateOperation>) -> Result<Json<Operation>, (axum::http::StatusCode, String)> {
+pub async fn create_operation(State(state): State<AppState>, Json(payload): Json<CreateOperation>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
-        "INSERT INTO operations (category_id, description, account_id, amount, operation_type, operation_date)
+        "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
          VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
-         RETURNING id, creation_date, category_id, description, account_id, amount::float8, operation_type::text, operation_date"
+         RETURNING id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date"
     ).bind(payload.category_id)
      .bind(&payload.description)
-     .bind(payload.account_id)
+     .bind(payload.asset_id)
      .bind(payload.amount)
      .bind(&payload.operation_type)
      .bind(&payload.operation_date)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     
     // Extract and link hashtags from description
+    let mut hashtags = Vec::new();
     if let Some(desc) = &payload.description {
-        let hashtags = extract_hashtags(desc);
-        for hashtag in hashtags {
+        let extracted_hashtags = extract_hashtags(desc);
+        for hashtag in extracted_hashtags {
             // Get or create hashtag
             let hashtag_id: (i32,) = sqlx::query_as(
                 "INSERT INTO hashtags (name) VALUES ($1)
@@ -164,10 +165,27 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
                 .execute(&state.pool)
                 .await
                 .map_err(db_err)?;
+            
+            // Fetch the hashtag record
+            if let Ok(tag) = sqlx::query_as::<_, Hashtag>(
+                "SELECT id, name, created_date FROM hashtags WHERE id = $1"
+            ).bind(hashtag_id.0).fetch_one(&state.pool).await {
+                hashtags.push(tag);
+            }
         }
     }
     
-    Ok(Json(op))
+    Ok(Json(OperationWithHashtags {
+        id: op.id,
+        creation_date: op.creation_date,
+        category_id: op.category_id,
+        description: op.description,
+        asset_id: op.asset_id,
+        amount: op.amount,
+        operation_type: op.operation_type,
+        operation_date: op.operation_date,
+        hashtags,
+    }))
 }
 
 // Helper function to extract hashtags from text
@@ -192,37 +210,113 @@ fn extract_hashtags(text: &str) -> Vec<String> {
     hashtags
 }
 
-pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<Operation>>, (axum::http::StatusCode, String)> {
+pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<OperationWithHashtags>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, account_id, amount::float8, operation_type::text, operation_date
+        "SELECT id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date
          FROM operations ORDER BY operation_date DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
-    Ok(Json(rows))
+    
+    let mut result = Vec::new();
+    for op in rows {
+        let hashtags = get_operation_hashtags(&state.pool, op.id).await.map_err(|_| db_err("Failed to fetch hashtags"))?;
+        result.push(OperationWithHashtags {
+            id: op.id,
+            creation_date: op.creation_date,
+            category_id: op.category_id,
+            description: op.description,
+            asset_id: op.asset_id,
+            amount: op.amount,
+            operation_type: op.operation_type,
+            operation_date: op.operation_date,
+            hashtags,
+        });
+    }
+    Ok(Json(result))
 }
 
-pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Operation>, (axum::http::StatusCode, String)> {
+pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, account_id, amount::float8, operation_type::text, operation_date
+        "SELECT id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date
          FROM operations WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
-    Ok(Json(op))
+    
+    let hashtags = get_operation_hashtags(&state.pool, op.id).await.map_err(|_| db_err("Failed to fetch hashtags"))?;
+    
+    Ok(Json(OperationWithHashtags {
+        id: op.id,
+        creation_date: op.creation_date,
+        category_id: op.category_id,
+        description: op.description,
+        asset_id: op.asset_id,
+        amount: op.amount,
+        operation_type: op.operation_type,
+        operation_date: op.operation_date,
+        hashtags,
+    }))
 }
 
-pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateOperation>) -> Result<Json<Operation>, (axum::http::StatusCode, String)> {
+pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateOperation>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
         "UPDATE operations
-         SET category_id = $1, description = $2, account_id = $3, amount = $4, operation_type = $5::operation_type, operation_date = $6::date
+         SET category_id = $1, description = $2, asset_id = $3, amount = $4, operation_type = $5::operation_type, operation_date = $6::date
          WHERE id = $7
-         RETURNING id, creation_date, category_id, description, account_id, amount::float8, operation_type::text, operation_date"
+         RETURNING id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date"
     ).bind(payload.category_id)
      .bind(&payload.description)
-     .bind(payload.account_id)
+     .bind(payload.asset_id)
      .bind(payload.amount)
      .bind(&payload.operation_type)
      .bind(&payload.operation_date)
      .bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
-    Ok(Json(op))
+    
+    // Delete old hashtag associations
+    sqlx::query("DELETE FROM operation_hashtags WHERE operation_id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
+    
+    // Extract and link hashtags from description
+    let mut hashtags = Vec::new();
+    if let Some(desc) = &payload.description {
+        let extracted_hashtags = extract_hashtags(desc);
+        for hashtag in extracted_hashtags {
+            // Get or create hashtag
+            let hashtag_id: (i32,) = sqlx::query_as(
+                "INSERT INTO hashtags (name) VALUES ($1)
+                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                 RETURNING id"
+            )
+            .bind(&hashtag)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(db_err)?;
+            
+            // Link operation and hashtag
+            sqlx::query("INSERT INTO operation_hashtags (operation_id, hashtag_id) VALUES ($1, $2)")
+                .bind(op.id)
+                .bind(hashtag_id.0)
+                .execute(&state.pool)
+                .await
+                .map_err(db_err)?;
+            
+            // Fetch the hashtag record
+            if let Ok(tag) = sqlx::query_as::<_, Hashtag>(
+                "SELECT id, name, created_date FROM hashtags WHERE id = $1"
+            ).bind(hashtag_id.0).fetch_one(&state.pool).await {
+                hashtags.push(tag);
+            }
+        }
+    }
+    
+    Ok(Json(OperationWithHashtags {
+        id: op.id,
+        creation_date: op.creation_date,
+        category_id: op.category_id,
+        description: op.description,
+        asset_id: op.asset_id,
+        amount: op.amount,
+        operation_type: op.operation_type,
+        operation_date: op.operation_date,
+        hashtags,
+    }))
 }
 
 pub async fn delete_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<(), (axum::http::StatusCode, String)> {
@@ -233,34 +327,34 @@ pub async fn delete_operation(State(state): State<AppState>, Path(id): Path<i32>
 // BUDGETS
 pub async fn create_budget(State(state): State<AppState>, Json(payload): Json<CreateBudget>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "INSERT INTO budgets (account_id, category_id, month, planned_amount)
+        "INSERT INTO budgets (asset_id, category_id, month, planned_amount)
          VALUES ($1, $2, $3, $4)
-         RETURNING id, account_id, category_id, month, planned_amount::float8"
-    ).bind(payload.account_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount)
+         RETURNING id, asset_id, category_id, month, planned_amount::float8"
+    ).bind(payload.asset_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
 
 pub async fn list_budgets(State(state): State<AppState>) -> Result<Json<Vec<Budget>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Budget>(
-        "SELECT id, account_id, category_id, month, planned_amount::float8 FROM budgets ORDER BY month DESC, id"
+        "SELECT id, asset_id, category_id, month, planned_amount::float8 FROM budgets ORDER BY month DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
 }
 
 pub async fn get_budget(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "SELECT id, account_id, category_id, month, planned_amount::float8 FROM budgets WHERE id = $1"
+        "SELECT id, asset_id, category_id, month, planned_amount::float8 FROM budgets WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
 
 pub async fn update_budget(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateBudget>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "UPDATE budgets SET account_id = $1, category_id = $2, month = $3, planned_amount = $4
+        "UPDATE budgets SET asset_id = $1, category_id = $2, month = $3, planned_amount = $4
          WHERE id = $5
-         RETURNING id, account_id, category_id, month, planned_amount::float8"
-    ).bind(payload.account_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount).bind(id)
+         RETURNING id, asset_id, category_id, month, planned_amount::float8"
+    ).bind(payload.asset_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount).bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
@@ -273,17 +367,17 @@ pub async fn delete_budget(State(state): State<AppState>, Path(id): Path<i32>) -
 // GOALS
 pub async fn create_goal(State(state): State<AppState>, Json(payload): Json<CreateGoal>) -> Result<Json<Goal>, (axum::http::StatusCode, String)> {
     let goal = sqlx::query_as::<_, Goal>(
-        "INSERT INTO goals (user_id, account_id, name, target_amount, target_date)
+        "INSERT INTO goals (user_id, asset_id, name, target_amount, target_date)
          VALUES ($1, $2, $3, $4, $5::date)
-         RETURNING id, user_id, account_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
-    ).bind(payload.user_id).bind(payload.account_id).bind(&payload.name).bind(payload.target_amount).bind(&payload.target_date)
+         RETURNING id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
+    ).bind(payload.user_id).bind(payload.asset_id).bind(&payload.name).bind(payload.target_amount).bind(&payload.target_date)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
 }
 
 pub async fn list_goals(State(state): State<AppState>) -> Result<Json<Vec<Goal>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Goal>(
-        "SELECT id, user_id, account_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed 
+        "SELECT id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed 
          FROM goals ORDER BY target_date DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
@@ -291,7 +385,7 @@ pub async fn list_goals(State(state): State<AppState>) -> Result<Json<Vec<Goal>>
 
 pub async fn get_goal(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Goal>, (axum::http::StatusCode, String)> {
     let goal = sqlx::query_as::<_, Goal>(
-        "SELECT id, user_id, account_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed 
+        "SELECT id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed 
          FROM goals WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
@@ -299,10 +393,10 @@ pub async fn get_goal(State(state): State<AppState>, Path(id): Path<i32>) -> Res
 
 pub async fn update_goal(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateGoal>) -> Result<Json<Goal>, (axum::http::StatusCode, String)> {
     let goal = sqlx::query_as::<_, Goal>(
-        "UPDATE goals SET user_id = $1, account_id = $2, name = $3, target_amount = $4, target_date = $5::date
+        "UPDATE goals SET user_id = $1, asset_id = $2, name = $3, target_amount = $4, target_date = $5::date
          WHERE id = $6
-         RETURNING id, user_id, account_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
-    ).bind(payload.user_id).bind(payload.account_id).bind(&payload.name).bind(payload.target_amount).bind(&payload.target_date).bind(id)
+         RETURNING id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
+    ).bind(payload.user_id).bind(payload.asset_id).bind(&payload.name).bind(payload.target_amount).bind(&payload.target_date).bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
 }
@@ -316,7 +410,7 @@ pub async fn complete_goal(State(state): State<AppState>, Path(id): Path<i32>) -
     let goal = sqlx::query_as::<_, Goal>(
         "UPDATE goals SET is_completed = TRUE, completed_date = CURRENT_TIMESTAMP
          WHERE id = $1
-         RETURNING id, user_id, account_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
+         RETURNING id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
 }
@@ -384,7 +478,117 @@ pub async fn extract_hashtags_from_text(State(state): State<AppState>, Json(payl
     Ok(Json(hashtags))
 }
 
+// RECURRING OPERATIONS
+pub async fn create_recurring_operation(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateRecurringOperation>,
+) -> Result<Json<RecurringOperation>, (axum::http::StatusCode, String)> {
+    let start_date = chrono::NaiveDate::parse_from_str(&payload.start_date, "%Y-%m-%d")
+        .map_err(|_| (axum::http::StatusCode::BAD_REQUEST, "Invalid start_date format".to_string()))?;
+    
+    let end_date = if let Some(ed) = payload.end_date {
+        Some(chrono::NaiveDate::parse_from_str(&ed, "%Y-%m-%d")
+            .map_err(|_| (axum::http::StatusCode::BAD_REQUEST, "Invalid end_date format".to_string()))?)
+    } else {
+        None
+    };
+
+    let recurring_op = sqlx::query_as::<_, RecurringOperation>(
+        "INSERT INTO recurring_operations (asset_id, category_id, description, amount, operation_type, frequency, start_date, end_date, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+         RETURNING id, asset_id, category_id, description, amount, operation_type, frequency, start_date, end_date, is_active, creation_date, last_generated"
+    )
+    .bind(payload.asset_id)
+    .bind(payload.category_id)
+    .bind(&payload.description)
+    .bind(payload.amount)
+    .bind(&payload.operation_type)
+    .bind(&payload.frequency)
+    .bind(start_date)
+    .bind(end_date)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+
+    Ok(Json(recurring_op))
+}
+
+pub async fn list_recurring_operations(State(state): State<AppState>) -> Result<Json<Vec<RecurringOperation>>, (axum::http::StatusCode, String)> {
+    let rows = sqlx::query_as::<_, RecurringOperation>(
+        "SELECT id, asset_id, category_id, description, amount, operation_type, frequency, start_date, end_date, is_active, creation_date, last_generated
+         FROM recurring_operations
+         WHERE is_active = TRUE
+         ORDER BY start_date DESC"
+    ).fetch_all(&state.pool).await.map_err(db_err)?;
+    Ok(Json(rows))
+}
+
+pub async fn get_recurring_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<RecurringOperation>, (axum::http::StatusCode, String)> {
+    let row = sqlx::query_as::<_, RecurringOperation>(
+        "SELECT id, asset_id, category_id, description, amount, operation_type, frequency, start_date, end_date, is_active, creation_date, last_generated
+         FROM recurring_operations
+         WHERE id = $1"
+    ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
+    Ok(Json(row))
+}
+
+pub async fn update_recurring_operation(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateRecurringOperation>,
+) -> Result<Json<RecurringOperation>, (axum::http::StatusCode, String)> {
+    let end_date = if let Some(ed) = payload.end_date {
+        Some(chrono::NaiveDate::parse_from_str(&ed, "%Y-%m-%d")
+            .map_err(|_| (axum::http::StatusCode::BAD_REQUEST, "Invalid end_date format".to_string()))?)
+    } else {
+        None
+    };
+
+    let recurring_op = sqlx::query_as::<_, RecurringOperation>(
+        "UPDATE recurring_operations 
+         SET description = COALESCE($1, description),
+             amount = COALESCE($2, amount),
+             category_id = COALESCE($3, category_id),
+             end_date = COALESCE($4, end_date),
+             is_active = COALESCE($5, is_active)
+         WHERE id = $6
+         RETURNING id, asset_id, category_id, description, amount, operation_type, frequency, start_date, end_date, is_active, creation_date, last_generated"
+    )
+    .bind(&payload.description)
+    .bind(payload.amount)
+    .bind(payload.category_id)
+    .bind(end_date)
+    .bind(payload.is_active)
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+
+    Ok(Json(recurring_op))
+}
+
+pub async fn delete_recurring_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<(), (axum::http::StatusCode, String)> {
+    sqlx::query("DELETE FROM recurring_operations WHERE id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
+    Ok(())
+}
+
 // Prosty wrapper błędów
 fn db_err<E: std::fmt::Display>(e: E) -> (axum::http::StatusCode, String) {
     (axum::http::StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e))
+}
+
+// Helper function to fetch hashtags for an operation
+async fn get_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32) -> Result<Vec<Hashtag>, String> {
+    let hashtags = sqlx::query_as::<_, Hashtag>(
+        "SELECT h.id, h.name, h.created_date
+         FROM hashtags h
+         INNER JOIN operation_hashtags oh ON h.id = oh.hashtag_id
+         WHERE oh.operation_id = $1
+         ORDER BY h.name"
+    )
+    .bind(operation_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    Ok(hashtags)
 }
