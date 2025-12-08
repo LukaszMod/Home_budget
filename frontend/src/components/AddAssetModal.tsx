@@ -11,8 +11,10 @@ import {
   Box
 } from '@mui/material'
 import StyledModal from './StyledModal'
+import CalcTextField from './CalcTextField'
 import type { Asset, AssetType, CreateAssetPayload } from '../lib/api'
 import { useAssetTypes } from '../hooks/useAssetTypes'
+import { useAccountsData } from '../hooks/useAccountsData'
 
 interface AddAssetModalProps {
   open: boolean
@@ -28,6 +30,8 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
   onSave,
 }) => {
   const { assetTypes } = useAssetTypes()
+  const { usersQuery } = useAccountsData()
+  const users = usersQuery.data ?? []
 
   const [assetTypeId, setAssetTypeId] = useState<number | ''>('')
   const [name, setName] = useState('')
@@ -165,14 +169,20 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
           rows={2}
         />
 
-        <TextField
-          label="Użytkownik ID"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value === '' ? '' : Number(e.target.value))}
-          fullWidth
-          type="number"
-          required
-        />
+        <FormControl fullWidth required>
+          <InputLabel>Użytkownik</InputLabel>
+          <Select
+            value={userId}
+            onChange={(e) => setUserId(e.target.value as number)}
+            label="Użytkownik"
+          >
+            {users.map((user) => (
+              <MenuItem key={user.id} value={user.id}>
+                @{user.nick} ({user.full_name})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         {/* Conditional Fields Based on Asset Type */}
         {selectedAssetType?.category === 'liquid' || selectedAssetType?.category === 'liability' ? (
@@ -190,22 +200,18 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
             <Typography variant="caption" color="textSecondary">
               Ilość i średnia cena zakupu będą automatycznie wyliczane na podstawie transakcji
             </Typography>
-            <TextField
+            <CalcTextField
               label="Ilość (opcjonalnie)"
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onChange={(val) => setQuantity(String(val))}
               fullWidth
-              type="number"
-              inputProps={{ step: '0.0001' }}
               helperText="Zostanie zaktualizowane przy dodawaniu transakcji"
             />
-            <TextField
+            <CalcTextField
               label="Średnia cena zakupu (opcjonalnie)"
               value={averagePurchasePrice}
-              onChange={(e) => setAveragePurchasePrice(e.target.value)}
+              onChange={(val) => setAveragePurchasePrice(String(val))}
               fullWidth
-              type="number"
-              inputProps={{ step: '0.01' }}
               helperText="Zostanie zaktualizowane przy dodawaniu transakcji"
             />
           </>
@@ -214,13 +220,11 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
         {selectedAssetType?.category === 'property' || 
          selectedAssetType?.category === 'vehicle' || 
          selectedAssetType?.category === 'valuable' ? (
-          <TextField
+          <CalcTextField
             label="Aktualna wycena"
             value={currentValuation}
-            onChange={(e) => setCurrentValuation(e.target.value)}
+            onChange={(val) => setCurrentValuation(String(val))}
             fullWidth
-            type="number"
-            inputProps={{ step: '0.01' }}
             helperText="Możesz później dodać historię wycen"
           />
         ) : null}

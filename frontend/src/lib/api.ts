@@ -35,9 +35,9 @@ export type Asset = {
   name: string
   description?: string | null
   account_number?: string | null
-  quantity?: number | null
-  average_purchase_price?: number | null
-  current_valuation?: number | null
+  quantity?: number | string | null
+  average_purchase_price?: number | string | null
+  current_valuation?: number | string | null
   currency: string
   is_active: boolean
   created_date?: string | null
@@ -90,9 +90,9 @@ export type InvestmentTransaction = {
   id: number
   asset_id: number
   transaction_type: InvestmentTransactionType
-  quantity?: number | null
-  price_per_unit?: number | null
-  total_value: number
+  quantity?: number | string | null
+  price_per_unit?: number | string | null
+  total_value: number | string
   transaction_date: string
   notes?: string | null
   created_date?: string | null
@@ -129,7 +129,7 @@ export type AssetValuation = {
   id: number
   asset_id: number
   valuation_date: string
-  value: number
+  value: number | string
   notes?: string | null
   created_date?: string | null
 }
@@ -220,7 +220,7 @@ export type Operation = {
   category_id?: number | null
   description?: string | null
   asset_id: number
-  amount: number
+  amount: number | string
   operation_type: OperationType
   operation_date: string
   hashtags?: Hashtag[]
@@ -250,6 +250,41 @@ export const createOperation = async (payload: CreateOperationPayload): Promise<
 
 export const deleteOperation = async (id: number): Promise<void> => {
   await fetchJson(`${API}/operations/${id}`, { method: 'DELETE' })
+}
+
+// --- Transfers
+export type TransferRequest = {
+  from_asset_id: number
+  to_asset_id?: number
+  amount: number
+  transfer_type: string
+  description?: string
+  operation_date: string
+  new_asset?: {
+    asset_type_id: number
+    name: string
+    description?: string
+    account_number?: string
+    currency?: string
+  }
+  investment_quantity?: number
+  investment_price_per_unit?: number
+}
+
+export type TransferResponse = {
+  success: boolean
+  from_operation_id?: number
+  to_operation_id?: number
+  new_asset_id?: number
+  investment_transaction_id?: number
+}
+
+export const createTransfer = async (payload: TransferRequest): Promise<TransferResponse> => {
+  return fetchJson(`${API}/operations/transfer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 }
 
 // --- Categories
@@ -286,7 +321,7 @@ export type Budget = {
   asset_id: number
   category_id: number
   month: string // YYYY-MM-DD
-  planned_amount: number
+  planned_amount: number | string
 }
 
 export type CreateBudgetPayload = {
@@ -326,8 +361,8 @@ export type Goal = {
   user_id: number
   asset_id: number
   name: string
-  target_amount: number
-  current_amount: number
+  target_amount: number | string
+  current_amount: number | string
   target_date: string // YYYY-MM-DD
   created_date: string // ISO datetime
   completed_date: string | null // ISO datetime

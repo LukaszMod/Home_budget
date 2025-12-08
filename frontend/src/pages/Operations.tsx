@@ -5,11 +5,15 @@ import { useOperations } from '../hooks/useOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
 import { useHashtags } from '../hooks/useHashtags'
+import { useTransfer } from '../hooks/useTransfer'
 import AddOperationModal from '../components/AddOperationModal'
+import TransferDialog from '../components/TransferDialog'
+import type { TransferData } from '../components/TransferDialog'
 import { Typography, Paper, Box, IconButton, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import AddIcon from '@mui/icons-material/Add'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { useTranslation } from 'react-i18next'
@@ -33,13 +37,21 @@ const Operations: React.FC = () => {
   const { accountsQuery } = useAccountsData()
   const { categoriesQuery } = useCategories()
   const { hashtags } = useHashtags()
+  const transferMutation = useTransfer()
 
   const operations = operationsQuery.data ?? []
   const accounts = accountsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
 
+  // Helper to parse BigDecimal string/number to number
+  const parseAmount = (amount: number | string | undefined | null): number => {
+    if (amount === undefined || amount === null) return 0
+    return typeof amount === 'string' ? parseFloat(amount) : amount
+  }
+
   const [modalOpen, setModalOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<APIOperation | null>(null)
+  const [transferDialogOpen, setTransferDialogOpen] = React.useState(false)
   const [datePreset, setDatePreset] = React.useState<string>('thisMonth')
   const [customDateFrom, setCustomDateFrom] = React.useState<string>('')
   const [customDateTo, setCustomDateTo] = React.useState<string>('')
@@ -50,6 +62,12 @@ const Operations: React.FC = () => {
 
   const openNew = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (op: APIOperation) => { setEditing(op); setModalOpen(true) }
+  const openTransfer = () => { setTransferDialogOpen(true) }
+
+  const handleTransfer = async (data: TransferData) => {
+    await transferMutation.mutateAsync(data)
+    setTransferDialogOpen(false)
+  }
 
   // Grupowanie kategorii - główne i podkategorie
   const mainCategories = React.useMemo(() => 
@@ -166,7 +184,14 @@ const Operations: React.FC = () => {
     <Paper sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('operations.title') ?? 'Operacje'}</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openNew}>{t('operations.add') ?? 'Dodaj operację'}</Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button variant="outlined" startIcon={<SwapHorizIcon />} onClick={openTransfer}>
+            {t('operations.transfer', 'Przelew')}
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openNew}>
+            {t('operations.add') ?? 'Dodaj operację'}
+          </Button>
+        </Box>
       </Box>
 
       <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
@@ -320,19 +345,19 @@ const Operations: React.FC = () => {
           <Box>
             <Typography variant="body2" color="text.secondary">{t('operations.summary.totalIncome') ?? 'Przychody'}</Typography>
             <Typography variant="h6" sx={{ color: 'success.main' }}>
-              {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + r.amount, 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+              {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
             </Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">{t('operations.summary.totalExpense') ?? 'Wydatki'}</Typography>
             <Typography variant="h6" sx={{ color: 'error.main' }}>
-              {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + r.amount, 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+              {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
             </Typography>
           </Box>
           <Box>
             <Typography variant="body2" color="text.secondary">{t('operations.summary.net') ?? 'Saldo'}</Typography>
             <Typography variant="h6">
-              {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + r.amount, 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + r.amount, 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+              {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
             </Typography>
           </Box>
         </Stack>
@@ -343,6 +368,11 @@ const Operations: React.FC = () => {
       </Box>
 
       <AddOperationModal open={modalOpen} onClose={() => setModalOpen(false)} accounts={accounts} categories={categories} editing={editing} />
+      <TransferDialog 
+        open={transferDialogOpen} 
+        onClose={() => setTransferDialogOpen(false)}
+        onTransfer={handleTransfer}
+      />
     </Paper>
   )
 }

@@ -18,6 +18,7 @@ import {
   Box
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import CalcTextField from './CalcTextField'
 import type { InvestmentTransaction, InvestmentTransactionType } from '../lib/api'
 import { useInvestmentTransactions } from '../hooks/useInvestmentTransactions'
 
@@ -41,6 +42,17 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
   const [pricePerUnit, setPricePerUnit] = useState('')
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
+
+  // Helper to parse string or number
+  const parseValue = (value: number | string | null | undefined): number => {
+    if (value === null || value === undefined) return 0
+    return typeof value === 'string' ? parseFloat(value) : value
+  }
+
+  const formatQuantity = (value: number | string | null | undefined): string => {
+    const num = parseValue(value)
+    return isNaN(num) ? '-' : num.toFixed(4)
+  }
 
   const handleAddTransaction = () => {
     if (!quantity || !pricePerUnit) {
@@ -111,21 +123,17 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
               </TextField>
 
               <Stack direction="row" spacing={2}>
-                <TextField
+                <CalcTextField
                   label="Ilość"
-                  type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
+                  onChange={(val) => setQuantity(String(val))}
                   fullWidth
-                  inputProps={{ step: '0.0001' }}
                 />
-                <TextField
+                <CalcTextField
                   label="Cena za jednostkę"
-                  type="number"
                   value={pricePerUnit}
-                  onChange={(e) => setPricePerUnit(e.target.value)}
+                  onChange={(val) => setPricePerUnit(String(val))}
                   fullWidth
-                  inputProps={{ step: '0.01' }}
                 />
               </Stack>
 
@@ -186,12 +194,12 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
                         {new Date(transaction.transaction_date).toLocaleDateString('pl-PL')}
                       </TableCell>
                       <TableCell>{transactionTypeLabels[transaction.transaction_type]}</TableCell>
-                      <TableCell align="right">{transaction.quantity?.toFixed(4) || '-'}</TableCell>
+                      <TableCell align="right">{formatQuantity(transaction.quantity)}</TableCell>
                       <TableCell align="right">
-                        {transaction.price_per_unit?.toLocaleString('pl-PL', {
+                        {transaction.price_per_unit ? parseValue(transaction.price_per_unit).toLocaleString('pl-PL', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        }) || '-'}
+                        }) : '-'}
                       </TableCell>
                       <TableCell align="right">
                         <strong>

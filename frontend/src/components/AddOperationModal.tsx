@@ -12,6 +12,7 @@ import {
 import { useNotifier } from './Notifier'
 import StyledModal from './StyledModal'
 import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions'
+import CalcTextField from './CalcTextField'
 import { useHashtags } from '../hooks/useHashtags'
 import {
   TextField,
@@ -259,13 +260,13 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
           <Controller
             name="amount"
             control={control}
-            render={({ field }) => (
-              <TextField
+            render={({ field: { onChange, value, ...field } }) => (
+              <CalcTextField
                 {...field}
+                value={value || ''}
+                onChange={(val) => onChange(val)}
                 label={t('operations.fields.amount') ?? 'Kwota'}
-                type="number"
                 fullWidth
-                inputProps={{ step: '0.01' }}
               />
             )}
           />

@@ -25,11 +25,17 @@ const Budget: React.FC = () => {
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set())
   const [calendarAnchor, setCalendarAnchor] = useState<HTMLButtonElement | null>(null)
 
+  // Helper to parse BigDecimal string/number to number
+  const parseAmount = (amount: number | string | undefined | null): number => {
+    if (amount === undefined || amount === null) return 0
+    return typeof amount === 'string' ? parseFloat(amount) : amount
+  }
+
   const categorySpending = useMemo(() => {
     const spending: Record<number, number> = {}
     operations.forEach((op: Operation) => {
       if (op.category_id) {
-        const amount = typeof op.amount === 'number' ? op.amount : parseFloat(String(op.amount))
+        const amount = parseAmount(op.amount)
         spending[op.category_id] = (spending[op.category_id] || 0) + Math.abs(amount)
       }
     })
@@ -48,13 +54,14 @@ const Budget: React.FC = () => {
       const monthEndStr = monthEnd.toISOString().split('T')[0]
       const monthOperations = operations.filter((op: Operation) => op.category_id === cat.id && op.operation_date && op.operation_date >= monthStart && op.operation_date <= monthEndStr)
       monthOperations.forEach((op: Operation) => {
-        const amount = Math.abs(typeof op.amount === 'number' ? op.amount : parseFloat(String(op.amount)))
+        const amount = Math.abs(parseAmount(op.amount))
         if (op.operation_type === 'income') realIncome += amount
         else realExpense += amount
       })
       if (budget) {
-        if (cat.type === 'income') plannedIncome += budget.planned_amount
-        else plannedExpense += budget.planned_amount
+        const plannedAmount = parseAmount(budget.planned_amount)
+        if (cat.type === 'income') plannedIncome += plannedAmount
+        else plannedExpense += plannedAmount
       }
     })
     return { plannedIncome, plannedExpense, realIncome, realExpense, plannedCashFlow: plannedIncome - plannedExpense, realCashFlow: realIncome - realExpense }
@@ -78,7 +85,7 @@ const Budget: React.FC = () => {
       let mainCatPlan = 0, mainCatSpending = 0
       subCategories.forEach((subCat: Category) => {
         const budget = budgets.find((b: BudgetType) => b.category_id === subCat.id && b.month.startsWith(selectedMonth))
-        const plan = budget?.planned_amount ?? 0
+        const plan = parseAmount(budget?.planned_amount)
         const spending = categorySpending[subCat.id] ?? 0
         mainCatPlan += plan
         mainCatSpending += spending
@@ -86,7 +93,7 @@ const Budget: React.FC = () => {
       result.push({ id: `parent-${mainCat.id}`, category_name: mainCat.name, plan: mainCatPlan, spending: mainCatSpending, remaining: mainCatPlan - mainCatSpending, isParent: true, parentId: undefined })
       subCategories.sort((a: Category, b: Category) => a.id - b.id).forEach((subCat: Category) => {
         const budget = budgets.find((b: BudgetType) => b.category_id === subCat.id && b.month.startsWith(selectedMonth))
-        const plan = budget?.planned_amount ?? 0
+        const plan = parseAmount(budget?.planned_amount)
         const spending = categorySpending[subCat.id] ?? 0
         result.push({ id: `sub-${subCat.id}`, category_id: subCat.id, category_name: subCat.name, plan, spending, remaining: plan - spending, isParent: false, parentId: `parent-${mainCat.id}` })
       })
@@ -150,8 +157,9 @@ const Budget: React.FC = () => {
     try {
       for (const budget of previousMonthBudgets) {
         const existingBudget = budgets.find((b) => b.category_id === budget.category_id && b.month.startsWith(selectedMonth))
-        if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: budget.planned_amount } })
-        else await createMutation.mutateAsync({ asset_id: 1, category_id: budget.category_id, month: selectedMonth + '-01', planned_amount: budget.planned_amount })
+        const plannedAmount = parseAmount(budget.planned_amount)
+        if (existingBudget) await updateMutation.mutateAsync({ id: existingBudget.id, payload: { ...existingBudget, planned_amount: plannedAmount } })
+        else await createMutation.mutateAsync({ asset_id: 1, category_id: budget.category_id, month: selectedMonth + '-01', planned_amount: plannedAmount })
       }
       setEditedRows(new Map())
     } catch (error) { console.error('Failed to copy previous month plan:', error) }

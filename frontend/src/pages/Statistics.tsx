@@ -61,6 +61,17 @@ const Statistics: React.FC = () => {
 
   const activeAccountIds = accounts.filter(a => !a.is_closed).map(a => a.id)
 
+  // Helper to parse BigDecimal (string | number) to number
+  const parseAmount = (amount: number | string | undefined | null): number => {
+    if (amount === undefined || amount === null) return 0
+    return typeof amount === 'string' ? parseFloat(amount) : amount
+  }
+
+  // Helper to format amount
+  const formatAmount = (amount: number): string => {
+    return isNaN(amount) ? '0.00' : amount.toFixed(2)
+  }
+
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
     period: 'currentMonth',
@@ -138,11 +149,11 @@ const Statistics: React.FC = () => {
   const overallStats = useMemo(() => {
     const totalIncome = operations
       .filter(o => o.operation_type === 'income')
-      .reduce((sum, o) => sum + o.amount, 0)
+      .reduce((sum, o) => sum + parseAmount(o.amount), 0)
 
     const totalExpense = operations
       .filter(o => o.operation_type === 'expense')
-      .reduce((sum, o) => sum + o.amount, 0)
+      .reduce((sum, o) => sum + parseAmount(o.amount), 0)
 
     return {
       totalIncome,
@@ -163,11 +174,11 @@ const Statistics: React.FC = () => {
 
     const income = filtered
       .filter(o => o.operation_type === 'income')
-      .reduce((sum, o) => sum + o.amount, 0)
+      .reduce((sum, o) => sum + parseAmount(o.amount), 0)
 
     const expense = filtered
       .filter(o => o.operation_type === 'expense')
-      .reduce((sum, o) => sum + o.amount, 0)
+      .reduce((sum, o) => sum + parseAmount(o.amount), 0)
 
     return {
       income,
@@ -209,11 +220,11 @@ const Statistics: React.FC = () => {
 
       const income = filtered
         .filter(o => o.operation_type === 'income')
-        .reduce((sum, o) => sum + o.amount, 0)
+        .reduce((sum, o) => sum + parseAmount(o.amount), 0)
 
       const expense = filtered
         .filter(o => o.operation_type === 'expense')
-        .reduce((sum, o) => sum + o.amount, 0)
+        .reduce((sum, o) => sum + parseAmount(o.amount), 0)
 
       result.push({
         key: period,
@@ -245,7 +256,7 @@ const Statistics: React.FC = () => {
               amount: 0,
             }
           }
-          categoryExpenses[o.category_id].amount += o.amount
+          categoryExpenses[o.category_id].amount += parseAmount(o.amount)
         }
       })
 
@@ -275,7 +286,7 @@ const Statistics: React.FC = () => {
                 {t('operations.summary.totalIncome') ?? 'Total Income'}
               </Typography>
               <Typography variant="h5" sx={{ color: '#4caf50' }}>
-                {overallStats.totalIncome.toFixed(2)} zł
+                {formatAmount(overallStats.totalIncome)} zł
               </Typography>
             </CardContent>
           </Card>
@@ -288,7 +299,7 @@ const Statistics: React.FC = () => {
                 {t('operations.summary.totalExpense') ?? 'Total Expense'}
               </Typography>
               <Typography variant="h5" sx={{ color: '#f44336' }}>
-                {overallStats.totalExpense.toFixed(2)} zł
+                {formatAmount(overallStats.totalExpense)} zł
               </Typography>
             </CardContent>
           </Card>
@@ -301,7 +312,7 @@ const Statistics: React.FC = () => {
                 {t('operations.summary.net') ?? 'Net Balance'}
               </Typography>
               <Typography variant="h5" sx={{ color: overallStats.netBalance >= 0 ? '#4caf50' : '#f44336' }}>
-                {overallStats.netBalance.toFixed(2)} zł
+                {formatAmount(overallStats.netBalance)} zł
               </Typography>
             </CardContent>
           </Card>
@@ -384,7 +395,7 @@ const Statistics: React.FC = () => {
                 {t('operations.summary.totalIncome') ?? 'Income'}
               </Typography>
               <Typography variant="h6" sx={{ color: '#4caf50' }}>
-                {filteredStats.income.toFixed(2)} zł
+                {formatAmount(filteredStats.income)} zł
               </Typography>
             </Box>
           </Grid>
@@ -394,7 +405,7 @@ const Statistics: React.FC = () => {
                 {t('operations.summary.totalExpense') ?? 'Expense'}
               </Typography>
               <Typography variant="h6" sx={{ color: '#f44336' }}>
-                {filteredStats.expense.toFixed(2)} zł
+                {formatAmount(filteredStats.expense)} zł
               </Typography>
             </Box>
           </Grid>
@@ -404,7 +415,7 @@ const Statistics: React.FC = () => {
                 {t('operations.summary.net') ?? 'Balance'}
               </Typography>
               <Typography variant="h6" sx={{ color: filteredStats.balance >= 0 ? '#4caf50' : '#f44336' }}>
-                {filteredStats.balance.toFixed(2)} zł
+                {formatAmount(filteredStats.balance)} zł
               </Typography>
             </Box>
           </Grid>
@@ -426,7 +437,7 @@ const Statistics: React.FC = () => {
                       {t('operations.summary.totalIncome') ?? 'Income'}:
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
-                      {period.income.toFixed(2)} zł
+                      {formatAmount(period.income)} zł
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -434,7 +445,7 @@ const Statistics: React.FC = () => {
                       {t('operations.summary.totalExpense') ?? 'Expense'}:
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 'bold' }}>
-                      {period.expense.toFixed(2)} zł
+                      {formatAmount(period.expense)} zł
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ddd', pt: 1 }}>
@@ -445,7 +456,7 @@ const Statistics: React.FC = () => {
                       variant="body2"
                       sx={{ color: period.balance >= 0 ? '#4caf50' : '#f44336', fontWeight: 'bold' }}
                     >
-                      {period.balance.toFixed(2)} zł
+                      {formatAmount(period.balance)} zł
                     </Typography>
                   </Box>
                 </Stack>
@@ -472,7 +483,7 @@ const Statistics: React.FC = () => {
               />
               <YAxis />
               <Tooltip
-                formatter={(value: any) => `${value.toFixed(2)} zł`}
+                formatter={(value: any) => `${formatAmount(value)} zł`}
                 labelFormatter={() => 'Wartość'}
               />
               <Bar dataKey="value" fill="#8884d8" name={t('operations.summary.totalExpense') ?? 'Expense'}>

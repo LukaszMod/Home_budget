@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Asset, AssetType, AssetCategory } from '../lib/api'
 import { useAssets } from '../hooks/useAssets'
 import { useAssetTypes } from '../hooks/useAssetTypes'
+import { useAccountsData } from '../hooks/useAccountsData'
 import {
   Typography,
   Paper,
@@ -16,7 +18,13 @@ import {
   Button,
   IconButton,
   Chip,
-  Stack
+  Stack,
+  Checkbox,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -53,6 +61,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Assets: React.FC = () => {
+  const { t } = useTranslation()
   const [selectedTab, setSelectedTab] = useState(0)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -60,9 +69,13 @@ const Assets: React.FC = () => {
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false)
   const [valuationsDialogOpen, setValuationsDialogOpen] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
+  const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set())
+  const [summaryPeriod, setSummaryPeriod] = useState<string>('thisMonth')
 
   const { assets, isLoading, isError, deleteAsset, toggleAssetActive, createAsset, updateAsset } = useAssets()
   const { assetTypes } = useAssetTypes()
+  const { usersQuery } = useAccountsData()
+  const users = usersQuery.data ?? []
 
   // Define category order
   const categories: AssetCategory[] = [
@@ -75,12 +88,12 @@ const Assets: React.FC = () => {
   ]
 
   const categoryLabels: Record<AssetCategory, string> = {
-    liquid: 'Płynne',
-    investment: 'Inwestycje',
-    property: 'Nieruchomości',
-    vehicle: 'Pojazdy',
-    valuable: 'Wartościowe',
-    liability: 'Zobowiązania'
+    liquid: t('assets.categories.liquid') ?? 'Płynne',
+    investment: t('assets.categories.investment') ?? 'Inwestycje',
+    property: t('assets.categories.property') ?? 'Nieruchomości',
+    vehicle: t('assets.categories.vehicle') ?? 'Pojazdy',
+    valuable: t('assets.categories.valuable') ?? 'Wartościowe',
+    liability: t('assets.categories.liability') ?? 'Zobowiązania'
   }
 
   // Group assets by category
@@ -122,18 +135,90 @@ const Assets: React.FC = () => {
     setSelectedAsset(null)
   }
 
-  const formatValue = (value: number | null | undefined, currency: string = 'PLN'): string => {
+  const formatValue = (value: number | string | null | undefined, currency: string = 'PLN'): string => {
     if (value === null || value === undefined) return '-'
+    const numValue = typeof value === 'string' ? parseFloat(value) : value
+    if (isNaN(numValue)) return '-'
     return new Intl.NumberFormat('pl-PL', {
       style: 'currency',
       currency: currency
-    }).format(value)
+    }).format(numValue)
   }
+
+  const formatQuantity = (quantity: number | string | null | undefined, decimals: number = 4): string => {
+    if (quantity === null || quantity === undefined) return '-'
+    const numValue = typeof quantity === 'string' ? parseFloat(quantity) : quantity
+    if (isNaN(numValue)) return '-'
+    return numValue.toFixed(decimals)
+  }
+
+  const getUserNick = (userId: number): string => {
+    const user = users.find(u => u.id === userId)
+    return user ? `@${user.nick}` : `#${userId}`
+  }
+
+  const getCurrentValue = (asset: Asset): number | null => {
+    const assetType = getAssetType(asset.asset_type_id)
+    
+    if (!assetType) return null
+    
+    // For investments, calculate current value from quantity and last price
+    if (assetType.category === 'investment') {
+      if (asset.quantity && asset.average_purchase_price) {
+        const qty = typeof asset.quantity === 'string' ? parseFloat(asset.quantity) : asset.quantity
+        const price = typeof asset.average_purchase_price === 'string' ? parseFloat(asset.average_purchase_price) : asset.average_purchase_price
+        if (!isNaN(qty) && !isNaN(price)) {
+          return qty * price
+        }
+      }
+      return null
+    }
+    
+    // For property/vehicle/valuable, use current_valuation
+    if (assetType.category === 'property' || assetType.category === 'vehicle' || assetType.category === 'valuable') {
+      if (asset.current_valuation) {
+        const val = typeof asset.current_valuation === 'string' ? parseFloat(asset.current_valuation) : asset.current_valuation
+        return isNaN(val) ? null : val
+      }
+      return null
+    }
+    
+    // For liquid/liability, we don't track value in asset itself
+    return null
+  }
+
+  const handleToggleAssetSelection = (assetId: number) => {
+    const newSelected = new Set(selectedAssetIds)
+    if (newSelected.has(assetId)) {
+      newSelected.delete(assetId)
+    } else {
+      newSelected.add(assetId)
+    }
+    setSelectedAssetIds(newSelected)
+  }
+
+  const calculateSummary = () => {
+    const selectedAssets = assets.filter(a => selectedAssetIds.has(a.id))
+    const totalValue = selectedAssets.reduce((sum, asset) => {
+      const value = getCurrentValue(asset)
+      return sum + (value || 0)
+    }, 0)
+    
+    return {
+      count: selectedAssets.length,
+      totalValue,
+      // TODO: Implementacja zmiany wartości według okresu wymaga dodatkowych danych historycznych
+      startValue: totalValue, // Placeholder
+      difference: 0 // Placeholder
+    }
+  }
+
+  const summary = calculateSummary()
 
   if (isLoading) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography>Ładowanie...</Typography>
+        <Typography>{t('common.loading') ?? 'Ładowanie...'}</Typography>
       </Box>
     )
   }
@@ -141,23 +226,25 @@ const Assets: React.FC = () => {
   if (isError) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography color="error">Błąd ładowania aktywów</Typography>
+        <Typography color="error">{t('assets.errors.loadingError') ?? 'Błąd ładowania aktywów'}</Typography>
       </Box>
     )
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h4">Majątek</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setAddModalOpen(true)}
-        >
-          Dodaj aktywo
-        </Button>
-      </Stack>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={selectedAssetIds.size > 0 ? 9 : 12}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <Typography variant="h4">{t('assets.title') ?? 'Majątek'}</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setAddModalOpen(true)}
+            >
+              {t('assets.actions.addAsset') ?? 'Dodaj aktywo'}
+            </Button>
+          </Stack>
 
       <Paper sx={{ width: '100%' }}>
         <Tabs
@@ -182,29 +269,32 @@ const Assets: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Typ</TableCell>
-                  <TableCell>Nazwa</TableCell>
+                  <TableCell padding="checkbox"></TableCell>
+                  <TableCell>{t('assets.table.type') ?? 'Typ'}</TableCell>
+                  <TableCell>{t('assets.table.name') ?? 'Nazwa'}</TableCell>
+                  <TableCell>{t('assets.table.user') ?? 'Użytkownik'}</TableCell>
                   {category === 'liquid' || category === 'liability' ? (
-                    <TableCell>Numer konta</TableCell>
+                    <TableCell>{t('assets.table.accountNumber') ?? 'Numer konta'}</TableCell>
                   ) : null}
                   {category === 'investment' ? (
                     <>
-                      <TableCell align="right">Ilość</TableCell>
-                      <TableCell align="right">Śr. cena zakupu</TableCell>
+                      <TableCell align="right">{t('assets.table.quantity') ?? 'Ilość'}</TableCell>
+                      <TableCell align="right">{t('assets.table.avgPurchasePrice') ?? 'Śr. cena zakupu'}</TableCell>
                     </>
                   ) : null}
                   {category === 'property' || category === 'vehicle' || category === 'valuable' ? (
-                    <TableCell align="right">Wycena</TableCell>
+                    <TableCell align="right">{t('assets.table.valuation') ?? 'Wycena'}</TableCell>
                   ) : null}
-                  <TableCell>Waluta</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Akcje</TableCell>
+                  <TableCell align="right">{t('assets.table.currentValue') ?? 'Obecna wartość'}</TableCell>
+                  <TableCell>{t('assets.table.currency') ?? 'Waluta'}</TableCell>
+                  <TableCell>{t('assets.table.status') ?? 'Status'}</TableCell>
+                  <TableCell align="right">{t('assets.table.actions') ?? 'Akcje'}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {assetsByCategory(category).length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center">
+                    <TableCell colSpan={11} align="center">
                       <Typography color="textSecondary">
                         Brak aktywów w tej kategorii
                       </Typography>
@@ -213,8 +303,15 @@ const Assets: React.FC = () => {
                 ) : (
                   assetsByCategory(category).map((asset) => {
                     const assetType = getAssetType(asset.asset_type_id)
+                    const currentValue = getCurrentValue(asset)
                     return (
                       <TableRow key={asset.id}>
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={selectedAssetIds.has(asset.id)}
+                            onChange={() => handleToggleAssetSelection(asset.id)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <span>{assetType?.icon}</span>
@@ -222,6 +319,9 @@ const Assets: React.FC = () => {
                           </Stack>
                         </TableCell>
                         <TableCell>{asset.name}</TableCell>
+                        <TableCell>
+                          <Chip label={getUserNick(asset.user_id)} size="small" variant="outlined" />
+                        </TableCell>
                         {category === 'liquid' || category === 'liability' ? (
                           <TableCell>
                             <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
@@ -232,7 +332,7 @@ const Assets: React.FC = () => {
                         {category === 'investment' ? (
                           <>
                             <TableCell align="right">
-                              {asset.quantity?.toFixed(4) || '-'}
+                              {formatQuantity(asset.quantity, 4)}
                             </TableCell>
                             <TableCell align="right">
                               {formatValue(asset.average_purchase_price, asset.currency)}
@@ -244,10 +344,15 @@ const Assets: React.FC = () => {
                             {formatValue(asset.current_valuation, asset.currency)}
                           </TableCell>
                         ) : null}
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight="bold">
+                            {formatValue(currentValue, asset.currency)}
+                          </Typography>
+                        </TableCell>
                         <TableCell>{asset.currency}</TableCell>
                         <TableCell>
                           <Chip
-                            label={asset.is_active ? 'Aktywne' : 'Nieaktywne'}
+                            label={asset.is_active ? (t('assets.status.active') ?? 'Aktywne') : (t('assets.status.inactive') ?? 'Nieaktywne')}
                             color={asset.is_active ? 'success' : 'default'}
                             size="small"
                           />
@@ -263,7 +368,7 @@ const Assets: React.FC = () => {
                                   setSelectedAsset(asset)
                                   setTransactionsDialogOpen(true)
                                 }}
-                                title="Transakcje"
+                                title={t('assets.actions.transactions') ?? 'Transakcje'}
                               >
                                 <ShowChartIcon />
                               </IconButton>
@@ -280,7 +385,7 @@ const Assets: React.FC = () => {
                                   setSelectedAsset(asset)
                                   setValuationsDialogOpen(true)
                                 }}
-                                title="Historia wycen"
+                                title={t('assets.actions.valuationHistory') ?? 'Historia wycen'}
                               >
                                 <HistoryIcon />
                               </IconButton>
@@ -289,7 +394,7 @@ const Assets: React.FC = () => {
                             <IconButton
                               size="small"
                               onClick={() => handleToggleActive(asset)}
-                              title={asset.is_active ? 'Dezaktywuj' : 'Aktywuj'}
+                              title={asset.is_active ? (t('assets.actions.deactivate') ?? 'Dezaktywuj') : (t('assets.actions.activate') ?? 'Aktywuj')}
                             >
                               {asset.is_active ? <VisibilityOffIcon /> : <VisibilityIcon />}
                             </IconButton>
@@ -299,7 +404,7 @@ const Assets: React.FC = () => {
                                 setSelectedAsset(asset)
                                 setEditModalOpen(true)
                               }}
-                              title="Edytuj"
+                              title={t('assets.actions.edit') ?? 'Edytuj'}
                             >
                               <EditIcon />
                             </IconButton>
@@ -310,7 +415,7 @@ const Assets: React.FC = () => {
                                 setSelectedAsset(asset)
                                 setDeleteModalOpen(true)
                               }}
-                              title="Usuń"
+                              title={t('assets.actions.delete') ?? 'Usuń'}
                             >
                               <DeleteIcon />
                             </IconButton>
@@ -325,6 +430,95 @@ const Assets: React.FC = () => {
           </TabPanel>
         ))}
       </Paper>
+        </Grid>
+
+        {/* Summary Panel */}
+        {selectedAssetIds.size > 0 && (
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ p: 2, position: 'sticky', top: 20 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('assets.summary.title') ?? 'Podsumowanie'}
+              </Typography>
+              
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <InputLabel>{t('assets.summary.period') ?? 'Okres'}</InputLabel>
+                <Select
+                  value={summaryPeriod}
+                  onChange={(e) => setSummaryPeriod(e.target.value)}
+                  label={t('assets.summary.period') ?? 'Okres'}
+                  size="small"
+                >
+                  <MenuItem value="thisMonth">{t('assets.summary.periods.thisMonth') ?? 'Bieżący miesiąc'}</MenuItem>
+                  <MenuItem value="lastMonth">{t('assets.summary.periods.lastMonth') ?? 'Ostatni miesiąc'}</MenuItem>
+                  <MenuItem value="lastQuarter">{t('assets.summary.periods.lastQuarter') ?? 'Ostatni kwartał'}</MenuItem>
+                  <MenuItem value="thisYear">{t('assets.summary.periods.thisYear') ?? 'Bieżący rok'}</MenuItem>
+                  <MenuItem value="lastYear">{t('assets.summary.periods.lastYear') ?? 'Ostatni rok'}</MenuItem>
+                  <MenuItem value="all">{t('assets.summary.periods.all') ?? 'Cały czas'}</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="caption" color="textSecondary">
+                    {t('assets.summary.selectedAssets') ?? 'Zaznaczone aktywa'}
+                  </Typography>
+                  <Typography variant="h6">
+                    {summary.count}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="textSecondary">
+                    {t('assets.summary.startValue') ?? 'Wartość początkowa'}
+                  </Typography>
+                  <Typography variant="h6">
+                    {summary.startValue.toLocaleString('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN'
+                    })}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="textSecondary">
+                    {t('assets.summary.difference') ?? 'Różnica'}
+                  </Typography>
+                  <Typography 
+                    variant="h6"
+                    color={summary.difference >= 0 ? 'success.main' : 'error.main'}
+                  >
+                    {summary.difference >= 0 ? '+' : ''}{summary.difference.toLocaleString('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN'
+                    })}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                  <Typography variant="caption" color="textSecondary">
+                    {t('assets.summary.currentValue') ?? 'Obecna wartość'}
+                  </Typography>
+                  <Typography variant="h5" fontWeight="bold">
+                    {summary.totalValue.toLocaleString('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN'
+                    })}
+                  </Typography>
+                </Box>
+
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setSelectedAssetIds(new Set())}
+                  fullWidth
+                >
+                  {t('assets.summary.clearSelection') ?? 'Wyczyść zaznaczenie'}
+                </Button>
+              </Stack>
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
 
       {/* Delete Confirmation Modal */}
       <StyledModal
@@ -333,14 +527,14 @@ const Assets: React.FC = () => {
           setDeleteModalOpen(false)
           setSelectedAsset(null)
         }}
-        title="Usuń aktywo"
+        title={t('assets.deleteModal.title') ?? 'Usuń aktywo'}
       >
         <Box>
           <Typography sx={{ mb: 2 }}>
-            Czy na pewno chcesz usunąć aktywo <strong>{selectedAsset?.name}</strong>?
+            {t('assets.deleteModal.confirmMessage') ?? 'Czy na pewno chcesz usunąć aktywo'} <strong>{selectedAsset?.name}</strong>?
           </Typography>
           <Typography variant="body2" color="error" sx={{ mb: 3 }}>
-            Ta operacja jest nieodwracalna i usunie wszystkie powiązane transakcje.
+            {t('assets.deleteModal.warning') ?? 'Ta operacja jest nieodwracalna i usunie wszystkie powiązane transakcje.'}
           </Typography>
           <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button
@@ -349,14 +543,14 @@ const Assets: React.FC = () => {
                 setSelectedAsset(null)
               }}
             >
-              Anuluj
+              {t('common.cancel') ?? 'Anuluj'}
             </Button>
             <Button
               variant="contained"
               color="error"
               onClick={handleDeleteAsset}
             >
-              Usuń
+              {t('common.delete') ?? 'Usuń'}
             </Button>
           </Stack>
         </Box>

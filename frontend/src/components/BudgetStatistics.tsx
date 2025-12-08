@@ -18,6 +18,11 @@ interface BudgetStatisticsProps {
 const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
   const { t } = useTranslation()
 
+  // Helper to format numeric values
+  const formatAmount = (amount: number): string => {
+    return isNaN(amount) ? '0.00' : amount.toFixed(2)
+  }
+
   return (
     <Box sx={{ mt: 3, mb: 2 }}>
       <Grid container spacing={2}>
@@ -27,7 +32,7 @@ const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
               {t('budget.statistics.plannedIncome')}
             </Typography>
             <Typography variant="h6" sx={{ mt: 0.5 }}>
-              {stats.plannedIncome.toFixed(2)}
+              {formatAmount(stats.plannedIncome)}
             </Typography>
           </Paper>
         </Grid>
@@ -37,7 +42,7 @@ const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
               {t('budget.statistics.realIncome')}
             </Typography>
             <Typography variant="h6" sx={{ mt: 0.5 }}>
-              {stats.realIncome.toFixed(2)}
+              {formatAmount(stats.realIncome)}
             </Typography>
           </Paper>
         </Grid>
@@ -47,7 +52,7 @@ const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
               {t('budget.statistics.plannedExpense')}
             </Typography>
             <Typography variant="h6" sx={{ mt: 0.5 }}>
-              {stats.plannedExpense.toFixed(2)}
+              {formatAmount(stats.plannedExpense)}
             </Typography>
           </Paper>
         </Grid>
@@ -57,7 +62,7 @@ const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
               {t('budget.statistics.realExpense')}
             </Typography>
             <Typography variant="h6" sx={{ mt: 0.5 }}>
-              {stats.realExpense.toFixed(2)}
+              {formatAmount(stats.realExpense)}
             </Typography>
           </Paper>
         </Grid>
@@ -67,7 +72,7 @@ const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
               {t('budget.statistics.plannedCashFlow')}
             </Typography>
             <Typography variant="h6" sx={{ mt: 0.5 }}>
-              {stats.plannedCashFlow.toFixed(2)}
+              {formatAmount(stats.plannedCashFlow)}
             </Typography>
           </Paper>
         </Grid>
@@ -77,7 +82,7 @@ const BudgetStatistics: React.FC<BudgetStatisticsProps> = ({ stats }) => {
               {t('budget.statistics.realCashFlow')}
             </Typography>
             <Typography variant="h6" sx={{ mt: 0.5 }}>
-              {stats.realCashFlow.toFixed(2)}
+              {formatAmount(stats.realCashFlow)}
             </Typography>
           </Paper>
         </Grid>

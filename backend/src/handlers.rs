@@ -1,6 +1,7 @@
 use axum::{extract::{State, Path}, Json};
 use crate::{AppState, models::*};
 use serde_json::json;
+use bigdecimal::{BigDecimal, FromPrimitive};
 
 
 // USERS
@@ -133,7 +134,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
     let op = sqlx::query_as::<_, Operation>(
         "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
          VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
-         RETURNING id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date"
+         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
     ).bind(payload.category_id)
      .bind(&payload.description)
      .bind(payload.asset_id)
@@ -212,7 +213,7 @@ fn extract_hashtags(text: &str) -> Vec<String> {
 
 pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<OperationWithHashtags>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date
+        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date
          FROM operations ORDER BY operation_date DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     
@@ -236,7 +237,7 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
 
 pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date
+        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date
          FROM operations WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     
@@ -260,7 +261,7 @@ pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>
         "UPDATE operations
          SET category_id = $1, description = $2, asset_id = $3, amount = $4, operation_type = $5::operation_type, operation_date = $6::date
          WHERE id = $7
-         RETURNING id, creation_date, category_id, description, asset_id, amount::float8, operation_type::text, operation_date"
+         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
     ).bind(payload.category_id)
      .bind(&payload.description)
      .bind(payload.asset_id)
@@ -329,7 +330,7 @@ pub async fn create_budget(State(state): State<AppState>, Json(payload): Json<Cr
     let row = sqlx::query_as::<_, Budget>(
         "INSERT INTO budgets (asset_id, category_id, month, planned_amount)
          VALUES ($1, $2, $3, $4)
-         RETURNING id, asset_id, category_id, month, planned_amount::float8"
+         RETURNING id, asset_id, category_id, month, planned_amount"
     ).bind(payload.asset_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
@@ -337,14 +338,14 @@ pub async fn create_budget(State(state): State<AppState>, Json(payload): Json<Cr
 
 pub async fn list_budgets(State(state): State<AppState>) -> Result<Json<Vec<Budget>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Budget>(
-        "SELECT id, asset_id, category_id, month, planned_amount::float8 FROM budgets ORDER BY month DESC, id"
+        "SELECT id, asset_id, category_id, month, planned_amount FROM budgets ORDER BY month DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
 }
 
 pub async fn get_budget(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "SELECT id, asset_id, category_id, month, planned_amount::float8 FROM budgets WHERE id = $1"
+        "SELECT id, asset_id, category_id, month, planned_amount FROM budgets WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
@@ -353,7 +354,7 @@ pub async fn update_budget(State(state): State<AppState>, Path(id): Path<i32>, J
     let row = sqlx::query_as::<_, Budget>(
         "UPDATE budgets SET asset_id = $1, category_id = $2, month = $3, planned_amount = $4
          WHERE id = $5
-         RETURNING id, asset_id, category_id, month, planned_amount::float8"
+         RETURNING id, asset_id, category_id, month, planned_amount"
     ).bind(payload.asset_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount).bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
@@ -369,7 +370,7 @@ pub async fn create_goal(State(state): State<AppState>, Json(payload): Json<Crea
     let goal = sqlx::query_as::<_, Goal>(
         "INSERT INTO goals (user_id, asset_id, name, target_amount, target_date)
          VALUES ($1, $2, $3, $4, $5::date)
-         RETURNING id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
+         RETURNING id, user_id, asset_id, name, target_amount, current_amount, target_date, created_date, completed_date, is_completed"
     ).bind(payload.user_id).bind(payload.asset_id).bind(&payload.name).bind(payload.target_amount).bind(&payload.target_date)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
@@ -377,7 +378,7 @@ pub async fn create_goal(State(state): State<AppState>, Json(payload): Json<Crea
 
 pub async fn list_goals(State(state): State<AppState>) -> Result<Json<Vec<Goal>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Goal>(
-        "SELECT id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed 
+        "SELECT id, user_id, asset_id, name, target_amount, current_amount, target_date, created_date, completed_date, is_completed 
          FROM goals ORDER BY target_date DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
@@ -385,7 +386,7 @@ pub async fn list_goals(State(state): State<AppState>) -> Result<Json<Vec<Goal>>
 
 pub async fn get_goal(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Goal>, (axum::http::StatusCode, String)> {
     let goal = sqlx::query_as::<_, Goal>(
-        "SELECT id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed 
+        "SELECT id, user_id, asset_id, name, target_amount, current_amount, target_date, created_date, completed_date, is_completed 
          FROM goals WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
@@ -395,7 +396,7 @@ pub async fn update_goal(State(state): State<AppState>, Path(id): Path<i32>, Jso
     let goal = sqlx::query_as::<_, Goal>(
         "UPDATE goals SET user_id = $1, asset_id = $2, name = $3, target_amount = $4, target_date = $5::date
          WHERE id = $6
-         RETURNING id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
+         RETURNING id, user_id, asset_id, name, target_amount, current_amount, target_date, created_date, completed_date, is_completed"
     ).bind(payload.user_id).bind(payload.asset_id).bind(&payload.name).bind(payload.target_amount).bind(&payload.target_date).bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
@@ -410,7 +411,7 @@ pub async fn complete_goal(State(state): State<AppState>, Path(id): Path<i32>) -
     let goal = sqlx::query_as::<_, Goal>(
         "UPDATE goals SET is_completed = TRUE, completed_date = CURRENT_TIMESTAMP
          WHERE id = $1
-         RETURNING id, user_id, asset_id, name, target_amount::float8, current_amount::float8, target_date, created_date, completed_date, is_completed"
+         RETURNING id, user_id, asset_id, name, target_amount, current_amount, target_date, created_date, completed_date, is_completed"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(goal))
 }
@@ -570,6 +571,376 @@ pub async fn update_recurring_operation(
 pub async fn delete_recurring_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<(), (axum::http::StatusCode, String)> {
     sqlx::query("DELETE FROM recurring_operations WHERE id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
     Ok(())
+}
+
+// TRANSFER OPERATIONS
+pub async fn transfer_operation(
+    State(state): State<AppState>,
+    Json(payload): Json<TransferRequest>,
+) -> Result<Json<TransferResponse>, (axum::http::StatusCode, String)> {
+    // Parse operation date
+    let operation_date = chrono::NaiveDate::parse_from_str(&payload.operation_date, "%Y-%m-%d")
+        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, format!("Invalid date format: {}", e)))?;
+
+    // Start transaction
+    let mut tx = state.pool.begin().await.map_err(db_err)?;
+
+    // Verify source asset exists
+    let from_asset = sqlx::query_as::<_, Asset>(
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+         FROM assets WHERE id = $1"
+    )
+    .bind(payload.from_asset_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, format!("Error fetching from_asset: {}", e)))?;
+
+    let mut response = TransferResponse {
+        success: false,
+        from_operation_id: None,
+        to_operation_id: None,
+        new_asset_id: None,
+        investment_transaction_id: None,
+    };
+
+    match payload.transfer_type.as_str() {
+        "liquid_to_liquid" => {
+            // Verify destination asset exists
+            let to_asset_id = payload.to_asset_id
+                .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "to_asset_id required for liquid_to_liquid".to_string()))?;
+            
+            sqlx::query("SELECT id FROM assets WHERE id = $1")
+                .bind(to_asset_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|_| (axum::http::StatusCode::NOT_FOUND, "Destination asset not found".to_string()))?;
+
+            // Create outgoing operation
+            let from_op = sqlx::query_as::<_, Operation>(
+                "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
+                 VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+            )
+            .bind(None::<i32>)
+            .bind(payload.description.as_ref().unwrap_or(&format!("Przelew do aktywa #{}", to_asset_id)))
+            .bind(payload.from_asset_id)
+            .bind(-payload.amount)
+            .bind("expense")
+            .bind(&payload.operation_date)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, format!("Error creating from_op: {}", e)))?;
+
+            response.from_operation_id = Some(from_op.id);
+
+            // Create incoming operation
+            let to_op = sqlx::query_as::<_, Operation>(
+                "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
+                 VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+            )
+            .bind(None::<i32>)
+            .bind(payload.description.as_ref().unwrap_or(&format!("Przelew z aktywa #{}", payload.from_asset_id)))
+            .bind(to_asset_id)
+            .bind(payload.amount)
+            .bind("income")
+            .bind(&payload.operation_date)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db_err)?;
+
+            response.to_operation_id = Some(to_op.id);
+        },
+
+        "liquid_to_investment" => {
+            // Check if we're adding to existing or creating new
+            if let Some(to_asset_id) = payload.to_asset_id {
+                // Adding to existing investment
+                let existing_asset = sqlx::query_as::<_, Asset>(
+                    "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+                     FROM assets WHERE id = $1"
+                )
+                .bind(to_asset_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|_| (axum::http::StatusCode::NOT_FOUND, "Destination investment asset not found".to_string()))?;
+
+                let quantity = payload.investment_quantity
+                    .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "investment_quantity required".to_string()))?;
+
+                let price_per_unit = payload.amount / quantity;
+
+                // Calculate new average price
+                let quantity_bd = BigDecimal::from_f64(quantity).unwrap_or_else(|| BigDecimal::from(0));
+                let price_per_unit_bd = BigDecimal::from_f64(price_per_unit).unwrap_or_else(|| BigDecimal::from(0));
+                let old_quantity = existing_asset.quantity.clone().unwrap_or_else(|| BigDecimal::from(0));
+                let old_avg_price = existing_asset.average_purchase_price.clone().unwrap_or_else(|| BigDecimal::from(0));
+                let new_quantity = &old_quantity + &quantity_bd;
+                let new_avg_price = ((&old_quantity * &old_avg_price) + (&quantity_bd * &price_per_unit_bd)) / &new_quantity;
+
+                // Update asset
+                sqlx::query(
+                    "UPDATE assets SET quantity = $1, average_purchase_price = $2 WHERE id = $3"
+                )
+                .bind(new_quantity)
+                .bind(new_avg_price)
+                .bind(to_asset_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(db_err)?;
+
+                // Create investment transaction
+                let inv_tx = sqlx::query_as::<_, InvestmentTransaction>(
+                    "INSERT INTO investment_transactions (asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date)
+                     VALUES ($1, 'buy', $2, $3, $4, $5)
+                     RETURNING id, asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes, created_date"
+                )
+                .bind(to_asset_id)
+                .bind(quantity)
+                .bind(price_per_unit)
+                .bind(payload.amount)
+                .bind(&payload.operation_date)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(db_err)?;
+
+                response.investment_transaction_id = Some(inv_tx.id);
+
+                // Create outgoing operation from source
+                let from_op = sqlx::query_as::<_, Operation>(
+                    "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+                     VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
+                     RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                )
+                .bind(payload.from_asset_id)
+                .bind(-payload.amount)
+                .bind(&payload.operation_date)
+                .bind(payload.description.as_ref().unwrap_or(&format!("Zakup inwestycji #{}", to_asset_id)))
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(db_err)?;
+
+                response.from_operation_id = Some(from_op.id);
+
+            } else {
+                // Creating new investment asset
+                let new_asset_data = payload.new_asset
+                    .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "new_asset required when to_asset_id is null".to_string()))?;
+
+                let quantity = payload.investment_quantity
+                    .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "investment_quantity required".to_string()))?;
+
+                let price_per_unit = payload.amount / quantity;
+
+                // Create new asset
+                let new_asset = sqlx::query_as::<_, Asset>(
+                    "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, currency)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                     RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+                )
+                .bind(from_asset.user_id)
+                .bind(new_asset_data.asset_type_id)
+                .bind(&new_asset_data.name)
+                .bind(&new_asset_data.description)
+                .bind(&new_asset_data.account_number)
+                .bind(quantity)
+                .bind(price_per_unit)
+                .bind(new_asset_data.currency.as_ref().unwrap_or(&"PLN".to_string()))
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(db_err)?;
+
+                response.new_asset_id = Some(new_asset.id);
+
+                // Create investment transaction
+                let inv_tx = sqlx::query_as::<_, InvestmentTransaction>(
+                    "INSERT INTO investment_transactions (asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date)
+                     VALUES ($1, 'buy', $2, $3, $4, $5)
+                     RETURNING id, asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes, created_date"
+                )
+                .bind(new_asset.id)
+                .bind(quantity)
+                .bind(price_per_unit)
+                .bind(payload.amount)
+                .bind(&payload.operation_date)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(db_err)?;
+
+                response.investment_transaction_id = Some(inv_tx.id);
+
+                // Create outgoing operation from source
+                let from_op = sqlx::query_as::<_, Operation>(
+                    "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+                     VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
+                     RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                )
+                .bind(payload.from_asset_id)
+                .bind(-payload.amount)
+                .bind(&payload.operation_date)
+                .bind(payload.description.as_ref().unwrap_or(&format!("Zakup inwestycji: {}", new_asset.name)))
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(db_err)?;
+
+                response.from_operation_id = Some(from_op.id);
+            }
+        },
+
+        "liquid_to_property" | "liquid_to_vehicle" | "liquid_to_valuable" => {
+            // Creating new non-investment asset
+            let new_asset_data = payload.new_asset
+                .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "new_asset required for this transfer type".to_string()))?;
+
+            // Create new asset with valuation
+            let new_asset = sqlx::query_as::<_, Asset>(
+                "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, current_valuation, currency)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                 RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+            )
+            .bind(from_asset.user_id)
+            .bind(new_asset_data.asset_type_id)
+            .bind(&new_asset_data.name)
+            .bind(&new_asset_data.description)
+            .bind(&new_asset_data.account_number)
+            .bind(payload.amount)
+            .bind(new_asset_data.currency.as_ref().unwrap_or(&"PLN".to_string()))
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db_err)?;
+
+            response.new_asset_id = Some(new_asset.id);
+
+            // Create initial valuation
+            sqlx::query(
+                "INSERT INTO asset_valuations (asset_id, valuation_date, value, notes)
+                 VALUES ($1, $2, $3, $4)"
+            )
+            .bind(new_asset.id)
+            .bind(&payload.operation_date)
+            .bind(payload.amount)
+            .bind("Początkowa wycena przy zakupie")
+            .execute(&mut *tx)
+            .await
+            .map_err(db_err)?;
+
+            // Create outgoing operation from source
+            let from_op = sqlx::query_as::<_, Operation>(
+                "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+                 VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+            )
+            .bind(payload.from_asset_id)
+            .bind(-payload.amount)
+            .bind(&payload.operation_date)
+            .bind(payload.description.as_ref().unwrap_or(&format!("Zakup: {}", new_asset.name)))
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db_err)?;
+
+            response.from_operation_id = Some(from_op.id);
+        },
+
+        "liquid_to_liability" => {
+            // Payment towards liability (debt payment)
+            let to_asset_id = payload.to_asset_id
+                .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "to_asset_id required for liability payment".to_string()))?;
+            
+            sqlx::query("SELECT id FROM assets WHERE id = $1")
+                .bind(to_asset_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|_| (axum::http::StatusCode::NOT_FOUND, "Liability asset not found".to_string()))?;
+
+            // Create outgoing operation from liquid asset
+            let from_op = sqlx::query_as::<_, Operation>(
+                "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+                 VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+            )
+            .bind(payload.from_asset_id)
+            .bind(-payload.amount)
+            .bind(&payload.operation_date)
+            .bind(payload.description.as_ref().unwrap_or(&format!("Spłata zobowiązania #{}", to_asset_id)))
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db_err)?;
+
+            response.from_operation_id = Some(from_op.id);
+
+            // Create operation reducing liability (positive amount = reduction)
+            let to_op = sqlx::query_as::<_, Operation>(
+                "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+                 VALUES ($1, $2, 'income'::operation_type, $3::date, $4)
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+            )
+            .bind(to_asset_id)
+            .bind(payload.amount)
+            .bind(&payload.operation_date)
+            .bind(payload.description.as_ref().unwrap_or(&format!("Spłata z aktywa #{}", payload.from_asset_id)))
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db_err)?;
+
+            response.to_operation_id = Some(to_op.id);
+        },
+
+        _ => {
+            return Err((axum::http::StatusCode::BAD_REQUEST, format!("Unknown transfer_type: {}", payload.transfer_type)));
+        }
+    }
+
+    // Commit transaction
+    tx.commit().await.map_err(db_err)?;
+
+    response.success = true;
+    Ok(Json(response))
+}
+
+// BACKWARD COMPATIBILITY: /accounts endpoints that map to liquid assets
+pub async fn list_accounts_compat(State(state): State<AppState>) -> Result<Json<Vec<serde_json::Value>>, (axum::http::StatusCode, String)> {
+    // Get liquid assets and format them as old Account objects
+    let rows = sqlx::query!(
+        "SELECT a.id, a.name, a.user_id, a.account_number, a.is_active as \"is_active!\"
+         FROM assets a
+         INNER JOIN asset_types at ON a.asset_type_id = at.id
+         WHERE at.category = 'liquid'
+         ORDER BY a.id"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(db_err)?;
+    
+    let accounts: Vec<serde_json::Value> = rows.into_iter().map(|row| {
+        serde_json::json!({
+            "id": row.id,
+            "name": row.name,
+            "user_id": row.user_id,
+            "account_number": row.account_number,
+            "is_closed": !row.is_active
+        })
+    }).collect();
+    
+    Ok(Json(accounts))
+}
+
+pub async fn toggle_account_closed_compat(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
+    // Toggle is_active on asset
+    let row = sqlx::query!(
+        "UPDATE assets SET is_active = NOT is_active WHERE id = $1
+         RETURNING id, name, user_id, account_number, is_active as \"is_active!\""
+    ,id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+    
+    Ok(Json(serde_json::json!({
+        "id": row.id,
+        "name": row.name,
+        "user_id": row.user_id,
+        "account_number": row.account_number,
+        "is_closed": !row.is_active
+    })))
 }
 
 // Prosty wrapper błędów

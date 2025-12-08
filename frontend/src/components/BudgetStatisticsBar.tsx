@@ -18,13 +18,18 @@ interface BudgetStatisticsBarProps {
 const BudgetStatisticsBar: React.FC<BudgetStatisticsBarProps> = ({ stats }) => {
   const { t } = useTranslation()
 
+  // Helper to format numeric values
+  const formatAmount = (amount: number): string => {
+    return isNaN(amount) ? '0.00' : amount.toFixed(2)
+  }
+
   const StatItem: React.FC<{ label: string; value: number }> = ({ label, value }) => (
     <Box sx={{ py: 1.5 }}>
       <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 0.5 }}>
         {label}
       </Typography>
       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {value.toFixed(2)}
+        {formatAmount(value)}
       </Typography>
     </Box>
   )

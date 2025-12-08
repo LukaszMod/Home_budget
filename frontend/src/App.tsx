@@ -2,7 +2,7 @@ import React from 'react'
 import { CssBaseline, Container, ThemeProvider } from '@mui/material'
 import NavBar from './components/NavBar'
 import Budget from './pages/Budget'
-import Accounts from './pages/Accounts'
+import Users from './pages/Users'
 import Assets from './pages/Assets'
 import Operations from './pages/Operations'
 import Categories from './pages/Categories'
@@ -32,7 +32,7 @@ const App: React.FC = () => {
       <NavBar />
       <Container maxWidth={false} disableGutters sx={{ mt: 4, display: 'flex', flexDirection: 'column', flex: 1, height: 'calc(100vh - 64px)' }}>
         {tab === 'budget' && <Budget />}
-        {tab === 'accounts' && <Accounts />}
+        {tab === 'users' && <Users />}
         {tab === 'assets' && <Assets />}
         {tab === 'operations' && <Operations />}
         {tab === 'categories' && <Categories />}

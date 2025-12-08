@@ -2,12 +2,11 @@ use crate::handlers::*;
 use crate::asset_handlers;
 
 use axum::{
-    routing::{get, post, put, delete},
-    Router, extract::{Path, State}, Json
+    routing::{get, post, delete},
+    Router,
 };
 
-use crate::{AppState};
-use crate::models::*;
+use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -17,10 +16,9 @@ pub fn router() -> Router<AppState> {
         // Categories
         .route("/categories", post(create_category).get(list_categories))
         .route("/categories/:id", get(get_category).put(update_category).delete(delete_category))
-        // Accounts (legacy - backward compatibility)
-        .route("/accounts", post(create_account).get(list_accounts))
-        .route("/accounts/:id", get(get_account).put(update_account).delete(delete_account))
-        .route("/accounts/:id/toggle-closed", post(toggle_account_closed))
+        // Accounts (backward compatibility - maps to liquid assets)
+        .route("/accounts", get(list_accounts_compat))
+        .route("/accounts/:id/toggle-closed", post(toggle_account_closed_compat))
         // Assets (new system)
         .route("/asset-types", get(asset_handlers::list_asset_types))
         .route("/assets", post(asset_handlers::create_asset).get(asset_handlers::list_assets))
@@ -37,6 +35,7 @@ pub fn router() -> Router<AppState> {
         // Operations
         .route("/operations", post(create_operation).get(list_operations))
         .route("/operations/:id", get(get_operation).put(update_operation).delete(delete_operation))
+        .route("/operations/transfer", post(transfer_operation))
         // Budgets
         .route("/budgets", post(create_budget).get(list_budgets))
         .route("/budgets/:id", get(get_budget).put(update_budget).delete(delete_budget))

@@ -20,7 +20,7 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
     let asset = sqlx::query_as::<_, Asset>(
         "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity::float8, average_purchase_price::float8, current_valuation::float8, currency, is_active, created_date"
+         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
     )
     .bind(payload.user_id)
     .bind(payload.asset_type_id)
@@ -40,7 +40,7 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
 
 pub async fn list_assets(State(state): State<AppState>) -> Result<Json<Vec<Asset>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Asset>(
-        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity::float8, average_purchase_price::float8, current_valuation::float8, currency, is_active, created_date 
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
          FROM assets ORDER BY id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
@@ -48,7 +48,7 @@ pub async fn list_assets(State(state): State<AppState>) -> Result<Json<Vec<Asset
 
 pub async fn get_asset(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
     let asset = sqlx::query_as::<_, Asset>(
-        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity::float8, average_purchase_price::float8, current_valuation::float8, currency, is_active, created_date 
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
          FROM assets WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(asset))
@@ -62,7 +62,7 @@ pub async fn update_asset(State(state): State<AppState>, Path(id): Path<i32>, Js
          SET user_id = $1, asset_type_id = $2, name = $3, description = $4, account_number = $5, 
              quantity = $6, average_purchase_price = $7, current_valuation = $8, currency = $9
          WHERE id = $10
-         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity::float8, average_purchase_price::float8, current_valuation::float8, currency, is_active, created_date"
+         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
     )
     .bind(payload.user_id)
     .bind(payload.asset_type_id)
@@ -89,7 +89,7 @@ pub async fn delete_asset(State(state): State<AppState>, Path(id): Path<i32>) ->
 pub async fn toggle_asset_active(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
     let asset = sqlx::query_as::<_, Asset>(
         "UPDATE assets SET is_active = NOT is_active WHERE id = $1
-         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity::float8, average_purchase_price::float8, current_valuation::float8, currency, is_active, created_date"
+         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(asset))
 }
@@ -99,7 +99,7 @@ pub async fn create_investment_transaction(State(state): State<AppState>, Json(p
     let txn = sqlx::query_as::<_, InvestmentTransaction>(
         "INSERT INTO investment_transactions (asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes)
          VALUES ($1, $2, $3, $4, $5, $6::date, $7)
-         RETURNING id, asset_id, transaction_type, quantity::float8, price_per_unit::float8, total_value::float8, transaction_date, notes, created_date"
+         RETURNING id, asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes, created_date"
     )
     .bind(payload.asset_id)
     .bind(&payload.transaction_type)
@@ -122,7 +122,7 @@ pub async fn create_investment_transaction(State(state): State<AppState>, Json(p
 
 pub async fn list_investment_transactions(State(state): State<AppState>, Path(asset_id): Path<i32>) -> Result<Json<Vec<InvestmentTransaction>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, InvestmentTransaction>(
-        "SELECT id, asset_id, transaction_type, quantity::float8, price_per_unit::float8, total_value::float8, transaction_date, notes, created_date 
+        "SELECT id, asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes, created_date 
          FROM investment_transactions WHERE asset_id = $1 ORDER BY transaction_date DESC, id DESC"
     ).bind(asset_id).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
@@ -149,11 +149,11 @@ pub async fn create_asset_valuation(State(state): State<AppState>, Json(payload)
     let val = sqlx::query_as::<_, AssetValuation>(
         "INSERT INTO asset_valuations (asset_id, valuation_date, value, notes)
          VALUES ($1, $2::date, $3, $4)
-         RETURNING id, asset_id, valuation_date, value::float8, notes, created_date"
+         RETURNING id, asset_id, valuation_date, value, notes, created_date"
     )
     .bind(payload.asset_id)
     .bind(&payload.valuation_date)
-    .bind(payload.value)
+    .bind(&payload.value)
     .bind(&payload.notes)
     .fetch_one(&state.pool)
     .await
@@ -161,7 +161,7 @@ pub async fn create_asset_valuation(State(state): State<AppState>, Json(payload)
     
     // Update current valuation in asset
     sqlx::query("UPDATE assets SET current_valuation = $1 WHERE id = $2")
-        .bind(payload.value)
+        .bind(&payload.value)
         .bind(payload.asset_id)
         .execute(&state.pool)
         .await
@@ -172,7 +172,7 @@ pub async fn create_asset_valuation(State(state): State<AppState>, Json(payload)
 
 pub async fn list_asset_valuations(State(state): State<AppState>, Path(asset_id): Path<i32>) -> Result<Json<Vec<AssetValuation>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, AssetValuation>(
-        "SELECT id, asset_id, valuation_date, value::float8, notes, created_date 
+        "SELECT id, asset_id, valuation_date, value, notes, created_date 
          FROM asset_valuations WHERE asset_id = $1 ORDER BY valuation_date DESC, id DESC"
     ).bind(asset_id).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))

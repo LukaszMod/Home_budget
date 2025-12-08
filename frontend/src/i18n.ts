@@ -9,7 +9,8 @@ const resources = {
         cancel: 'Cancel',
         delete: 'Delete',
         edit: 'Edit',
-        confirmDelete: 'Confirm delete?'
+        confirmDelete: 'Confirm delete?',
+        loading: 'Loading...'
       },
       Budget: 'Budget',
       Accounts: 'Accounts',
@@ -47,6 +48,68 @@ const resources = {
         title: 'Users',
         add: 'Add user'
       }
+      },
+      assets: {
+        title: 'Assets',
+        categories: {
+          liquid: 'Liquid',
+          investment: 'Investments',
+          property: 'Real Estate',
+          vehicle: 'Vehicles',
+          valuable: 'Valuables',
+          liability: 'Liabilities'
+        },
+        table: {
+          type: 'Type',
+          name: 'Name',
+          user: 'User',
+          accountNumber: 'Account Number',
+          quantity: 'Quantity',
+          avgPurchasePrice: 'Avg. Purchase Price',
+          valuation: 'Valuation',
+          currentValue: 'Current Value',
+          currency: 'Currency',
+          status: 'Status',
+          actions: 'Actions'
+        },
+        status: {
+          active: 'Active',
+          inactive: 'Inactive'
+        },
+        actions: {
+          addAsset: 'Add Asset',
+          transactions: 'Transactions',
+          valuationHistory: 'Valuation History',
+          activate: 'Activate',
+          deactivate: 'Deactivate',
+          edit: 'Edit',
+          delete: 'Delete'
+        },
+        summary: {
+          title: 'Summary',
+          period: 'Period',
+          periods: {
+            thisMonth: 'This Month',
+            lastMonth: 'Last Month',
+            lastQuarter: 'Last Quarter',
+            thisYear: 'This Year',
+            lastYear: 'Last Year',
+            all: 'All Time'
+          },
+          selectedAssets: 'Selected Assets',
+          startValue: 'Start Value',
+          difference: 'Difference',
+          currentValue: 'Current Value',
+          clearSelection: 'Clear Selection'
+        },
+        deleteModal: {
+          title: 'Delete Asset',
+          confirmMessage: 'Are you sure you want to delete asset',
+          warning: 'This operation is irreversible and will delete all related transactions.'
+        },
+        errors: {
+          loadingError: 'Error loading assets'
+        }
       },
       actions: {
         cancel: 'Cancel',
@@ -305,7 +368,8 @@ const resources = {
         cancel: 'Anuluj',
         delete: 'Usuń',
         edit: 'Edytuj',
-        confirmDelete: 'Potwierdź usunięcie?'
+        confirmDelete: 'Potwierdź usunięcie?',
+        loading: 'Ładowanie...'
       },
       Budget: 'Budżet',
       Accounts: 'Konta',
@@ -343,6 +407,68 @@ const resources = {
         title: 'Użytkownicy',
         add: 'Dodaj użytkownika'
       }
+      },
+      assets: {
+        title: 'Majątek',
+        categories: {
+          liquid: 'Płynne',
+          investment: 'Inwestycje',
+          property: 'Nieruchomości',
+          vehicle: 'Pojazdy',
+          valuable: 'Wartościowe',
+          liability: 'Zobowiązania'
+        },
+        table: {
+          type: 'Typ',
+          name: 'Nazwa',
+          user: 'Użytkownik',
+          accountNumber: 'Numer konta',
+          quantity: 'Ilość',
+          avgPurchasePrice: 'Śr. cena zakupu',
+          valuation: 'Wycena',
+          currentValue: 'Obecna wartość',
+          currency: 'Waluta',
+          status: 'Status',
+          actions: 'Akcje'
+        },
+        status: {
+          active: 'Aktywne',
+          inactive: 'Nieaktywne'
+        },
+        actions: {
+          addAsset: 'Dodaj aktywo',
+          transactions: 'Transakcje',
+          valuationHistory: 'Historia wycen',
+          activate: 'Aktywuj',
+          deactivate: 'Dezaktywuj',
+          edit: 'Edytuj',
+          delete: 'Usuń'
+        },
+        summary: {
+          title: 'Podsumowanie',
+          period: 'Okres',
+          periods: {
+            thisMonth: 'Bieżący miesiąc',
+            lastMonth: 'Ostatni miesiąc',
+            lastQuarter: 'Ostatni kwartał',
+            thisYear: 'Bieżący rok',
+            lastYear: 'Ostatni rok',
+            all: 'Cały czas'
+          },
+          selectedAssets: 'Zaznaczone aktywa',
+          startValue: 'Wartość początkowa',
+          difference: 'Różnica',
+          currentValue: 'Obecna wartość',
+          clearSelection: 'Wyczyść zaznaczenie'
+        },
+        deleteModal: {
+          title: 'Usuń aktywo',
+          confirmMessage: 'Czy na pewno chcesz usunąć aktywo',
+          warning: 'Ta operacja jest nieodwracalna i usunie wszystkie powiązane transakcje.'
+        },
+        errors: {
+          loadingError: 'Błąd ładowania aktywów'
+        }
       },
       actions: {
         cancel: 'Anuluj',

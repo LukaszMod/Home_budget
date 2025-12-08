@@ -17,6 +17,7 @@ import {
   Box
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import CalcTextField from './CalcTextField'
 import { useAssetValuations } from '../hooks/useAssetValuations'
 
 interface AssetValuationsDialogProps {
@@ -65,11 +66,12 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
     }
   }
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number | string) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value
     return new Intl.NumberFormat('pl-PL', {
       style: 'currency',
       currency: currency,
-    }).format(value)
+    }).format(numValue)
   }
 
   return (
@@ -85,13 +87,11 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
               Dodaj wycenę
             </Typography>
             <Stack spacing={2}>
-              <TextField
+              <CalcTextField
                 label={`Wycena (${currency})`}
-                type="number"
                 value={valuation}
-                onChange={(e) => setValuation(e.target.value)}
+                onChange={(val) => setValuation(String(val))}
                 fullWidth
-                inputProps={{ step: '0.01' }}
               />
 
               <TextField

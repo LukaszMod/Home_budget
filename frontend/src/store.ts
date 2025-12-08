@@ -1,7 +1,7 @@
 import create from 'zustand'
 import { persist } from 'zustand/middleware'
 
-type TabName = 'budget' | 'accounts' | 'assets' | 'operations' | 'categories' | 'goals' | 'hashtags' | 'recurring' | 'statistics'
+type TabName = 'budget' | 'users' | 'assets' | 'operations' | 'categories' | 'goals' | 'hashtags' | 'recurring' | 'statistics'
 type ThemeMode = 'light' | 'dark'
 
 interface Store {

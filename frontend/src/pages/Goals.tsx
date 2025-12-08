@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Goal as APIGoal, CreateGoalPayload } from '../lib/api'
 import { useGoals } from '../hooks/useGoals'
+import CalcTextField from '../components/CalcTextField'
 import {
   Typography,
   Paper,
@@ -109,8 +110,21 @@ const Goals: React.FC = () => {
     }
   }
 
+  const parseAmount = (amount: number | string | undefined): number => {
+    if (amount === undefined || amount === null) return 0
+    return typeof amount === 'string' ? parseFloat(amount) : amount
+  }
+
+  const formatAmount = (amount: number | string | undefined): string => {
+    const num = parseAmount(amount)
+    return num.toFixed(2)
+  }
+
   const calculateProgress = (goal: Goal) => {
-    return Math.min((goal.current_amount / goal.target_amount) * 100, 100)
+    const current = parseAmount(goal.current_amount)
+    const target = parseAmount(goal.target_amount)
+    if (target === 0) return 0
+    return Math.min((current / target) * 100, 100)
   }
 
   const calculateMonthlyNeeded = (goal: Goal) => {
@@ -121,7 +135,9 @@ const Goals: React.FC = () => {
       (targetDate.getFullYear() - today.getFullYear()) * 12 + 
       (targetDate.getMonth() - today.getMonth())
     )
-    return (goal.target_amount - goal.current_amount) / monthsRemaining
+    const target = parseAmount(goal.target_amount)
+    const current = parseAmount(goal.current_amount)
+    return (target - current) / monthsRemaining
   }
 
   const calculateDaysRemaining = (goal: Goal) => {
@@ -204,7 +220,7 @@ const Goals: React.FC = () => {
                     <Box>
                       <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                         <Typography variant="body2">
-                          {t('goals.progress') || 'Postęp'}: {goal.current_amount.toFixed(2)} / {goal.target_amount.toFixed(2)}
+                          {t('goals.progress') || 'Postęp'}: {formatAmount(goal.current_amount)} / {formatAmount(goal.target_amount)}
                         </Typography>
                         <Typography variant="body2">
                           {progress.toFixed(0)}%
@@ -230,7 +246,7 @@ const Goals: React.FC = () => {
                         <Typography variant="caption" color="textSecondary">
                           {t('goals.monthlyNeeded') || 'Potrzebnie na miesiąc'}
                         </Typography>
-                        <Typography variant="body2">{monthlyNeeded.toFixed(2)}</Typography>
+                        <Typography variant="body2">{formatAmount(monthlyNeeded)}</Typography>
                       </div>
                       {goal.is_completed && (
                         <div>
@@ -292,12 +308,10 @@ const Goals: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-            <TextField
+            <CalcTextField
               label={t('goals.targetAmount') || 'Kwota docelowa'}
-              type="number"
-              inputProps={{ step: '0.01', min: '0' }}
               value={targetAmount}
-              onChange={(e) => setTargetAmount(e.target.value)}
+              onChange={(val) => setTargetAmount(String(val))}
               fullWidth
             />
             <TextField

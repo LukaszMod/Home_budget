@@ -32,6 +32,7 @@ import { useRecurringOperations, type RecurringOperation } from '../hooks/useRec
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
 import { useNotifier } from '../components/Notifier'
+import CalcTextField from '../components/CalcTextField'
 
 const RecurringOperations: React.FC = () => {
   const { t } = useTranslation()
@@ -43,6 +44,18 @@ const RecurringOperations: React.FC = () => {
   const recurringOps = query.data ?? []
   const accounts = accountsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
+
+  // Helper to parse BigDecimal string/number to number
+  const parseAmount = (amount: number | string | undefined | null): number => {
+    if (amount === undefined || amount === null) return 0
+    return typeof amount === 'string' ? parseFloat(amount) : amount
+  }
+
+  // Helper to format numeric values
+  const formatAmount = (amount: number | string | undefined | null): string => {
+    const parsed = parseAmount(amount)
+    return isNaN(parsed) ? '0.00' : parsed.toFixed(2)
+  }
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<RecurringOperation | null>(null)
@@ -182,7 +195,7 @@ const RecurringOperations: React.FC = () => {
               <TableRow key={op.id}>
                 <TableCell>{op.description || '-'}</TableCell>
                 <TableCell>{accounts.find(a => a.id === op.asset_id)?.name ?? '-'}</TableCell>
-                <TableCell align="right">{op.amount.toFixed(2)} zł</TableCell>
+                <TableCell align="right">{formatAmount(op.amount)} zł</TableCell>
                 <TableCell>
                   <Chip
                     label={op.operation_type === 'income' ? t('operations.type.income') : t('operations.type.expense')}
@@ -251,13 +264,11 @@ const RecurringOperations: React.FC = () => {
               </Select>
             </FormControl>
 
-            <TextField
+            <CalcTextField
               label={t('recurringOperations.fields.amount') ?? 'Amount'}
-              type="number"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(val) => setAmount(String(val))}
               fullWidth
-              inputProps={{ step: '0.01' }}
             />
 
             <FormControl fullWidth>

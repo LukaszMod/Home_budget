@@ -34,7 +34,7 @@ const NavBar: React.FC = () => {
         </Typography>
         <Tabs value={tab} onChange={handleChange} textColor="inherit" indicatorColor="secondary">
           <Tab label={t('Budget')} value="budget" />
-          <Tab label={t('Accounts')} value="accounts" />
+          <Tab label={t('Users')} value="users" />
           <Tab label={t('Assets')} value="assets" />
           <Tab label={t('Operations')} value="operations" />
           <Tab label={t('Categories')} value="categories" />

@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, IconButton, TextField } from '@mui/material'
+import { Box, IconButton } from '@mui/material'
+import CalcTextField from './CalcTextField'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 
@@ -31,6 +32,11 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
   onEditPlan,
 }) => {
   const { t } = useTranslation()
+
+  // Helper to format numeric values
+  const formatAmount = (amount: number): string => {
+    return isNaN(amount) ? '0.00' : amount.toFixed(2)
+  }
 
   return (
     <Box sx={{ overflowX: 'auto', overflowY: 'auto', height: 'calc(100vh - 300px)' }}>
@@ -92,29 +98,30 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
                 </td>
                 <td style={{ padding: '12px', textAlign: 'center' }}>
                   {row.isParent ? (
-                    <Box sx={{ fontWeight: 'bold' }}>{displayRow.plan.toFixed(2)}</Box>
+                    <Box sx={{ fontWeight: 'bold' }}>{formatAmount(displayRow.plan)}</Box>
                   ) : (
-                    <TextField
-                      type="number"
+                    <CalcTextField
                       size="small"
                       value={displayRow.plan}
-                      onChange={(e) => onEditPlan(row.id, parseFloat(e.target.value) || 0)}
-                      inputProps={{ step: '0.01', style: { textAlign: 'center' } }}
+                      onChange={(val) => onEditPlan(row.id, val)}
                       sx={{
                         width: '100px',
                         '& .MuiOutlinedInput-root': {
                           fontSize: '14px',
                           padding: '4px',
                         },
+                        '& input': {
+                          textAlign: 'center'
+                        }
                       }}
                     />
                   )}
                 </td>
                 <td style={{ padding: '12px', textAlign: 'center', fontWeight: row.isParent ? 'bold' : 'normal' }}>
-                  {displayRow.spending.toFixed(2)}
+                  {formatAmount(displayRow.spending)}
                 </td>
                 <td style={{ padding: '12px', textAlign: 'center', fontWeight: row.isParent ? 'bold' : 'normal' }}>
-                  {displayRow.remaining.toFixed(2)}
+                  {formatAmount(displayRow.remaining)}
                 </td>
               </tr>
             )

@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use chrono::{NaiveDateTime, NaiveDate};
 use sqlx::FromRow;
+use bigdecimal::BigDecimal;
 
 #[derive(Serialize, FromRow)]
 pub struct User {
@@ -52,9 +53,9 @@ pub struct Asset {
     pub name: String,
     pub description: Option<String>,
     pub account_number: Option<String>,
-    pub quantity: Option<f64>,
-    pub average_purchase_price: Option<f64>,
-    pub current_valuation: Option<f64>,
+    pub quantity: Option<BigDecimal>,
+    pub average_purchase_price: Option<BigDecimal>,
+    pub current_valuation: Option<BigDecimal>,
     pub currency: String,
     pub is_active: bool,
     pub created_date: Option<NaiveDateTime>,
@@ -79,9 +80,9 @@ pub struct InvestmentTransaction {
     pub id: i32,
     pub asset_id: i32,
     pub transaction_type: String,
-    pub quantity: Option<f64>,
-    pub price_per_unit: Option<f64>,
-    pub total_value: f64,
+    pub quantity: Option<BigDecimal>,
+    pub price_per_unit: Option<BigDecimal>,
+    pub total_value: BigDecimal,
     pub transaction_date: NaiveDate,
     pub notes: Option<String>,
     pub created_date: Option<NaiveDateTime>,
@@ -91,9 +92,9 @@ pub struct InvestmentTransaction {
 pub struct CreateInvestmentTransaction {
     pub asset_id: i32,
     pub transaction_type: String,
-    pub quantity: Option<f64>,
-    pub price_per_unit: Option<f64>,
-    pub total_value: f64,
+    pub quantity: Option<BigDecimal>,
+    pub price_per_unit: Option<BigDecimal>,
+    pub total_value: BigDecimal,
     pub transaction_date: String,
     pub notes: Option<String>,
 }
@@ -104,7 +105,7 @@ pub struct AssetValuation {
     pub id: i32,
     pub asset_id: i32,
     pub valuation_date: NaiveDate,
-    pub value: f64,
+    pub value: BigDecimal,
     pub notes: Option<String>,
     pub created_date: Option<NaiveDateTime>,
 }
@@ -113,7 +114,7 @@ pub struct AssetValuation {
 pub struct CreateAssetValuation {
     pub asset_id: i32,
     pub valuation_date: String,
-    pub value: f64,
+    pub value: BigDecimal,
     pub notes: Option<String>,
 }
 
@@ -141,7 +142,7 @@ pub struct Operation {
     pub category_id: Option<i32>,
     pub description: Option<String>,
     pub asset_id: i32,
-    pub amount: f64,
+    pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: NaiveDate,
 }
@@ -153,7 +154,7 @@ pub struct OperationWithHashtags {
     pub category_id: Option<i32>,
     pub description: Option<String>,
     pub asset_id: i32,
-    pub amount: f64,
+    pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: NaiveDate,
     pub hashtags: Vec<Hashtag>,
@@ -176,7 +177,7 @@ pub struct Budget {
     pub asset_id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
-    pub planned_amount: f64,
+    pub planned_amount: BigDecimal,
 }
 
 #[derive(Deserialize)]
@@ -184,7 +185,7 @@ pub struct CreateBudget {
     pub asset_id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
-    pub planned_amount: f64,
+    pub planned_amount: BigDecimal,
 }
 
 #[derive(Serialize, FromRow)]
@@ -193,8 +194,8 @@ pub struct Goal {
     pub user_id: i32,
     pub asset_id: i32,
     pub name: String,
-    pub target_amount: f64,
-    pub current_amount: f64,
+    pub target_amount: BigDecimal,
+    pub current_amount: BigDecimal,
     pub target_date: NaiveDate,
     pub created_date: NaiveDateTime,
     pub completed_date: Option<NaiveDateTime>,
@@ -206,7 +207,7 @@ pub struct CreateGoal {
     pub user_id: i32,
     pub asset_id: i32,
     pub name: String,
-    pub target_amount: f64,
+    pub target_amount: BigDecimal,
     pub target_date: String,
 }
 
@@ -257,4 +258,39 @@ pub struct UpdateRecurringOperation {
     pub category_id: Option<i32>,
     pub end_date: Option<String>,
     pub is_active: Option<bool>,
+}
+
+// Transfer structures
+#[derive(Deserialize)]
+pub struct NewAssetData {
+    pub asset_type_id: i32,
+    pub name: String,
+    pub description: Option<String>,
+    pub account_number: Option<String>,
+    pub currency: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct TransferRequest {
+    pub from_asset_id: i32,
+    pub to_asset_id: Option<i32>,
+    pub amount: f64,
+    pub transfer_type: String, // "liquid_to_liquid", "liquid_to_investment", "liquid_to_property", etc.
+    pub description: Option<String>,
+    pub operation_date: String,
+    
+    // For creating new assets
+    pub new_asset: Option<NewAssetData>,
+    
+    // For investment transactions
+    pub investment_quantity: Option<f64>,
+}
+
+#[derive(Serialize)]
+pub struct TransferResponse {
+    pub success: bool,
+    pub from_operation_id: Option<i32>,
+    pub to_operation_id: Option<i32>,
+    pub new_asset_id: Option<i32>,
+    pub investment_transaction_id: Option<i32>,
 }
