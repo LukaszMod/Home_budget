@@ -144,37 +144,16 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
      .fetch_one(&state.pool).await.map_err(db_err)?;
     
     // Extract and link hashtags from description
-    let mut hashtags = Vec::new();
-    if let Some(desc) = &payload.description {
+    let hashtags = if let Some(desc) = &payload.description {
         let extracted_hashtags = extract_hashtags(desc);
-        for hashtag in extracted_hashtags {
-            // Get or create hashtag
-            let hashtag_id: (i32,) = sqlx::query_as(
-                "INSERT INTO hashtags (name) VALUES ($1)
-                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                 RETURNING id"
-            )
-            .bind(&hashtag)
-            .fetch_one(&state.pool)
-            .await
-            .map_err(db_err)?;
-            
-            // Link operation and hashtag
-            sqlx::query("INSERT INTO operation_hashtags (operation_id, hashtag_id) VALUES ($1, $2)")
-                .bind(op.id)
-                .bind(hashtag_id.0)
-                .execute(&state.pool)
-                .await
-                .map_err(db_err)?;
-            
-            // Fetch the hashtag record
-            if let Ok(tag) = sqlx::query_as::<_, Hashtag>(
-                "SELECT id, name, created_date FROM hashtags WHERE id = $1"
-            ).bind(hashtag_id.0).fetch_one(&state.pool).await {
-                hashtags.push(tag);
-            }
+        if !extracted_hashtags.is_empty() {
+            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags).await.map_err(|e| db_err(e))?
+        } else {
+            Vec::new()
         }
-    }
+    } else {
+        Vec::new()
+    };
     
     Ok(Json(OperationWithHashtags {
         id: op.id,
@@ -217,10 +196,17 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
          FROM operations ORDER BY operation_date DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     
-    let mut result = Vec::new();
-    for op in rows {
-        let hashtags = get_operation_hashtags(&state.pool, op.id).await.map_err(|_| db_err("Failed to fetch hashtags"))?;
-        result.push(OperationWithHashtags {
+    if rows.is_empty() {
+        return Ok(Json(Vec::new()));
+    }
+    
+    // Batch fetch all hashtags for all operations
+    let operation_ids: Vec<i32> = rows.iter().map(|op| op.id).collect();
+    let all_hashtags = get_operations_hashtags_batch(&state.pool, &operation_ids).await.map_err(|e| db_err(e))?;
+    
+    let result: Vec<OperationWithHashtags> = rows.into_iter().map(|op| {
+        let hashtags = all_hashtags.get(&op.id).cloned().unwrap_or_default();
+        OperationWithHashtags {
             id: op.id,
             creation_date: op.creation_date,
             category_id: op.category_id,
@@ -230,8 +216,9 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
             operation_type: op.operation_type,
             operation_date: op.operation_date,
             hashtags,
-        });
-    }
+        }
+    }).collect();
+    
     Ok(Json(result))
 }
 
@@ -275,37 +262,16 @@ pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>
     sqlx::query("DELETE FROM operation_hashtags WHERE operation_id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
     
     // Extract and link hashtags from description
-    let mut hashtags = Vec::new();
-    if let Some(desc) = &payload.description {
+    let hashtags = if let Some(desc) = &payload.description {
         let extracted_hashtags = extract_hashtags(desc);
-        for hashtag in extracted_hashtags {
-            // Get or create hashtag
-            let hashtag_id: (i32,) = sqlx::query_as(
-                "INSERT INTO hashtags (name) VALUES ($1)
-                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                 RETURNING id"
-            )
-            .bind(&hashtag)
-            .fetch_one(&state.pool)
-            .await
-            .map_err(db_err)?;
-            
-            // Link operation and hashtag
-            sqlx::query("INSERT INTO operation_hashtags (operation_id, hashtag_id) VALUES ($1, $2)")
-                .bind(op.id)
-                .bind(hashtag_id.0)
-                .execute(&state.pool)
-                .await
-                .map_err(db_err)?;
-            
-            // Fetch the hashtag record
-            if let Ok(tag) = sqlx::query_as::<_, Hashtag>(
-                "SELECT id, name, created_date FROM hashtags WHERE id = $1"
-            ).bind(hashtag_id.0).fetch_one(&state.pool).await {
-                hashtags.push(tag);
-            }
+        if !extracted_hashtags.is_empty() {
+            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags).await.map_err(|e| db_err(e))?
+        } else {
+            Vec::new()
         }
-    }
+    } else {
+        Vec::new()
+    };
     
     Ok(Json(OperationWithHashtags {
         id: op.id,
@@ -961,5 +927,79 @@ async fn get_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32) -> Resul
     .fetch_all(pool)
     .await
     .map_err(|e| e.to_string())?;
+    Ok(hashtags)
+}
+
+// Helper function to fetch hashtags for multiple operations in one query (batch)
+async fn get_operations_hashtags_batch(pool: &sqlx::PgPool, operation_ids: &[i32]) -> Result<std::collections::HashMap<i32, Vec<Hashtag>>, String> {
+    use std::collections::HashMap;
+    
+    let rows = sqlx::query!(
+        "SELECT oh.operation_id, h.id, h.name, h.created_date
+         FROM hashtags h
+         INNER JOIN operation_hashtags oh ON h.id = oh.hashtag_id
+         WHERE oh.operation_id = ANY($1)
+         ORDER BY oh.operation_id, h.name",
+        operation_ids
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    let mut map: HashMap<i32, Vec<Hashtag>> = HashMap::new();
+    for row in rows {
+        let hashtag = Hashtag {
+            id: row.id,
+            name: row.name,
+            created_date: row.created_date,
+        };
+        map.entry(row.operation_id).or_insert_with(Vec::new).push(hashtag);
+    }
+    
+    Ok(map)
+}
+
+// Helper function to link hashtags to operation (batch insert)
+async fn link_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32, hashtag_names: &[String]) -> Result<Vec<Hashtag>, String> {
+    if hashtag_names.is_empty() {
+        return Ok(Vec::new());
+    }
+    
+    // Batch insert/get hashtags using UNNEST
+    let hashtag_ids: Vec<i32> = sqlx::query_scalar(
+        "INSERT INTO hashtags (name)
+         SELECT * FROM UNNEST($1::text[])
+         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+         RETURNING id"
+    )
+    .bind(hashtag_names)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    // Batch insert operation_hashtags relationships
+    if !hashtag_ids.is_empty() {
+        let operation_ids = vec![operation_id; hashtag_ids.len()];
+        sqlx::query(
+            "INSERT INTO operation_hashtags (operation_id, hashtag_id)
+             SELECT * FROM UNNEST($1::int[], $2::int[])
+             ON CONFLICT DO NOTHING"
+        )
+        .bind(&operation_ids)
+        .bind(&hashtag_ids)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+    
+    // Fetch all linked hashtags in one query
+    let hashtags = sqlx::query_as::<_, Hashtag>(
+        "SELECT id, name, created_date FROM hashtags WHERE id = ANY($1) ORDER BY name"
+    )
+    .bind(&hashtag_ids)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
     Ok(hashtags)
 }

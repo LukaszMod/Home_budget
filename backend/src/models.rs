@@ -166,7 +166,7 @@ pub struct CreateOperation {
     pub category_id: Option<i32>,
     pub description: Option<String>,
     pub asset_id: i32,
-    pub amount: f64,
+    pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: String,
 }
