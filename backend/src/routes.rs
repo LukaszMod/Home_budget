@@ -38,6 +38,7 @@ pub fn router() -> Router<AppState> {
         .route("/operations/transfer", post(transfer_operation))
         // Budgets
         .route("/budgets", post(create_budget).get(list_budgets))
+        .route("/budgets/data/:month", get(get_budget_data_for_month))
         .route("/budgets/:id", get(get_budget).put(update_budget).delete(delete_budget))
         // Goals
         .route("/goals", post(create_goal).get(list_goals))

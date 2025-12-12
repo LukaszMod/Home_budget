@@ -1,33 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCategories, getBudgets, getOperations, updateBudget, createBudget } from '../lib/api'
-import type { Category, Budget as BudgetType, Operation, CreateBudgetPayload } from '../lib/api'
+import { getCategories, getBudgetData, updateBudget, createBudget } from '../lib/api'
+import type { Category, Budget as BudgetType, CreateBudgetPayload, BudgetDataResponse } from '../lib/api'
 import { useNotifier } from '../components/Notifier'
 
-export const useBudgetData = () => {
+export const useBudgetData = (month: string) => {
   const qc = useQueryClient()
   const notifier = useNotifier()
 
-  // Queries
+  // Categories still needed for dropdowns (full list)
   const categoriesQuery = useQuery<Category[], Error>({
     queryKey: ['categories'],
     queryFn: getCategories,
   })
 
-  const budgetsQuery = useQuery<BudgetType[], Error>({
-    queryKey: ['budgets'],
-    queryFn: getBudgets,
-  })
-
-  const operationsQuery = useQuery<Operation[], Error>({
-    queryKey: ['operations'],
-    queryFn: getOperations,
+  // Optimized query: budgets with category info + spending aggregations
+  const budgetDataQuery = useQuery<BudgetDataResponse, Error>({
+    queryKey: ['budgetData', month],
+    queryFn: () => getBudgetData(month),
   })
 
   // Mutations
   const updateMutation = useMutation<BudgetType, Error, { id: number; payload: CreateBudgetPayload }>({
     mutationFn: ({ id, payload }) => updateBudget({ id, payload }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['budgets'] })
+      qc.invalidateQueries({ queryKey: ['budgetData'] })
       notifier.notify('Budget updated', 'success')
     },
   })
@@ -35,15 +31,14 @@ export const useBudgetData = () => {
   const createMutation = useMutation<BudgetType, Error, CreateBudgetPayload>({
     mutationFn: (payload) => createBudget(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['budgets'] })
+      qc.invalidateQueries({ queryKey: ['budgetData'] })
       notifier.notify('Budget created', 'success')
     },
   })
 
   return {
     categoriesQuery,
-    budgetsQuery,
-    operationsQuery,
+    budgetDataQuery,
     updateMutation,
     createMutation,
   }

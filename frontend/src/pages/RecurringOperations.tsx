@@ -194,7 +194,7 @@ const RecurringOperations: React.FC = () => {
             {recurringOps.map((op) => (
               <TableRow key={op.id}>
                 <TableCell>{op.description || '-'}</TableCell>
-                <TableCell>{accounts.find(a => a.id === op.asset_id)?.name ?? '-'}</TableCell>
+                <TableCell>{op.asset_name ?? '-'}</TableCell>
                 <TableCell align="right">{formatAmount(op.amount)} zł</TableCell>
                 <TableCell>
                   <Chip

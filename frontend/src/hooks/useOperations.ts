@@ -10,6 +10,7 @@ export const useOperations = () => {
   const operationsQuery = useQuery<Operation[], Error>({
     queryKey: ['operations'],
     queryFn: getOperations,
+    staleTime: 0, // Always fetch fresh data
   })
 
   const createMutation = useMutation<Operation, Error, CreateOperationPayload>({

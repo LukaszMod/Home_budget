@@ -218,8 +218,11 @@ export type Operation = {
   id: number
   creation_date?: string | null
   category_id?: number | null
+  category_name?: string | null  // JOINed from backend
+  parent_category_name?: string | null  // JOINed from backend (parent category)
   description?: string | null
   asset_id: number
+  asset_name?: string | null      // JOINed from backend
   amount: number | string
   operation_type: OperationType
   operation_date: string
@@ -353,6 +356,32 @@ export const updateBudget = async ({ id, payload }: { id: number; payload: Creat
 
 export const deleteBudget = async (id: number): Promise<void> => {
   await fetchJson(`${API}/budgets/${id}`, { method: 'DELETE' })
+}
+
+// Budget data with JOINed categories and aggregated spending
+export type BudgetWithCategory = {
+  id: number
+  asset_id: number
+  category_id: number
+  category_name: string
+  category_type: string
+  parent_id: number | null
+  month: string // YYYY-MM-DD
+  planned_amount: number | string
+}
+
+export type CategorySpending = {
+  category_id: number
+  amount: number | string
+}
+
+export type BudgetDataResponse = {
+  budgets: BudgetWithCategory[]
+  spending: CategorySpending[]
+}
+
+export const getBudgetData = async (month: string): Promise<BudgetDataResponse> => {
+  return fetchJson(`${API}/budgets/data/${month}`)
 }
 
 // --- Goals

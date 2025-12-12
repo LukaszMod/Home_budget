@@ -119,6 +119,7 @@ pub struct CreateAssetValuation {
 }
 
 // Legacy Account structs (for backwards compatibility during migration)
+#[allow(dead_code)]
 #[derive(Serialize, FromRow)]
 pub struct Account {
     pub id: i32,
@@ -128,6 +129,7 @@ pub struct Account {
     pub is_closed: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct CreateAccount {
     pub user_id: i32,
@@ -160,8 +162,26 @@ pub struct OperationWithHashtags {
     pub hashtags: Vec<Hashtag>,
 }
 
+// Extended operation with JOINed data for frontend
+#[derive(Serialize)]
+pub struct OperationWithDetails {
+    pub id: i32,
+    pub creation_date: Option<NaiveDateTime>,
+    pub category_id: Option<i32>,
+    pub category_name: Option<String>,
+    pub parent_category_name: Option<String>,
+    pub description: Option<String>,
+    pub asset_id: i32,
+    pub asset_name: Option<String>,
+    pub amount: BigDecimal,
+    pub operation_type: String,
+    pub operation_date: NaiveDate,
+    pub hashtags: Vec<Hashtag>,
+}
+
 #[derive(Deserialize)]
 pub struct CreateOperation {
+    #[allow(dead_code)]
     pub creation_date: Option<String>,
     pub category_id: Option<i32>,
     pub description: Option<String>,
@@ -186,6 +206,32 @@ pub struct CreateBudget {
     pub category_id: i32,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
+}
+
+// Budget with JOINed category data for frontend
+#[derive(Serialize)]
+pub struct BudgetWithCategory {
+    pub id: i32,
+    pub asset_id: i32,
+    pub category_id: i32,
+    pub category_name: String,
+    pub category_type: String,
+    pub parent_id: Option<i32>,
+    pub month: NaiveDate,
+    pub planned_amount: BigDecimal,
+}
+
+// Complete budget data response with spending
+#[derive(Serialize)]
+pub struct BudgetDataResponse {
+    pub budgets: Vec<BudgetWithCategory>,
+    pub spending: Vec<CategorySpending>,
+}
+
+#[derive(Serialize)]
+pub struct CategorySpending {
+    pub category_id: i32,
+    pub amount: BigDecimal,
 }
 
 #[derive(Serialize, FromRow)]
@@ -229,7 +275,26 @@ pub struct RecurringOperation {
     pub asset_id: i32,
     pub category_id: Option<i32>,
     pub description: Option<String>,
-    pub amount: f64,
+    pub amount: BigDecimal,
+    pub operation_type: String,
+    pub frequency: String,
+    pub start_date: NaiveDate,
+    pub end_date: Option<NaiveDate>,
+    pub is_active: bool,
+    pub creation_date: Option<NaiveDateTime>,
+    pub last_generated: Option<NaiveDate>,
+}
+
+// Extended recurring operation with JOINed data
+#[derive(Serialize)]
+pub struct RecurringOperationWithDetails {
+    pub id: i32,
+    pub asset_id: i32,
+    pub asset_name: Option<String>,
+    pub category_id: Option<i32>,
+    pub category_name: Option<String>,
+    pub description: Option<String>,
+    pub amount: BigDecimal,
     pub operation_type: String,
     pub frequency: String,
     pub start_date: NaiveDate,
@@ -244,7 +309,7 @@ pub struct CreateRecurringOperation {
     pub asset_id: i32,
     pub category_id: Option<i32>,
     pub description: Option<String>,
-    pub amount: f64,
+    pub amount: BigDecimal,
     pub operation_type: String,
     pub frequency: String,
     pub start_date: String,
@@ -254,7 +319,7 @@ pub struct CreateRecurringOperation {
 #[derive(Deserialize)]
 pub struct UpdateRecurringOperation {
     pub description: Option<String>,
-    pub amount: Option<f64>,
+    pub amount: Option<BigDecimal>,
     pub category_id: Option<i32>,
     pub end_date: Option<String>,
     pub is_active: Option<bool>,

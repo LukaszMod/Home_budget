@@ -110,7 +110,18 @@ const Operations: React.FC = () => {
     { key: 'custom', label: t('operations.dateFilter.custom') ?? 'Zakres niestandardowy' },
   ], [t])
 
-  const rows = React.useMemo(() => operations.map(o => ({ id: o.id, operation_date: o.operation_date ?? '', amount: o.amount, description: o.description ?? '', asset_id: o.asset_id, category_id: o.category_id, operation_type: o.operation_type })), [operations])
+  const rows = React.useMemo(() => operations.map(o => ({ 
+    id: o.id, 
+    operation_date: o.operation_date ?? '', 
+    amount: o.amount, 
+    description: o.description ?? '', 
+    asset_id: o.asset_id, 
+    asset_name: o.asset_name,
+    category_id: o.category_id, 
+    category_name: o.category_name,
+    parent_category_name: o.parent_category_name,
+    operation_type: o.operation_type 
+  })), [operations])
 
   const filteredRows = React.useMemo(() => {
     let filtered = rows
@@ -165,11 +176,21 @@ const Operations: React.FC = () => {
 
   const columns: GridColDef[] = [
     { field: 'operation_date', headerName: t('operations.fields.date'), width: 150, valueGetter: (p: any) => p.row.operation_date ? new Date(p.row.operation_date).toLocaleString() : '', sortable: true },
-    { field: 'account_id', headerName: t('operations.fields.account'), width: 180, valueGetter: (p: any) => accounts.find(a => a.id === p.row.asset_id)?.name ?? '' },
+    { field: 'asset_name', headerName: t('operations.fields.account'), width: 180 },
     { field: 'amount', headerName: t('operations.fields.amount'), width: 120 },
     { field: 'description', headerName: t('operations.fields.description'), flex: 1 },
-    { field: 'category_id', headerName: t('operations.fields.category'), width: 180, valueGetter: (p: any) => categories.find(c => c.id === p.row.category_id)?.name ?? '' },
-    { field: 'operation_type', headerName: t('operations.fields.type'), width: 160, valueGetter: (p: any) => p.row.operation_type },
+    { 
+      field: 'category_name', 
+      headerName: t('operations.fields.category'), 
+      width: 200,
+      valueGetter: (p: any) => {
+        if (!p.row.category_name) return ''
+        return p.row.parent_category_name 
+          ? `${p.row.parent_category_name} → ${p.row.category_name}`
+          : p.row.category_name
+      }
+    },
+    { field: 'operation_type', headerName: t('operations.fields.type'), width: 160 },
     { field: 'actions', headerName: '', width: 120, sortable: false, filterable: false, renderCell: (params: GridRenderCellParams<any>) => {
       const id = params.row.id as number
       const op = operations.find(o => o.id === id)

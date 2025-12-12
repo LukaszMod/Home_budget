@@ -249,10 +249,13 @@ const Statistics: React.FC = () => {
       .forEach(o => {
         if (o.category_id) {
           if (!categoryExpenses[o.category_id]) {
-            const cat = categories.find(c => c.id === o.category_id)
-            const parentCat = cat?.parent_id ? categories.find(c => c.id === cat.parent_id) : null
+            // Use JOINed data from backend instead of find()
+            const categoryName = o.category_name || 'Unknown'
+            const fullName = o.parent_category_name 
+              ? `${o.parent_category_name} → ${categoryName}` 
+              : categoryName
             categoryExpenses[o.category_id] = {
-              name: parentCat ? `${parentCat.name} → ${cat?.name}` : cat?.name || 'Unknown',
+              name: fullName,
               amount: 0,
             }
           }
@@ -267,7 +270,7 @@ const Statistics: React.FC = () => {
         value: cat.amount,
         fullName: cat.name,
       }))
-  }, [operations, categories, filters])
+  }, [operations, filters])
 
   const COLORS = ['#ff7c7c', '#8884d8', '#82ca9d', '#ffc658', '#ff85a2', '#a4de6c', '#d084d0', '#ffb347', '#87ceeb', '#f0e68c']
 

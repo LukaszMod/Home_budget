@@ -1,7 +1,4 @@
-use axum::{
-    routing::{get, post, put, delete},
-    Router, extract::State, Json
-};
+use axum::Router;
 use dotenvy::dotenv;
 use std::net::SocketAddr;
 use sqlx::postgres::PgPoolOptions;
@@ -13,6 +10,7 @@ mod models;
 mod handlers;
 mod routes;
 mod asset_handlers;
+mod utils;
 
 #[derive(Clone)]
 pub struct AppState {

@@ -5,7 +5,9 @@ const API = import.meta.env.VITE_BACKEND_URL
 export interface RecurringOperation {
   id: number
   asset_id: number
+  asset_name?: string  // JOINed from backend
   category_id?: number
+  category_name?: string  // JOINed from backend
   description?: string
   amount: number
   operation_type: 'income' | 'expense'
