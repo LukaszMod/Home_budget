@@ -81,14 +81,20 @@ const Hashtags: React.FC = () => {
   }, [hashtags, searchTerm, sortField, sortOrder])
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Stack spacing={2}>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+    <Stack spacing={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h4">
           {t('hashtags.title') ?? 'Hashtags'}
         </Typography>
+      </Paper>
 
+      <Paper sx={{ p: 2 }}>
         {/* Add new hashtag section */}
-        <Stack direction="row" spacing={1} sx={{ p: 2, backgroundColor: '#f9f9f9', borderRadius: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ 
+          p: 2, 
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f9f9f9',
+          borderRadius: 1 
+        }}>
           <TextField
             value={newHashtagName}
             onChange={(e) => setNewHashtagName(e.target.value)}
@@ -111,7 +117,7 @@ const Hashtags: React.FC = () => {
             onClick={handleAddHashtag}
             disabled={!isValidHashtagName(newHashtagName) || createHashtagMut.isPending}
           >
-            {t('hashtags.add') ?? 'Add'}
+            {t('hashtags.addButton') ?? 'Add'}
           </Button>
         </Stack>
 
@@ -123,15 +129,15 @@ const Hashtags: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             size="small"
             fullWidth
-            sx={{ mb: 1 }}
           />
         )}
+      </Paper>
 
-        {/* Hashtags list */}
-        {hashtags.length > 0 ? (
-          <>
-            {filteredAndSortedHashtags.length > 0 ? (
-              <Table>
+      {/* Hashtags list */}
+      {hashtags.length > 0 ? (
+        <Paper sx={{ flexGrow: 1, overflow: 'auto' }}>
+          {filteredAndSortedHashtags.length > 0 ? (
+            <Table stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>
@@ -156,23 +162,33 @@ const Hashtags: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredAndSortedHashtags.map((hashtag) => (
-                    <TableRow key={hashtag.id}>
-                      <TableCell>#{hashtag.name}</TableCell>
-                      <TableCell>
-                        {hashtag.created_date ? new Date(hashtag.created_date).toLocaleDateString() : '-'}
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteClick(hashtag.id)}
-                          title={t('hashtags.deleteButton') ?? 'Delete hashtag'}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredAndSortedHashtags.map((hashtag) => {
+                    const isUsed = hashtag.usage_count > 0
+                    return (
+                      <TableRow 
+                        key={hashtag.id}
+                        sx={{ 
+                          opacity: isUsed ? 0.6 : 1,
+                          backgroundColor: isUsed ? (theme) => theme.palette.action.hover : 'transparent'
+                        }}
+                      >
+                        <TableCell>#{hashtag.name}</TableCell>
+                        <TableCell>
+                          {hashtag.created_date ? new Date(hashtag.created_date).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteClick(hashtag.id)}
+                            title={isUsed ? (t('hashtags.cannotDelete') ?? 'Cannot delete hashtag that is used') : (t('hashtags.deleteButton') ?? 'Delete hashtag')}
+                            disabled={isUsed}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             ) : (
@@ -180,37 +196,38 @@ const Hashtags: React.FC = () => {
                 {t('hashtags.noResults') ?? 'No hashtags found matching your search.'}
               </Typography>
             )}
-          </>
+          </Paper>
         ) : (
-          <Typography variant="body2" sx={{ color: '#999', p: 2, textAlign: 'center' }}>
-            {t('hashtags.empty') ?? 'No hashtags yet. Create your first one!'}
-          </Typography>
+          <Paper sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#999', p: 2, textAlign: 'center' }}>
+              {t('hashtags.empty') ?? 'No hashtags yet. Create your first one!'}
+            </Typography>
+          </Paper>
         )}
-      </Stack>
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
-        <DialogTitle>{t('hashtags.deleteTitle') ?? 'Delete Hashtag'}</DialogTitle>
-        <DialogContent>
-          <Typography>
-            {t('hashtags.deleteConfirm') ?? 'Are you sure? You can only delete hashtags that are not used in any operations.'}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>
-            {t('common.cancel') ?? 'Cancel'}
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            variant="contained"
-            color="error"
-            disabled={deleteHashtagMut.isPending}
-          >
-            {t('common.delete') ?? 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Paper>
+        {/* Delete confirmation dialog */}
+        <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+          <DialogTitle>{t('hashtags.deleteTitle') ?? 'Delete Hashtag'}</DialogTitle>
+          <DialogContent>
+            <Typography>
+              {t('hashtags.deleteConfirm') ?? 'Are you sure? You can only delete hashtags that are not used in any operations.'}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteConfirmOpen(false)}>
+              {t('common.cancel') ?? 'Cancel'}
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              variant="contained"
+              color="error"
+              disabled={deleteHashtagMut.isPending}
+            >
+              {t('common.delete') ?? 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+    </Stack>
   )
 }
 

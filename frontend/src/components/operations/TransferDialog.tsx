@@ -14,11 +14,13 @@ import {
   Radio,
 } from '@mui/material'
 import StyledModal from '../common/StyledModal'
-import CalcTextField from '../common/CalcTextField'
+import CalcTextField from '../common/ui/CalcTextField'
+import AccountSelect from '../common/ui/AccountSelect'
 import { useAssets } from '../../hooks/useAssets'
 import { useAssetTypes } from '../../hooks/useAssetTypes'
 import { useAccountsData } from '../../hooks/useAccountsData'
 import { useTranslation } from 'react-i18next'
+import { useNotifier } from '../common/Notifier'
 import type { AssetType } from '../../lib/api'
 
 interface TransferDialogProps {
@@ -61,17 +63,11 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
   preselectedAssetId,
 }) => {
   const { t } = useTranslation()
+  const notifier = useNotifier()
   const { assets } = useAssets()
   const { assetTypes } = useAssetTypes()
   const { usersQuery } = useAccountsData()
   const users = usersQuery.data ?? []
-
-  // Helper function to format amounts
-  const formatAmount = (value: number | string | null | undefined): string => {
-    if (value === null || value === undefined) return '0.00'
-    const num = typeof value === 'string' ? parseFloat(value) : value
-    return isNaN(num) ? '0.00' : num.toFixed(2)
-  }
 
   // Form state
   const [fromAssetId, setFromAssetId] = useState<number | ''>(preselectedAssetId || '')
@@ -156,58 +152,85 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
   const handleSubmit = () => {
     // Validation
     if (!fromAssetId) {
-      alert(t('transfer.error.selectFromAsset', 'Wybierz konto źródłowe'))
+      notifier.notify(
+        t('transfer.error.selectFromAsset', 'Wybierz konto źródłowe'),
+        'error'
+      )
       return
     }
 
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum) || amountNum <= 0) {
-      alert(t('transfer.error.invalidAmount', 'Podaj prawidłową kwotę'))
+      notifier.notify(
+        t('transfer.error.invalidAmount', 'Podaj prawidłową kwotę'),
+        'error'
+      )
       return
     }
 
     // Check balance
     const balance = getAssetBalance(fromAssetId as number)
     if (amountNum > balance) {
-      alert(t('transfer.error.insufficientFunds', 'Niewystarczające środki'))
+      notifier.notify(
+        t('transfer.error.insufficientFunds', 'Niewystarczające środki'),
+        'error'
+      )
       return
     }
 
     // Type-specific validation
     if (transferType === 'liquid_to_liquid' && !toAssetId) {
-      alert(t('transfer.error.selectToAsset', 'Wybierz konto docelowe'))
+      notifier.notify(
+        t('transfer.error.selectToAsset', 'Wybierz konto docelowe'),
+        'error'
+      )
       return
     }
 
     if (transferType === 'liquid_to_investment') {
       if (createNewAsset) {
         if (!newAssetTypeId || !newAssetName) {
-          alert(t('transfer.error.newAssetRequired', 'Wypełnij dane nowego aktywa'))
+          notifier.notify(
+            t('transfer.error.newAssetRequired', 'Wypełnij dane nowego aktywa'),
+            'error'
+          )
           return
         }
       } else {
         if (!toAssetId) {
-          alert(t('transfer.error.selectInvestment', 'Wybierz inwestycję'))
+          notifier.notify(
+            t('transfer.error.selectInvestment', 'Wybierz inwestycję'),
+            'error'
+          )
           return
         }
       }
       const qty = parseFloat(investmentQuantity)
       const price = parseFloat(investmentPricePerUnit)
       if (isNaN(qty) || qty <= 0 || isNaN(price) || price <= 0) {
-        alert(t('transfer.error.investmentDetails', 'Podaj ilość i cenę jednostkową'))
+        notifier.notify(
+          t('transfer.error.investmentDetails', 'Podaj ilość i cenę jednostkową'),
+          'error'
+        )
         return
       }
     }
 
     if (['liquid_to_property', 'liquid_to_vehicle', 'liquid_to_valuable'].includes(transferType)) {
       if (!newAssetTypeId || !newAssetName) {
-        alert(t('transfer.error.newAssetRequired', 'Wypełnij dane nowego aktywa'))
+        notifier.notify(
+          t('transfer.error.newAssetRequired', 'Wypełnij dane nowego aktywa'),
+          'error'
+        )
         return
       }
     }
 
     if (transferType === 'liquid_to_liability' && !toAssetId) {
-      alert(t('transfer.error.selectLiability', 'Wybierz zobowiązanie'))
+      notifier.notify(
+        t('transfer.error.selectLiability', 'Wybierz zobowiązanie'),
+        'error'
+      )
       return
     }
 
@@ -258,26 +281,13 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
     switch (transferType) {
       case 'liquid_to_liquid':
         return (
-          <FormControl fullWidth>
-            <InputLabel>{t('transfer.toAccount', 'Konto docelowe')}</InputLabel>
-            <Select
-              value={toAssetId}
-              onChange={(e) => setToAssetId(e.target.value as number)}
-              label={t('transfer.toAccount', 'Konto docelowe')}
-            >
-              {liquidAssets
-                .filter(a => a.id !== fromAssetId)
-                .map((asset) => {
-                  const user = users.find(u => u.id === asset.user_id)
-                  return (
-                    <MenuItem key={asset.id} value={asset.id}>
-                      {asset.name} ({formatAmount(asset.current_valuation)} {asset.currency})
-                      {user && ` - @${user.nick}`}
-                    </MenuItem>
-                  )
-                })}
-            </Select>
-          </FormControl>
+          <AccountSelect
+            label={t('transfer.toAccount', 'Konto docelowe')}
+            value={toAssetId}
+            onChange={setToAssetId}
+            assets={liquidAssets.filter(a => a.id !== fromAssetId)}
+            required
+          />
         )
 
       case 'liquid_to_investment':
@@ -312,7 +322,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
                     return (
                       <MenuItem key={asset.id} value={asset.id}>
                         {asset.name} ({asset.quantity || 0} szt.)
-                        {user && ` - @${user.nick}`}
+                        {user && ` - ${user.nick}`}
                       </MenuItem>
                     )
                   })}
@@ -344,24 +354,13 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
 
       case 'liquid_to_liability':
         return (
-          <FormControl fullWidth>
-            <InputLabel>{t('transfer.liability', 'Zobowiązanie')}</InputLabel>
-            <Select
-              value={toAssetId}
-              onChange={(e) => setToAssetId(e.target.value as number)}
-              label={t('transfer.liability', 'Zobowiązanie')}
-            >
-              {liabilityAssets.map((asset) => {
-                const user = users.find(u => u.id === asset.user_id)
-                return (
-                  <MenuItem key={asset.id} value={asset.id}>
-                    {asset.name} ({formatAmount(asset.current_valuation)} {asset.currency})
-                    {user && ` - @${user.nick}`}
-                  </MenuItem>
-                )
-              })}
-            </Select>
-          </FormControl>
+          <AccountSelect
+            label={t('transfer.liability', 'Zobowiązanie')}
+            value={toAssetId}
+            onChange={setToAssetId}
+            assets={liabilityAssets}
+            required
+          />
         )
 
       default:
@@ -402,7 +401,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
           >
             {users.map((user) => (
               <MenuItem key={user.id} value={user.id}>
-                @{user.nick}
+                {user.nick}
               </MenuItem>
             ))}
           </Select>
@@ -479,24 +478,13 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
         </FormControl>
 
         {/* From Account */}
-        <FormControl fullWidth>
-          <InputLabel>{t('transfer.fromAccount', 'Konto źródłowe')}</InputLabel>
-          <Select
-            value={fromAssetId}
-            onChange={(e) => setFromAssetId(e.target.value as number)}
-            label={t('transfer.fromAccount', 'Konto źródłowe')}
-          >
-            {liquidAssets.map((asset) => {
-              const user = users.find(u => u.id === asset.user_id)
-              return (
-                <MenuItem key={asset.id} value={asset.id}>
-                  {asset.name} ({formatAmount(asset.current_valuation)} {asset.currency})
-                  {user && ` - @${user.nick}`}
-                </MenuItem>
-              )
-            })}
-          </Select>
-        </FormControl>
+        <AccountSelect
+          label={t('transfer.fromAccount', 'Konto źródłowe')}
+          value={fromAssetId}
+          onChange={setFromAssetId}
+          assets={liquidAssets}
+          required
+        />
 
         {/* Amount */}
         <CalcTextField

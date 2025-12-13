@@ -282,6 +282,7 @@ pub struct Hashtag {
     pub id: i32,
     pub name: String,
     pub created_date: Option<NaiveDateTime>,
+    pub usage_count: i32,
 }
 
 #[derive(Deserialize)]

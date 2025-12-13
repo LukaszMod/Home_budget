@@ -17,8 +17,12 @@ import AddIcon from '@mui/icons-material/Add'
 import { useAccountsData } from '../hooks/useAccountsData'
 import StyledModal from '../components/common/StyledModal'
 import { TextField } from '@mui/material'
+import { useNotifier } from '../components/common/Notifier'
+import { useTranslation } from 'react-i18next'
 
 const Users: React.FC = () => {
+  const { t } = useTranslation()
+  const notifier = useNotifier()
   const { usersQuery, createUserMut, deleteUserMut } = useAccountsData()
   
   const users = usersQuery.data ?? []
@@ -29,14 +33,25 @@ const Users: React.FC = () => {
 
   const handleAddUser = async () => {
     if (!fullName || !nick) {
-      alert('Wypełnij wszystkie pola')
+      notifier.notify(
+        t('users.validation.fillRequired') ?? 'Wypełnij wszystkie pola',
+        'error'
+      )
       return
     }
     
-    await createUserMut.mutateAsync({ full_name: fullName, nick: nick })
-    setFullName('')
-    setNick('')
-    setModalOpen(false)
+    try {
+      await createUserMut.mutateAsync({ full_name: fullName, nick: nick })
+      notifier.notify(
+        t('users.messages.created') ?? 'Użytkownik utworzony',
+        'success'
+      )
+      setFullName('')
+      setNick('')
+      setModalOpen(false)
+    } catch (e: any) {
+      notifier.notify(String(e), 'error')
+    }
   }
 
   const handleDeleteUser = async (id: number) => {
@@ -46,20 +61,22 @@ const Users: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h4">Użytkownicy</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setModalOpen(true)}
-        >
-          Dodaj użytkownika
-        </Button>
-      </Stack>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
+      <Paper sx={{ p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h4">Użytkownicy</Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setModalOpen(true)}
+          >
+            Dodaj użytkownika
+          </Button>
+        </Stack>
+      </Paper>
 
-      <Paper>
-        <Table>
+      <Paper sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Table stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
@@ -73,7 +90,7 @@ const Users: React.FC = () => {
               <TableRow key={user.id}>
                 <TableCell>{user.id}</TableCell>
                 <TableCell>{user.full_name}</TableCell>
-                <TableCell><strong>@{user.nick}</strong></TableCell>
+                <TableCell><strong>{user.nick}</strong></TableCell>
                 <TableCell align="right">
                   <IconButton
                     size="small"

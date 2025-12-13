@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, IconButton } from '@mui/material'
-import CalcTextField from '../common/CalcTextField'
+import { Box, IconButton, useTheme } from '@mui/material'
+import CalcTextField from '../common/ui/CalcTextField'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 
@@ -32,27 +32,33 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
   onEditPlan,
 }) => {
   const { t } = useTranslation()
+  const theme = useTheme()
 
   // Helper to format numeric values
   const formatAmount = (amount: number): string => {
     return isNaN(amount) ? '0.00' : amount.toFixed(2)
   }
 
+  const headerBgColor = theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]
+  const borderColor = theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[300]
+  const parentRowBg = theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]
+  const editedRowBg = theme.palette.mode === 'dark' ? theme.palette.warning.dark : '#fffde7'
+
   return (
     <Box sx={{ overflowX: 'auto', overflowY: 'auto', height: 'calc(100vh - 300px)' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ backgroundColor: '#f5f5f5', fontWeight: 'bold' }}>
-            <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>
+          <tr style={{ backgroundColor: headerBgColor, fontWeight: 'bold' }}>
+            <th style={{ padding: '12px', textAlign: 'left', borderBottom: `2px solid ${borderColor}` }}>
               {t('budget.fields.category')}
             </th>
-            <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #ddd', width: '120px' }}>
+            <th style={{ padding: '12px', textAlign: 'center', borderBottom: `2px solid ${borderColor}`, width: '120px' }}>
               {t('budget.fields.plan')}
             </th>
-            <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #ddd', width: '120px' }}>
+            <th style={{ padding: '12px', textAlign: 'center', borderBottom: `2px solid ${borderColor}`, width: '120px' }}>
               {t('budget.fields.spending')}
             </th>
-            <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #ddd', width: '120px' }}>
+            <th style={{ padding: '12px', textAlign: 'center', borderBottom: `2px solid ${borderColor}`, width: '120px' }}>
               {t('budget.fields.remaining')}
             </th>
           </tr>
@@ -71,8 +77,8 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
               <tr
                 key={row.id}
                 style={{
-                  backgroundColor: row.isParent ? '#f5f5f5' : isEdited ? '#fffde7' : 'transparent',
-                  borderBottom: '1px solid #eee',
+                  backgroundColor: row.isParent ? parentRowBg : isEdited ? editedRowBg : 'transparent',
+                  borderBottom: `1px solid ${borderColor}`,
                 }}
               >
                 <td

@@ -476,7 +476,7 @@ export const completeGoal = async (id: number): Promise<Goal> => {
 }
 
 // --- Hashtags
-export type Hashtag = { id: number; name: string; created_date?: string }
+export type Hashtag = { id: number; name: string; created_date?: string; usage_count: number }
 
 export const getHashtags = async (): Promise<Hashtag[]> => {
   return fetchJson(`${API}/hashtags`)

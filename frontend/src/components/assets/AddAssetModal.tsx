@@ -11,10 +11,12 @@ import {
   Box
 } from '@mui/material'
 import StyledModal from '../common/StyledModal'
-import CalcTextField from '../common/CalcTextField'
+import CalcTextField from '../common/ui/CalcTextField'
 import type { Asset, AssetType, CreateAssetPayload } from '../../lib/api'
 import { useAssetTypes } from '../../hooks/useAssetTypes'
 import { useAccountsData } from '../../hooks/useAccountsData'
+import { useNotifier } from '../common/Notifier'
+import { useTranslation } from 'react-i18next'
 
 interface AddAssetModalProps {
   open: boolean
@@ -29,6 +31,8 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
   editing,
   onSave,
 }) => {
+  const { t } = useTranslation()
+  const notifier = useNotifier()
   const { assetTypes } = useAssetTypes()
   const { usersQuery } = useAccountsData()
   const users = usersQuery.data ?? []
@@ -73,7 +77,10 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
 
   const handleSave = () => {
     if (!assetTypeId || !name || !userId) {
-      alert('Wypełnij wymagane pola: Typ, Nazwa, Użytkownik')
+      notifier.notify(
+        t('assets.validation.fillRequired') ?? 'Wypełnij wymagane pola: Typ, Nazwa, Użytkownik',
+        'error'
+      )
       return
     }
 
@@ -178,7 +185,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
           >
             {users.map((user) => (
               <MenuItem key={user.id} value={user.id}>
-                @{user.nick} ({user.full_name})
+                {user.nick} ({user.full_name})
               </MenuItem>
             ))}
           </Select>

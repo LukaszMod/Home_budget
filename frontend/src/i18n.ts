@@ -4,13 +4,30 @@ import { initReactI18next } from 'react-i18next'
 const resources = {
   en: {
     translation: {
+      app: {
+        title: 'Home Budget',
+        darkMode: 'Dark Mode',
+        lightMode: 'Light Mode',
+      },
+      nav: {
+        budget: 'Budget',
+        users: 'Users',
+        assets: 'Assets',
+        operations: 'Operations',
+        categories: 'Categories',
+        goals: 'Goals',
+        hashtags: 'Hashtags',
+        recurring: 'Recurring',
+        statistics: 'Statistics',
+      },
       common: {
         save: 'Save',
         cancel: 'Cancel',
         delete: 'Delete',
         edit: 'Edit',
         confirmDelete: 'Confirm delete?',
-        loading: 'Loading...'
+        loading: 'Loading...',
+        actions: 'Actions'
       },
       Budget: 'Budget',
       Accounts: 'Accounts',
@@ -37,8 +54,7 @@ const resources = {
           name: 'Name',
           owner: 'Owner (user id)',
           accountNumber: 'Account number'
-        }
-      ,
+        },
       messages: {
         created: 'Account created',
         updated: 'Account updated',
@@ -46,7 +62,13 @@ const resources = {
       },
       users: {
         title: 'Users',
-        add: 'Add user'
+        add: 'Add user',
+        validation: {
+          fillRequired: 'Fill in all required fields'
+        },
+        messages: {
+          created: 'User created'
+        }
       }
       },
       assets: {
@@ -109,6 +131,9 @@ const resources = {
         },
         errors: {
           loadingError: 'Error loading assets'
+        },
+        validation: {
+          fillRequired: 'Fill in required fields: Type, Name, User'
         }
       },
       actions: {
@@ -138,6 +163,9 @@ const resources = {
           updated: 'Category updated',
           deleted: 'Category deleted',
           cannotDelete: 'Cannot delete category, there are operations assigned'
+        },
+        validation: {
+          nameRequired: 'Name field is required'
         }
       },
       operations: {
@@ -273,7 +301,14 @@ const resources = {
         markComplete: 'Mark as Complete',
         confirmComplete: 'Mark goal as completed?',
         noGoals: 'No savings goals yet',
-        requiredFields: 'Fill in all required fields'
+        requiredFields: 'Fill in all required fields',
+        validation: {
+          fillRequired: 'Fill in all required fields'
+        },
+        messages: {
+          created: 'Goal created',
+          updated: 'Goal updated'
+        }
       },
       Hashtags: 'Hashtags',
       hashtags: {
@@ -378,13 +413,30 @@ const resources = {
   },
   pl: {
     translation: {
+      app: {
+        title: 'Budżet Domowy',
+        darkMode: 'Ciemny motyw',
+        lightMode: 'Jasny motyw',
+      },
+      nav: {
+        budget: 'Budżet',
+        users: 'Użytkownicy',
+        assets: 'Majątek',
+        operations: 'Operacje',
+        categories: 'Kategorie',
+        goals: 'Cele',
+        hashtags: 'Hashtagi',
+        recurring: 'Cykliczne',
+        statistics: 'Statystyki',
+      },
       common: {
         save: 'Zapisz',
         cancel: 'Anuluj',
         delete: 'Usuń',
         edit: 'Edytuj',
         confirmDelete: 'Potwierdź usunięcie?',
-        loading: 'Ładowanie...'
+        loading: 'Ładowanie...',
+        actions: 'Akcje'
       },
       Budget: 'Budżet',
       Accounts: 'Konta',
@@ -411,17 +463,22 @@ const resources = {
           name: 'Nazwa',
           owner: 'Właściciel (id użytkownika)',
           accountNumber: 'Nr konta'
+        },
+        messages: {
+          created: 'Konto utworzone',
+          updated: 'Konto zaktualizowane',
+          deleted: 'Konto usunięte'
+        },
+        users: {
+          title: 'Użytkownicy',
+          add: 'Dodaj użytkownika',
+          validation: {
+            fillRequired: 'Wypełnij wszystkie pola'
+          },
+          messages: {
+            created: 'Użytkownik utworzony'
+          }
         }
-      ,
-      messages: {
-        created: 'Konto utworzone',
-        updated: 'Konto zaktualizowane',
-        deleted: 'Konto usunięte'
-      },
-      users: {
-        title: 'Użytkownicy',
-        add: 'Dodaj użytkownika'
-      }
       },
       assets: {
         title: 'Majątek',
@@ -483,6 +540,9 @@ const resources = {
         },
         errors: {
           loadingError: 'Błąd ładowania aktywów'
+        },
+        validation: {
+          fillRequired: 'Wypełnij wymagane pola: Typ, Nazwa, Użytkownik'
         }
       },
       actions: {
@@ -512,6 +572,9 @@ const resources = {
           updated: 'Kategoria zaktualizowana',
           deleted: 'Kategoria usunięta',
           cannotDelete: 'Nie można usunąć kategorii, są do niej przypisane operacje'
+        },
+        validation: {
+          nameRequired: 'Pole Nazwa jest wymagane'
         }
       },
       operations: {
@@ -650,7 +713,14 @@ const resources = {
         markComplete: 'Oznacz jako ukończone',
         confirmComplete: 'Potwierdź ukończenie celu',
         noGoals: 'Brak celów oszczędzania',
-        requiredFields: 'Uzupełnij wszystkie pola'
+        requiredFields: 'Uzupełnij wszystkie pola',
+        validation: {
+          fillRequired: 'Uzupełnij wszystkie pola'
+        },
+        messages: {
+          created: 'Cel utworzony',
+          updated: 'Cel zaktualizowany'
+        }
       },
       Hashtags: 'Hashtagi',
       hashtags: {

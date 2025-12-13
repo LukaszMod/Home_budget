@@ -8,7 +8,12 @@ fn is_valid_hashtag(name: &str) -> bool {
 
 pub async fn get_hashtags(State(state): State<AppState>) -> Result<Json<Vec<Hashtag>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Hashtag>(
-        "SELECT id, name, created_date FROM hashtags ORDER BY name"
+        "SELECT h.id, h.name, h.created_date, 
+                COALESCE(COUNT(oh.operation_id), 0)::int as usage_count
+         FROM hashtags h
+         LEFT JOIN operation_hashtags oh ON h.id = oh.hashtag_id
+         GROUP BY h.id, h.name, h.created_date
+         ORDER BY h.name"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
 }

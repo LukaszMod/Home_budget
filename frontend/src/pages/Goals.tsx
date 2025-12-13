@@ -2,7 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Goal as APIGoal, CreateGoalPayload } from '../lib/api'
 import { useGoals } from '../hooks/useGoals'
-import CalcTextField from '../components/common/CalcTextField'
+import CalcTextField from '../components/common/ui/CalcTextField'
 import {
   Typography,
   Paper,
@@ -25,11 +25,13 @@ import {
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import { useNotifier } from '../components/common/Notifier'
 
 type Goal = APIGoal
 
 const Goals: React.FC = () => {
   const { t } = useTranslation()
+  const notifier = useNotifier()
   
   const { 
     goals, 
@@ -78,7 +80,10 @@ const Goals: React.FC = () => {
 
   const handleSave = async () => {
     if (!name || !userId || !accountId || !targetAmount || !targetDate) {
-      alert(t('goals.requiredFields') || 'Uzupełnij wszystkie pola')
+      notifier.notify(
+        t('goals.validation.fillRequired') ?? 'Uzupełnij wszystkie pola',
+        'error'
+      )
       return
     }
 
@@ -90,12 +95,24 @@ const Goals: React.FC = () => {
       target_date: targetDate,
     }
 
-    if (editing) {
-      updateGoal({ id: editing.id, payload })
-    } else {
-      createGoal(payload)
+    try {
+      if (editing) {
+        await updateGoal({ id: editing.id, payload })
+        notifier.notify(
+          t('goals.messages.updated') ?? 'Cel zaktualizowany',
+          'success'
+        )
+      } else {
+        await createGoal(payload)
+        notifier.notify(
+          t('goals.messages.created') ?? 'Cel utworzony',
+          'success'
+        )
+      }
+      handleClose()
+    } catch (e: any) {
+      notifier.notify(String(e), 'error')
     }
-    handleClose()
   }
 
   const handleDelete = (goal: Goal) => {
@@ -153,24 +170,27 @@ const Goals: React.FC = () => {
   }
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5">{t('goals.title') || 'Cele oszczędzania'}</Typography>
-        <Button variant="contained" onClick={handleOpenNew}>
-          {t('goals.add') || 'Dodaj cel'}
-        </Button>
-      </Stack>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Paper sx={{ p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h4">{t('goals.title') || 'Cele oszczędzania'}</Typography>
+          <Button variant="contained" onClick={handleOpenNew}>
+            {t('goals.add') || 'Dodaj cel'}
+          </Button>
+        </Stack>
+      </Paper>
 
       {goalsLoading && <LinearProgress />}
-      {goalsError && <Typography color="error">{String(goalsError)}</Typography>}
+      {goalsError && <Typography color="error" sx={{ px: 2 }}>{String(goalsError)}</Typography>}
 
-      {goals.length === 0 ? (
-        <Typography variant="body2" color="textSecondary">
-          {t('goals.noGoals') || 'Brak celów'}
-        </Typography>
-      ) : (
-        <Grid container spacing={2}>
-          {goals.map((goal) => {
+      <Paper sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+        {goals.length === 0 ? (
+          <Typography variant="body2" color="textSecondary">
+            {t('goals.noGoals') || 'Brak celów'}
+          </Typography>
+        ) : (
+          <Grid container spacing={2}>
+            {goals.map((goal) => {
             const progress = calculateProgress(goal)
             const monthlyNeeded = calculateMonthlyNeeded(goal)
             const daysRemaining = calculateDaysRemaining(goal)
@@ -179,7 +199,12 @@ const Goals: React.FC = () => {
 
             return (
               <Grid item xs={12} key={goal.id}>
-                <Paper sx={{ p: 2, backgroundColor: goal.is_completed ? '#f5f5f5' : 'white' }}>
+                <Paper sx={{ 
+                  p: 2, 
+                  backgroundColor: (theme) => goal.is_completed 
+                    ? (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f5f5f5')
+                    : theme.palette.background.paper
+                }}>
                   <Stack spacing={1}>
                     <Stack direction="row" justifyContent="space-between" alignItems="start">
                       <div>
@@ -263,9 +288,10 @@ const Goals: React.FC = () => {
                 </Paper>
               </Grid>
             )
-          })}
-        </Grid>
-      )}
+            })}
+          </Grid>
+        )}
+      </Paper>
 
       {/* Dialog for create/edit */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -311,7 +337,7 @@ const Goals: React.FC = () => {
             <CalcTextField
               label={t('goals.targetAmount') || 'Kwota docelowa'}
               value={targetAmount}
-              onChange={(val) => setTargetAmount(String(val))}
+              onChange={(val: number) => setTargetAmount(String(val))}
               fullWidth
             />
             <TextField
@@ -331,7 +357,7 @@ const Goals: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+    </Box>
   )
 }
 
