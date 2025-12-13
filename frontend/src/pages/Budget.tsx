@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { Box, Button, Paper, IconButton, Grid } from '@mui/material'
+import { Box, Button, Paper, IconButton, Grid, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -279,7 +279,7 @@ const Budget: React.FC = () => {
   return (
     <Paper sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
-        <h1 style={{ margin: 0 }}>{t('budget.title')}</h1>
+        <Typography variant="h4">{t('budget.title')}</Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1, justifyContent: 'center' }}>
           <IconButton size="small" onClick={() => setSelectedMonth(getPreviousMonth(selectedMonth))}><ChevronLeftIcon /></IconButton>
           <Button variant="outlined" onClick={(e) => setCalendarAnchor(e.currentTarget)} sx={{ minWidth: '200px' }}>{getMonthName(selectedMonth)}</Button>

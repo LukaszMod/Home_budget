@@ -6,16 +6,16 @@ import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
 import { useHashtags } from '../hooks/useHashtags'
 import { useTransfer } from '../hooks/useTransfer'
-import AddOperationModal from '../components/operations/AddOperationModal'
-import TransferDialog from '../components/operations/TransferDialog'
+import { 
+  AddOperationModal, 
+  TransferDialog, 
+  OperationsTable, 
+  OperationDetailsDrawer 
+} from '../components'
 import type { TransferData } from '../components/operations/TransferDialog'
-import { Typography, Paper, Box, IconButton, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
-import { DataGrid } from '@mui/x-data-grid'
-import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { Typography, Paper, Box, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
 import { useTranslation } from 'react-i18next'
 
 function computeStartDate(preset: string): Date | null {
@@ -52,6 +52,7 @@ const Operations: React.FC = () => {
   const [modalOpen, setModalOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<APIOperation | null>(null)
   const [transferDialogOpen, setTransferDialogOpen] = React.useState(false)
+  const [selectedOperation, setSelectedOperation] = React.useState<APIOperation | null>(null)
   const [datePreset, setDatePreset] = React.useState<string>('thisMonth')
   const [customDateFrom, setCustomDateFrom] = React.useState<string>('')
   const [customDateTo, setCustomDateTo] = React.useState<string>('')
@@ -175,78 +176,21 @@ const Operations: React.FC = () => {
     return filtered
   }, [rows, datePreset, customDateFrom, customDateTo, filterAccountIds, filterCategoryIds, filterOperationType, filterHashtagIds, hashtags])
 
-  const columns: GridColDef[] = [
-    { field: 'operation_date', headerName: t('operations.fields.date'), width: 150, valueGetter: (p: any) => p.row.operation_date ? new Date(p.row.operation_date).toLocaleString() : '', sortable: true },
-    { field: 'asset_name', headerName: t('operations.fields.account'), width: 180 },
-    { field: 'amount', headerName: t('operations.fields.amount'), width: 120 },
-    { 
-      field: 'description', 
-      headerName: t('operations.fields.description'), 
-      flex: 1,
-      renderCell: (params: GridRenderCellParams<any>) => {
-        const op = operations.find(o => o.id === params.row.id)
-        if (!op) return params.row.description
-        
-        if (op.parent_operation_id) {
-          const parent = operations.find(o => o.id === op.parent_operation_id)
-          return (
-            <Box>
-              <Chip 
-                label={`${t('operations.partOf')}: ${parent?.description || `#${op.parent_operation_id}`}`} 
-                size="small" 
-                color="info" 
-                sx={{ mr: 1 }} 
-              />
-              {op.description}
-            </Box>
-          )
-        }
-        return params.row.description
-      }
-    },
-    { 
-      field: 'category_name', 
-      headerName: t('operations.fields.category'), 
-      width: 200,
-      valueGetter: (p: any) => {
-        // Show "Dzielona" for split operations (check FIRST before category_id check)
-        if (p.row.is_split) {
-          return t('operations.splitCategory') ?? 'Dzielona'
-        }
-        // Show "Przelew" for transfers (operations without category and NOT split)
-        if (!p.row.category_id && !p.row.is_split) {
-          return t('operations.transfer') ?? 'Przelew'
-        }
-        if (!p.row.category_name) return ''
-        return p.row.parent_category_name 
-          ? `${p.row.parent_category_name} → ${p.row.category_name}`
-          : p.row.category_name
-      }
-    },
-    { field: 'operation_type', headerName: t('operations.fields.type'), width: 160 },
-    { field: 'actions', headerName: '', width: 180, sortable: false, filterable: false, renderCell: (params: GridRenderCellParams<any>) => {
-      const id = params.row.id as number
-      const op = operations.find(o => o.id === id)
-      return (<div>
-        <IconButton size="small" onClick={() => op && openEdit(op)}><EditIcon /></IconButton>
-        <IconButton size="small" onClick={() => { if (confirm(t('operations.confirmSingle') ?? 'Usuń operację?')) deleteMutation.mutate(id) }}><DeleteIcon /></IconButton>
-      </div>)
-    } }
-  ]
-
   return (
-    <Paper sx={{ p: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">{t('operations.title') ?? 'Operacje'}</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<SwapHorizIcon />} onClick={openTransfer}>
-            {t('operations.transfer', 'Przelew')}
-          </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={openNew}>
-            {t('operations.add') ?? 'Dodaj operację'}
-          </Button>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h4">{t('operations.title') ?? 'Operacje'}</Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" startIcon={<SwapHorizIcon />} onClick={openTransfer}>
+              {t('operations.transfer', 'Przelew')}
+            </Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openNew}>
+              {t('operations.add') ?? 'Dodaj operację'}
+            </Button>
+          </Box>
         </Box>
-      </Box>
+      </Paper>
 
       <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
         <Stack spacing={2}>
@@ -394,32 +338,55 @@ const Operations: React.FC = () => {
         </Stack>
       </Paper>
 
-      <Paper sx={{ p: 2, mb: 3, bgcolor: 'info.light' }}>
-        <Stack direction="row" spacing={4}>
-          <Box>
-            <Typography variant="body2" color="text.secondary">{t('operations.summary.totalIncome') ?? 'Przychody'}</Typography>
-            <Typography variant="h6" sx={{ color: 'success.main' }}>
-              {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="body2" color="text.secondary">{t('operations.summary.totalExpense') ?? 'Wydatki'}</Typography>
-            <Typography variant="h6" sx={{ color: 'error.main' }}>
-              {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="body2" color="text.secondary">{t('operations.summary.net') ?? 'Saldo'}</Typography>
-            <Typography variant="h6">
-              {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-            </Typography>
-          </Box>
-        </Stack>
-      </Paper>
+      <OperationsTable
+        operations={filteredRows.map(r => operations.find(o => o.id === r.id)!).filter(Boolean)}
+        onEdit={openEdit}
+        onDelete={(id) => deleteMutation.mutate(id)}
+        onSelect={(op) => setSelectedOperation(op)}
+        selectedOperationId={selectedOperation?.id || null}
+      />
 
-      <Box sx={{ height: 500 }}>
-        <DataGrid rows={filteredRows} columns={columns} pageSizeOptions={[10, 25, 50]} />
-      </Box>
+      <Paper sx={{ 
+        p: 1.5, 
+        bgcolor: 'background.paper',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        gap: 2
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            {t('operations.summary.totalIncome') ?? 'Przychody'}
+          </Typography>
+          <Typography variant="h6" fontWeight="bold" sx={{ color: 'success.main' }}>
+            {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            {t('operations.summary.totalExpense') ?? 'Wydatki'}
+          </Typography>
+          <Typography variant="h6" fontWeight="bold" sx={{ color: 'error.main' }}>
+            {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            {t('operations.summary.net') ?? 'Saldo'}
+          </Typography>
+          <Typography 
+            variant="h6" 
+            fontWeight="bold" 
+            sx={{ 
+              color: (filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)) >= 0 
+                ? 'success.main' 
+                : 'error.main' 
+            }}
+          >
+            {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+          </Typography>
+        </Box>
+      </Paper>
 
       <AddOperationModal open={modalOpen} onClose={() => setModalOpen(false)} accounts={accounts} categories={categories} editing={editing} />
       <TransferDialog 
@@ -427,7 +394,12 @@ const Operations: React.FC = () => {
         onClose={() => setTransferDialogOpen(false)}
         onTransfer={handleTransfer}
       />
-    </Paper>
+      <OperationDetailsDrawer
+        open={!!selectedOperation}
+        operation={selectedOperation}
+        onClose={() => setSelectedOperation(null)}
+      />
+    </Box>
   )
 }
 

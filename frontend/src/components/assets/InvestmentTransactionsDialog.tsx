@@ -18,7 +18,7 @@ import {
   Box
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import CalcTextField from '../common/CalcTextField'
+import CalcTextField from '../common/ui/CalcTextField'
 import type { InvestmentTransaction, InvestmentTransactionType } from '../../lib/api'
 import { useInvestmentTransactions } from '../../hooks/useInvestmentTransactions'
 

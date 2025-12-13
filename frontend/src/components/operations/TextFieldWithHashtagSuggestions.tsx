@@ -136,13 +136,15 @@ const TextFieldWithHashtagSuggestions: React.FC<TextFieldWithHashtagSuggestionsP
             top: '100%',
             left: 0,
             right: 0,
-            background: 'white',
-            border: '1px solid #ccc',
+            bgcolor: 'background.paper',
+            border: (theme) => `1px solid ${theme.palette.divider}`,
             borderRadius: '4px',
             maxHeight: '200px',
             overflowY: 'auto',
             zIndex: 1000,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 2px 8px rgba(0,0,0,0.5)' 
+              : '0 2px 8px rgba(0,0,0,0.15)',
             mt: 0.5,
           }}
         >
@@ -156,9 +158,17 @@ const TextFieldWithHashtagSuggestions: React.FC<TextFieldWithHashtagSuggestionsP
               sx={{
                 p: 1,
                 cursor: 'pointer',
-                backgroundColor: highlightedIndex === index ? '#e3f2fd' : 'transparent',
-                '&:hover': { backgroundColor: '#f0f0f0' },
-                borderBottom: index < filteredSuggestions.length - 1 ? '1px solid #eee' : 'none',
+                backgroundColor: (theme) => highlightedIndex === index 
+                  ? (theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.3)' : '#e3f2fd')
+                  : 'transparent',
+                '&:hover': { 
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : '#f0f0f0' 
+                },
+                borderBottom: (theme) => index < filteredSuggestions.length - 1 
+                  ? `1px solid ${theme.palette.divider}` 
+                  : 'none',
               }}
             >
               #{suggestion}

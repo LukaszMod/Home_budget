@@ -16,7 +16,9 @@ import {
 import { useNotifier } from '../common/Notifier'
 import StyledModal from '../common/StyledModal'
 import TextFieldWithHashtagSuggestions from '../operations/TextFieldWithHashtagSuggestions'
-import CalcTextField from '../common/CalcTextField'
+import CalcTextField from '../common/ui/CalcTextField'
+import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
+import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
 import { useHashtags } from '../../hooks/useHashtags'
 import {
   TextField,
@@ -35,6 +37,7 @@ import {
   Divider,
   Paper,
   CircularProgress,
+  Grid,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -351,322 +354,315 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
       }
     >
       <form onSubmit={handleSubmit((data) => handleSave(data, false))}>
-        <Stack spacing={2}>
-          {isPlanned && (
-            <Box sx={{ 
-              p: 2, 
-              bgcolor: '#fff3cd', 
-              border: '1px solid #ffc107', 
-              borderRadius: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}>
-              <Typography variant="body2" sx={{ color: '#856404', fontWeight: 500 }}>
-                ⏰ {t('operations.plannedWarning') ?? 'Operacja zaplanowana na przyszłą datę'}
-              </Typography>
-            </Box>
-          )}
-
-          <Controller
-            name="operationDate"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label={t('operations.fields.date') ?? 'Data'}
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
-            )}
-          />
-
-          <Controller
-            name="accountId"
-            control={control}
-            render={({ field }) => (
-              <FormControl fullWidth>
-                <InputLabel>
-                  {t('operations.fields.account') ?? 'Konto'}
-                </InputLabel>
-                <Select
-                  {...field}
-                  label={t('operations.fields.account') ?? 'Konto'}
-                >
-                  {accounts.filter(a => !a.is_closed).map((a) => (
-                    <MenuItem key={a.id} value={a.id}>
-                      {a.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-          />
-
-          <Controller
-            name="amount"
-            control={control}
-            render={({ field: { onChange, value, ...field } }) => (
-              <CalcTextField
-                {...field}
-                value={value || ''}
-                onChange={(val) => onChange(val)}
-                label={t('operations.fields.amount') ?? 'Kwota'}
-                fullWidth
-              />
-            )}
-          />
-
-          <Controller
-            name="description"
-            control={control}
-            render={({ field }) => (
-              <TextFieldWithHashtagSuggestions
-                value={field.value || ''}
-                onChange={(newValue) => field.onChange(newValue)}
-                allHashtags={hashtags.map(h => h.name)}
-                label={t('operations.fields.description') ?? 'Opis'}
-                placeholder={t('operations.fields.description') ?? 'Opis'}
-                fullWidth
-                multiline
-                rows={3}
-              />
-            )}
-          />
-
-          <Controller
-            name="categoryId"
-            control={control}
-            render={({ field }) => {
-              const selectedCategory = field.value ? subcategoriesForAutocomplete.find(c => c.id === field.value) : null
-              return (
-                <Autocomplete
-                  options={subcategoriesForAutocomplete}
-                  groupBy={(option) => option.group}
-                  getOptionLabel={(option) => option.name}
-                  value={selectedCategory || null}
-                  onChange={(_, newValue) => {
-                    field.onChange(newValue ? newValue.id : '')
-                  }}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label={t('operations.fields.category') ?? 'Kategoria'}
-                      disabled={isSplit}
-                    />
-                  )}
-                  noOptionsText={t('operations.filters.none') ?? 'Brak'}
-                  fullWidth
-                  disableClearable={false}
-                  disabled={isSplit}
-                />
-              )
-            }}
-          />
-
-          {/* Split Operations Toggle */}
-          <Controller
-            name="isSplit"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={field.value}
-                    onChange={(e) => {
-                        field.onChange(e.target.checked)
-                        if (e.target.checked) {
-                          // Clear category when enabling split
-                          setValue('categoryId', '')
-                        }
-                      }}
-                    />
-                  }
-                  label={t('operations.enableSplit') ?? 'Podziel operację'}
-                />
+        <Grid container spacing={2}>
+          {/* Left Column: Main Form */}
+          <Grid item xs={12} md={(isSplit || (editing && editing.is_split)) ? 6 : 12}>
+            <Stack spacing={2}>
+              {isPlanned && (
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: '#fff3cd', 
+                  border: '1px solid #ffc107', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <Typography variant="body2" sx={{ color: '#856404', fontWeight: 500 }}>
+                    ⏰ {t('operations.plannedWarning') ?? 'Operacja zaplanowana na przyszłą datę'}
+                  </Typography>
+                </Box>
               )}
-            />
 
-          {/* Split Items Section */}
-          {(isSplit || (editing && editing.is_split)) && (
-            <Paper elevation={0} sx={{ p: 2, bgcolor: '#f5f5f5', border: '1px solid #e0e0e0' }}>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                {t('operations.splitItems') ?? 'Pozycje podziału'}
-                {loadingChildren && <CircularProgress size={16} sx={{ ml: 1 }} />}
-              </Typography>
+              <Controller
+                name="operationDate"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('operations.fields.date') ?? 'Data'}
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    required
+                  />
+                )}
+              />
 
-              <Stack spacing={2}>
-                {splitItems.map((item, index) => (
-                  <Paper key={index} sx={{ p: 2, bgcolor: 'white' }}>
-                    <Stack spacing={2}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="caption" sx={{ minWidth: 30 }}>
-                          #{index + 1}
-                        </Typography>
-                        <Autocomplete
-                          sx={{ flex: 1 }}
-                          options={subcategoriesForAutocomplete}
-                          groupBy={(option) => option.group}
-                          getOptionLabel={(option) => option.name}
-                          value={subcategoriesForAutocomplete.find(c => c.id === item.category_id) || null}
-                          onChange={(_, newValue) => {
-                            handleUpdateSplitItem(index, 'category_id', newValue ? newValue.id : 0)
-                          }}
-                          isOptionEqualToValue={(option, value) => option.id === value.id}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label={t('operations.fields.category') ?? 'Kategoria'}
-                              size="small"
-                            />
-                          )}
-                          noOptionsText={t('operations.filters.none') ?? 'Brak'}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveSplitItem(index)}
-                          disabled={splitItems.length <= 1}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Stack>
-
-                      <CalcTextField
-                        value={String(item.amount || '')}
-                        onChange={(val) => handleUpdateSplitItem(index, 'amount', Number(val) || 0)}
-                        label={t('operations.fields.amount') ?? 'Kwota'}
-                        size="small"
-                        fullWidth
-                      />
-
-                      <TextField
-                        value={item.description || ''}
-                        onChange={(e) => handleUpdateSplitItem(index, 'description', e.target.value)}
-                        label={t('operations.fields.description') ?? 'Opis'}
-                        size="small"
-                        fullWidth
-                        multiline
-                        rows={2}
-                      />
-                    </Stack>
-                  </Paper>
-                ))}
-
-                <Button
-                  startIcon={<AddIcon />}
-                  onClick={handleAddSplitItem}
-                  variant="outlined"
-                  size="small"
-                >
-                  {t('operations.addItem') ?? 'Dodaj pozycję'}
-                </Button>
-
-                <Divider />
-
-                {/* Summary */}
-                <Stack spacing={1}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2">
-                      {t('operations.totalAmount') ?? 'Kwota całkowita'}:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {Number(totalAmount || 0).toFixed(2)}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2">
-                      {t('operations.allocated') ?? 'Przydzielono'}:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {allocatedAmount.toFixed(2)}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}>
-                      {t('operations.remaining') ?? 'Pozostało'}:
-                    </Typography>
-                    <Typography 
-                      variant="body2" 
-                      fontWeight={600}
-                      color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}
+              <Controller
+                name="accountId"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth required>
+                    <InputLabel>
+                      {t('operations.fields.account') ?? 'Konto'}
+                    </InputLabel>
+                    <Select
+                      {...field}
+                      label={t('operations.fields.account') ?? 'Konto'}
                     >
-                      {remainingAmount.toFixed(2)}
-                    </Typography>
-                  </Stack>
-                </Stack>
-              </Stack>
-            </Paper>
-          )}
+                      {accounts.filter(a => !a.is_closed).map((a) => (
+                        <MenuItem key={a.id} value={a.id}>
+                          {a.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              />
 
-          <Controller
-            name="operationType"
-            control={control}
-            render={({ field }) => {
-              const isExpense = field.value === 'expense'
-              return (
-                <FormControl fullWidth>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, backgroundColor: '#f9f9f9', borderRadius: 1 }}>
-                    <Stack>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
-                        {t('operations.fields.type') ?? 'Typ'}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#666' }}>
-                        {isExpense ? (t('operations.type.expense') ?? 'Wydatek') : (t('operations.type.income') ?? 'Przychód')}
-                      </Typography>
-                    </Stack>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={isExpense}
-                          onChange={(e) => field.onChange(e.target.checked ? 'expense' : 'income')}
+              <Controller
+                name="amount"
+                control={control}
+                render={({ field: { onChange, value, ...field } }) => (
+                  <CalcTextField
+                    {...field}
+                    value={value || ''}
+                    onChange={(val) => onChange(val)}
+                    label={t('operations.fields.amount') ?? 'Kwota'}
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextFieldWithHashtagSuggestions
+                    value={field.value || ''}
+                    onChange={(newValue) => field.onChange(newValue)}
+                    allHashtags={hashtags.map(h => h.name)}
+                    label={t('operations.fields.description') ?? 'Opis'}
+                    placeholder={t('operations.fields.description') ?? 'Opis'}
+                    fullWidth
+                    multiline
+                    rows={2}
+                  />
+                )}
+              />
+
+              <Controller
+                name="categoryId"
+                control={control}
+                render={({ field }) => (
+                  <CategoryAutocomplete
+                    categories={categories}
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    disabled={isSplit}
+                  />
+                )}
+              />
+
+              {/* Split Operations Toggle */}
+              <Controller
+                name="isSplit"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={field.value}
+                        onChange={(e) => {
+                            field.onChange(e.target.checked)
+                            if (e.target.checked) {
+                              // Clear category when enabling split
+                              setValue('categoryId', '')
+                            }
+                          }}
                         />
                       }
-                      label=""
+                      label={t('operations.enableSplit') ?? 'Podziel operację'}
                     />
-                  </Box>
-                </FormControl>
-              )
-            }}
-          />
+                  )}
+                />
 
-          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-            <Button type="submit" variant="contained">
-              {t('common.save') ?? 'Zapisz'}
-            </Button>
-            {editing && isSplit && (
-              <Button
-                variant="outlined"
-                color="warning"
-                onClick={async () => {
-                  if (confirm(t('operations.confirmUnsplit') ?? 'Czy na pewno chcesz cofnąć podział? Dzieci zostaną usunięte.')) {
-                    try {
-                      await unsplitMut.mutateAsync(editing.id)
-                      onClose()
-                    } catch (e: any) {
-                      notifier.notify(String(e), 'error')
-                    }
-                  }
+              <Controller
+                name="operationType"
+                control={control}
+                render={({ field }) => (
+                  <StyledIncomeSwitch
+                    value={field.value as 'income' | 'expense' | ''}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            </Stack>
+          </Grid>
+
+          {/* Right Column: Split Items (only when enabled) */}
+          {(isSplit || (editing && editing.is_split)) && (
+            <Grid item xs={12} md={6}>
+              <Paper 
+                elevation={0} 
+                sx={{ 
+                  p: 2, 
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+                  border: (theme) => `1px solid ${theme.palette.divider}`,
+                  height: '100%',
+                  maxHeight: '600px',
+                  overflow: 'auto'
                 }}
               >
-                {t('operations.unsplit') ?? 'Cofnij podział'}
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                  {t('operations.splitItems') ?? 'Pozycje podziału'}
+                  {loadingChildren && <CircularProgress size={16} sx={{ ml: 1 }} />}
+                </Typography>
+
+                <Stack spacing={2}>
+                  {splitItems.map((item, index) => (
+                    <Paper 
+                      key={index} 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: (theme) => theme.palette.background.paper,
+                        border: (theme) => `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      <Stack spacing={2}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography variant="caption" sx={{ minWidth: 30 }}>
+                            #{index + 1}
+                          </Typography>
+                          <Autocomplete
+                            sx={{ flex: 1 }}
+                            options={subcategoriesForAutocomplete}
+                            groupBy={(option) => option.group}
+                            getOptionLabel={(option) => option.name}
+                            value={subcategoriesForAutocomplete.find(c => c.id === item.category_id) || null}
+                            onChange={(_, newValue) => {
+                              handleUpdateSplitItem(index, 'category_id', newValue ? newValue.id : 0)
+                            }}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label={t('operations.fields.category') ?? 'Kategoria'}
+                                size="small"
+                                required
+                              />
+                            )}
+                            noOptionsText={t('operations.filters.none') ?? 'Brak'}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveSplitItem(index)}
+                            disabled={splitItems.length <= 1}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Stack>
+
+                        <CalcTextField
+                          value={String(item.amount || '')}
+                          onChange={(val) => handleUpdateSplitItem(index, 'amount', Number(val) || 0)}
+                          label={t('operations.fields.amount') ?? 'Kwota'}
+                          size="small"
+                          fullWidth
+                          required
+                        />
+
+                        <TextField
+                          value={item.description || ''}
+                          onChange={(e) => handleUpdateSplitItem(index, 'description', e.target.value)}
+                          label={t('operations.fields.description') ?? 'Opis'}
+                          size="small"
+                          fullWidth
+                          multiline
+                          rows={2}
+                        />
+                      </Stack>
+                    </Paper>
+                  ))}
+
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={handleAddSplitItem}
+                    variant="outlined"
+                    size="small"
+                  >
+                    {t('operations.addItem') ?? 'Dodaj pozycję'}
+                  </Button>
+
+                  <Divider />
+
+                  {/* Summary */}
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2">
+                        {t('operations.totalAmount') ?? 'Kwota całkowita'}:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {Number(totalAmount || 0).toFixed(2)}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2">
+                        {t('operations.allocated') ?? 'Przydzielono'}:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {allocatedAmount.toFixed(2)}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}>
+                        {t('operations.remaining') ?? 'Pozostało'}:
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        fontWeight={600}
+                        color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}
+                      >
+                        {remainingAmount.toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Stack>
+              </Paper>
+            </Grid>
+          )}
+
+          {/* Buttons Section */}
+          <Grid item xs={12}>
+            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+              <Button type="submit" variant="contained">
+                {t('common.save') ?? 'Zapisz'}
               </Button>
-            )}
-            {!editing && (
-              <Button
-                variant="outlined"
-                onClick={handleSubmit((data) => handleSave(data, true))}
-              >
-                {t('operations.addAnother') ?? 'Dodaj kolejną'}
+              {editing && isSplit && (
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  onClick={async () => {
+                    if (confirm(t('operations.confirmUnsplit') ?? 'Czy na pewno chcesz cofnąć podział? Dzieci zostaną usunięte.')) {
+                      try {
+                        await unsplitMut.mutateAsync(editing.id)
+                        onClose()
+                      } catch (e: any) {
+                        notifier.notify(String(e), 'error')
+                      }
+                    }
+                  }}
+                >
+                  {t('operations.unsplit') ?? 'Cofnij podział'}
+                </Button>
+              )}
+              {!editing && (
+                <Button
+                  variant="outlined"
+                  onClick={handleSubmit((data) => handleSave(data, true))}
+                >
+                  {t('operations.addAnother') ?? 'Dodaj kolejną'}
+                </Button>
+              )}
+              <Button onClick={onClose}>
+                {t('common.cancel') ?? 'Anuluj'}
               </Button>
-            )}
-            <Button onClick={onClose}>
-              {t('common.cancel') ?? 'Anuluj'}
-            </Button>
-          </Stack>
-        </Stack>
+            </Stack>
+          </Grid>
+        </Grid>
       </form>
     </StyledModal>
   )

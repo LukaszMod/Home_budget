@@ -10,12 +10,12 @@ import {
   Box,
   Typography,
   Alert,
-  MenuItem,
 } from '@mui/material'
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Operation, SplitItem, Category } from '../../lib/api'
-import CalcTextField from '../common/CalcTextField'
+import CalcTextField from '../common/ui/CalcTextField'
+import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
 
 type SplitOperationDialogProps = {
   open: boolean
@@ -143,25 +143,14 @@ export default function SplitOperationDialog({
               alignItems: 'flex-start',
             }}
           >
-            <TextField
-              select
-              label={t('operations.category')}
-              value={item.category_id}
-              onChange={(e) => handleItemChange(item.id, 'category_id', parseInt(e.target.value))}
-              size="small"
-              sx={{ minWidth: 200 }}
-              required
-            >
-              {categories.map((cat) => {
-                const parentCat = cat.parent_id ? categories.find(c => c.id === cat.parent_id) : null
-                const label = parentCat ? `${parentCat.name} → ${cat.name}` : cat.name
-                return (
-                  <MenuItem key={cat.id} value={cat.id}>
-                    {label}
-                  </MenuItem>
-                )
-              })}
-            </TextField>
+            <Box sx={{ minWidth: 200 }}>
+              <CategoryAutocomplete
+                categories={categories}
+                value={item.category_id}
+                onChange={(val) => handleItemChange(item.id, 'category_id', val || '')}
+                required
+              />
+            </Box>
 
             <CalcTextField
               label={t('operations.amount')}

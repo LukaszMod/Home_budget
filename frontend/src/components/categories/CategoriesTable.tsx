@@ -61,7 +61,9 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
     <TableContainer sx={{ mt: 2 }}>
       <Table>
         <TableHead>
-          <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+          <TableRow sx={{ 
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f5f5f5' 
+          }}>
             <TableCell width="5%"></TableCell>
             <TableCell width="40%"><strong>{t('categories.table.name')}</strong></TableCell>
             <TableCell width="20%"><strong>{t('categories.table.type')}</strong></TableCell>
@@ -73,7 +75,12 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
           {tree.map(({ category: main, children }) => (
             <React.Fragment key={main.id}>
               {/* Main category row */}
-              <TableRow sx={{ backgroundColor: '#fafafa', '&:hover': { backgroundColor: '#f0f0f0' } }}>
+              <TableRow sx={{ 
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : '#fafafa',
+                '&:hover': { 
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#f0f0f0' 
+                } 
+              }}>
                 <TableCell>
                   {children.length > 0 && (
                     <IconButton
@@ -112,7 +119,11 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 
               {/* Subcategories - collapsible */}
               {children.length > 0 && expanded[main.id] && children.map(child => (
-                <TableRow key={child.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                <TableRow key={child.id} sx={{ 
+                  '&:hover': { 
+                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f9f9f9' 
+                  } 
+                }}>
                   <TableCell></TableCell>
                   <TableCell sx={{ pl: 5 }}>
                     <span style={{ marginLeft: 12 }}>↳ {child.name}</span>

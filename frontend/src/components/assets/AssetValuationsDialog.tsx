@@ -17,7 +17,7 @@ import {
   Box
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import CalcTextField from '../common/CalcTextField'
+import CalcTextField from '../common/ui/CalcTextField'
 import { useAssetValuations } from '../../hooks/useAssetValuations'
 
 interface AssetValuationsDialogProps {

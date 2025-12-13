@@ -43,10 +43,11 @@ interface TabPanelProps {
   children?: React.ReactNode
   index: number
   value: number
+  sx?: any
 }
 
 function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props
+  const { children, value, index, sx, ...other } = props
   return (
     <div
       role="tabpanel"
@@ -54,8 +55,9 @@ function TabPanel(props: TabPanelProps) {
       id={`asset-tabpanel-${index}`}
       aria-labelledby={`asset-tab-${index}`}
       {...other}
+      style={{ display: value === index ? 'flex' : 'none', flexGrow: 1, overflow: 'auto' }}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ width: '100%', ...sx }}>{children}</Box>}
     </div>
   )
 }
@@ -154,7 +156,7 @@ const Assets: React.FC = () => {
 
   const getUserNick = (userId: number): string => {
     const user = users.find(u => u.id === userId)
-    return user ? `@${user.nick}` : `#${userId}`
+    return user ? user.nick : `#${userId}`
   }
 
   const getCurrentValue = (asset: Asset): number | null => {
@@ -240,41 +242,43 @@ const Assets: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={selectedAssetIds.size > 0 ? 9 : 12}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-            <Typography variant="h4">{t('assets.title') ?? 'Majątek'}</Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setAddModalOpen(true)}
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Paper sx={{ p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h4">{t('assets.title') ?? 'Majątek'}</Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setAddModalOpen(true)}
+          >
+            {t('assets.actions.addAsset') ?? 'Dodaj aktywo'}
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden' }}>
+        <Grid item xs={12} md={selectedAssetIds.size > 0 ? 9 : 12} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Tabs
+              value={selectedTab}
+              onChange={(_, newValue) => setSelectedTab(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
-              {t('assets.actions.addAsset') ?? 'Dodaj aktywo'}
-            </Button>
-          </Stack>
+              {categories.map((category, index) => (
+                <Tab
+                  key={category}
+                  label={categoryLabels[category]}
+                  id={`asset-tab-${index}`}
+                  aria-controls={`asset-tabpanel-${index}`}
+                />
+              ))}
+            </Tabs>
 
-      <Paper sx={{ width: '100%' }}>
-        <Tabs
-          value={selectedTab}
-          onChange={(_, newValue) => setSelectedTab(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          {categories.map((category, index) => (
-            <Tab
-              key={category}
-              label={categoryLabels[category]}
-              id={`asset-tab-${index}`}
-              aria-controls={`asset-tabpanel-${index}`}
-            />
-          ))}
-        </Tabs>
-
-        {categories.map((category, index) => (
-          <TabPanel key={category} value={selectedTab} index={index}>
-            <Table>
+            {categories.map((category, index) => (
+              <TabPanel key={category} value={selectedTab} index={index} sx={{ flexGrow: 1, overflow: 'auto' }}>
+                <Table stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox"></TableCell>
@@ -435,9 +439,9 @@ const Assets: React.FC = () => {
                 )}
               </TableBody>
             </Table>
-          </TabPanel>
-        ))}
-      </Paper>
+              </TabPanel>
+            ))}
+          </Paper>
         </Grid>
 
         {/* Summary Panel */}

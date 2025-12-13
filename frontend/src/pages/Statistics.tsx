@@ -280,6 +280,10 @@ const Statistics: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h4">{t('statistics.title') ?? 'Statystyki'}</Typography>
+      </Paper>
+
       {/* Górny panel - sumaryczne wartości na wszystkich kontach */}
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>

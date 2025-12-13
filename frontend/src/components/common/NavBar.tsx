@@ -1,29 +1,18 @@
 import React from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
 import useStore from '../../store'
-import { Switch, Box, Select, MenuItem } from '@mui/material'
+import { Box, Select, MenuItem, IconButton, Tooltip } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { Brightness4, Brightness7 } from '@mui/icons-material'
 
 const NavBar: React.FC = () => {
   const { t, i18n } = useTranslation()
-  const location = useLocation()
-  const navigate = useNavigate()
   const theme = useStore((s) => s.theme)
   const toggleTheme = useStore((s) => s.toggleTheme)
   const lang = useStore((s) => s.lang)
   const setLang = useStore((s) => s.setLang)
-
-  // Derive current tab from URL path
-  const currentTab = location.pathname.slice(1) || 'budget'
-
-  const handleChange = (_: React.SyntheticEvent, newValue: string) => {
-    navigate(`/${newValue}`)
-  }
 
   const handleLangChange = (value: string) => {
     setLang(value)
@@ -31,31 +20,35 @@ const NavBar: React.FC = () => {
   }
 
   return (
-    <AppBar position="static">
+    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
       <Toolbar>
-        <Typography variant="h6" sx={{ mr: 2 }}>
-          {t('Home Budget')}
+        <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+          💰 {t('app.title') || 'Home Budget'}
         </Typography>
-        <Tabs value={currentTab} onChange={handleChange} textColor="inherit" indicatorColor="secondary">
-          <Tab label={t('Budget')} value="budget" />
-          <Tab label={t('Users')} value="users" />
-          <Tab label={t('Assets')} value="assets" />
-          <Tab label={t('Operations')} value="operations" />
-          <Tab label={t('Categories')} value="categories" />
-          <Tab label={t('Goals')} value="goals" />
-          <Tab label={t('Hashtags')} value="hashtags" />
-          <Tab label={t('RecurringOperations')} value="recurring" />
-          <Tab label={t('Statistics')} value="statistics" />
-        </Tabs>
 
-        <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title={theme === 'dark' ? t('app.lightMode') || 'Light Mode' : t('app.darkMode') || 'Dark Mode'}>
+            <IconButton onClick={toggleTheme} color="inherit" size="small">
+              {theme === 'dark' ? <Brightness7 /> : <Brightness4 />}
+            </IconButton>
+          </Tooltip>
 
-        <Switch checked={theme === 'dark'} onChange={toggleTheme} color="default" />
-
-        <Select value={lang} onChange={(e) => handleLangChange(e.target.value as string)} size="small" sx={{ ml: 1, color: 'inherit' }}>
-          <MenuItem value="pl">PL</MenuItem>
-          <MenuItem value="en">EN</MenuItem>
-        </Select>
+          <Select
+            value={lang}
+            onChange={(e) => handleLangChange(e.target.value as string)}
+            size="small"
+            sx={{
+              ml: 1,
+              color: 'inherit',
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.7)' },
+              '& .MuiSvgIcon-root': { color: 'inherit' },
+            }}
+          >
+            <MenuItem value="pl">🇵🇱 PL</MenuItem>
+            <MenuItem value="en">🇬🇧 EN</MenuItem>
+          </Select>
+        </Box>
       </Toolbar>
     </AppBar>
   )

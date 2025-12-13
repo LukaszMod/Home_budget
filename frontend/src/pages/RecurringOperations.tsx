@@ -21,18 +21,18 @@ import {
   MenuItem,
   Box,
   Chip,
-  FormControlLabel,
-  Switch,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import StyledIncomeSwitch from '../components/common/ui/StyledIncomeSwitch'
+import CategoryAutocomplete from '../components/common/ui/CategoryAutocomplete'
 import { useTranslation } from 'react-i18next'
 import { useRecurringOperations, type RecurringOperation } from '../hooks/useRecurringOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
 import { useNotifier } from '../components/common/Notifier'
-import CalcTextField from '../components/common/CalcTextField'
+import CalcTextField from '../components/common/ui/CalcTextField'
 
 const RecurringOperations: React.FC = () => {
   const { t } = useTranslation()
@@ -167,16 +167,19 @@ const RecurringOperations: React.FC = () => {
   ]
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">{t('recurringOperations.title') ?? 'Recurring Operations'}</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenNew}>
-          {t('recurringOperations.add') ?? 'Add Recurring'}
-        </Button>
-      </Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h4">{t('recurringOperations.title') ?? 'Recurring Operations'}</Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenNew}>
+            {t('recurringOperations.add') ?? 'Add Recurring'}
+          </Button>
+        </Box>
+      </Paper>
 
-      {recurringOps.length > 0 ? (
-        <Table>
+      <Paper sx={{ flexGrow: 1, overflow: 'auto' }}>
+        {recurringOps.length > 0 ? (
+          <Table stickyHeader>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
               <TableCell>{t('recurringOperations.table.description') ?? 'Description'}</TableCell>
@@ -227,11 +230,12 @@ const RecurringOperations: React.FC = () => {
             ))}
           </TableBody>
         </Table>
-      ) : (
-        <Typography variant="body2" sx={{ color: '#999', p: 2, textAlign: 'center' }}>
-          {t('recurringOperations.empty') ?? 'No recurring operations yet'}
-        </Typography>
-      )}
+        ) : (
+          <Typography variant="body2" sx={{ color: '#999', p: 2, textAlign: 'center' }}>
+            {t('recurringOperations.empty') ?? 'No recurring operations yet'}
+          </Typography>
+        )}
+      </Paper>
 
       {/* Modal */}
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
@@ -251,7 +255,7 @@ const RecurringOperations: React.FC = () => {
               rows={2}
             />
 
-            <FormControl fullWidth>
+            <FormControl fullWidth required>
               <InputLabel>{t('recurringOperations.fields.account') ?? 'Account'}</InputLabel>
               <Select
                 value={accountId}
@@ -267,54 +271,27 @@ const RecurringOperations: React.FC = () => {
             <CalcTextField
               label={t('recurringOperations.fields.amount') ?? 'Amount'}
               value={amount}
-              onChange={(val) => setAmount(String(val))}
+              onChange={(val: number) => setAmount(String(val))}
               fullWidth
+              required
             />
 
-            <FormControl fullWidth>
-              <InputLabel>{t('recurringOperations.fields.category') ?? 'Category'}</InputLabel>
-              <Select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value as number | '')}
-                label={t('recurringOperations.fields.category') ?? 'Category'}
-              >
-                <MenuItem value="">{t('operations.filters.none') ?? 'None'}</MenuItem>
-                {categories
-                  .filter(c => c.parent_id !== null)
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {categories.find(cat => cat.id === c.parent_id)?.name} → {c.name}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
+            <CategoryAutocomplete
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+              label={t('recurringOperations.fields.category') ?? 'Category'}
+              required
+            />
 
             {!editing && (
               <>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={operationType === 'income'}
-                      onChange={(e) => setOperationType(e.target.checked ? 'income' : 'expense')}
-                    />
-                  }
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2">
-                        {operationType === 'income' ? t('operations.type.income') : t('operations.type.expense')}
-                      </Typography>
-                      <Chip
-                        label={operationType === 'income' ? '✅ Income' : '💔 Expense'}
-                        color={operationType === 'income' ? 'success' : 'error'}
-                        size="small"
-                      />
-                    </Box>
-                  }
-                  sx={{ mb: 1 }}
+                <StyledIncomeSwitch
+                  value={operationType}
+                  onChange={setOperationType}
                 />
 
-                <FormControl fullWidth>
+                <FormControl fullWidth required>
                   <InputLabel>{t('recurringOperations.fields.frequency') ?? 'Frequency'}</InputLabel>
                   <Select
                     value={frequency}
@@ -334,6 +311,7 @@ const RecurringOperations: React.FC = () => {
                   onChange={(e) => setStartDate(e.target.value)}
                   fullWidth
                   InputLabelProps={{ shrink: true }}
+                  required
                 />
               </>
             )}
@@ -366,7 +344,7 @@ const RecurringOperations: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+    </Box>
   )
 }
 
