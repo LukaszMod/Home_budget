@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './style.css'
-import { NotifierProvider } from './components/Notifier'
+import { NotifierProvider } from './components/common/Notifier'
 
 const queryClient = new QueryClient()
 

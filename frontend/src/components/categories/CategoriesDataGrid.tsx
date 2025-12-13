@@ -7,7 +7,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
-import type { Category } from '../lib/api'
+import type { Category } from '../../lib/api'
 
 interface CategoriesDataGridProps {
   categories: Category[]

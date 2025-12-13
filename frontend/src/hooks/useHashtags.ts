@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getHashtags, createHashtag, deleteHashtag, type Hashtag } from '../lib/api'
-import { useNotifier } from '../components/Notifier'
+import { useNotifier } from '../components/common/Notifier'
 
 export const useHashtags = () => {
   const qc = useQueryClient()

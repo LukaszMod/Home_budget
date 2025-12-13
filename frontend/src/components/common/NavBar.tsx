@@ -5,7 +5,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
-import useStore from '../store'
+import useStore from '../../store'
 import { Switch, Box, Select, MenuItem } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 

@@ -18,9 +18,9 @@ import {
   Box
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import CalcTextField from './CalcTextField'
-import type { InvestmentTransaction, InvestmentTransactionType } from '../lib/api'
-import { useInvestmentTransactions } from '../hooks/useInvestmentTransactions'
+import CalcTextField from '../common/CalcTextField'
+import type { InvestmentTransaction, InvestmentTransactionType } from '../../lib/api'
+import { useInvestmentTransactions } from '../../hooks/useInvestmentTransactions'
 
 interface InvestmentTransactionsDialogProps {
   open: boolean

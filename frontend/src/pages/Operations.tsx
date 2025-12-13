@@ -6,9 +6,9 @@ import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
 import { useHashtags } from '../hooks/useHashtags'
 import { useTransfer } from '../hooks/useTransfer'
-import AddOperationModal from '../components/AddOperationModal'
-import TransferDialog from '../components/TransferDialog'
-import type { TransferData } from '../components/TransferDialog'
+import AddOperationModal from '../components/operations/AddOperationModal'
+import TransferDialog from '../components/operations/TransferDialog'
+import type { TransferData } from '../components/operations/TransferDialog'
 import { Typography, Paper, Box, IconButton, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
@@ -33,7 +33,7 @@ function computeStartDate(preset: string): Date | null {
 
 const Operations: React.FC = () => {
   const { t } = useTranslation()
-  const { operationsQuery, deleteMutation, splitMutation, unsplitMutation } = useOperations()
+  const { operationsQuery, deleteMutation } = useOperations()
   const { accountsQuery } = useAccountsData()
   const { categoriesQuery } = useCategories()
   const { hashtags } = useHashtags()

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Paper, Typography, Box, FormControl, InputLabel, Select, MenuItem, Stack } from '@mui/material'
 
-import type { Operation } from '../lib/api'
+import type { Operation } from '../../lib/api'
 
 type RangeKey = 'month' | 'quarter' | 'year'
 

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAccounts, createAccount, updateAccount, deleteAccount, toggleAccountClosed, getUsers, createUser, deleteUser, getOperations } from '../lib/api'
 import type { Account as APIAccount, AccountPayload, User as APIUser, Operation as APIOperation } from '../lib/api'
-import { useNotifier } from '../components/Notifier'
+import { useNotifier } from '../components/common/Notifier'
 
 export const useAccountsData = () => {
   const qc = useQueryClient()

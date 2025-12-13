@@ -1,7 +1,7 @@
 import React from 'react'
 import { CssBaseline, Container, ThemeProvider } from '@mui/material'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import NavBar from './components/NavBar'
+import NavBar from './components/common/NavBar'
 import Budget from './pages/Budget'
 import Users from './pages/Users'
 import Assets from './pages/Assets'

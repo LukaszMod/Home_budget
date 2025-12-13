@@ -21,10 +21,10 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import LockIcon from '@mui/icons-material/Lock'
 import LockOpenIcon from '@mui/icons-material/LockOpen'
-import StyledModal from '../components/StyledModal'
-import AddAccountModal from '../components/AddAccountModal'
-import UsersPanel from '../components/UsersPanel'
-import AccountsSummary from '../components/AccountsSummary'
+import StyledModal from '../components/common/StyledModal'
+import AddAccountModal from '../components/users/AddAccountModal'
+import UsersPanel from '../components/users/UsersPanel'
+import AccountsSummary from '../components/users/AccountsSummary'
 
 type Account = APIAccount
 

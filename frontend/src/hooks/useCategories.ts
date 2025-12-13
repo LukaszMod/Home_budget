@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCategories, createCategory, updateCategory, deleteCategory, getOperations } from '../lib/api'
 import type { Category as APICategory, CreateCategoryPayload, Operation as APIOperation } from '../lib/api'
-import { useNotifier } from '../components/Notifier'
+import { useNotifier } from '../components/common/Notifier'
 
 export const useCategories = () => {
   const qc = useQueryClient()

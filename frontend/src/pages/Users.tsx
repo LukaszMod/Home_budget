@@ -15,7 +15,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import { useAccountsData } from '../hooks/useAccountsData'
-import StyledModal from '../components/StyledModal'
+import StyledModal from '../components/common/StyledModal'
 import { TextField } from '@mui/material'
 
 const Users: React.FC = () => {

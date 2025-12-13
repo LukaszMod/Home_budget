@@ -10,11 +10,11 @@ import {
   Typography,
   Box
 } from '@mui/material'
-import StyledModal from './StyledModal'
-import CalcTextField from './CalcTextField'
-import type { Asset, AssetType, CreateAssetPayload } from '../lib/api'
-import { useAssetTypes } from '../hooks/useAssetTypes'
-import { useAccountsData } from '../hooks/useAccountsData'
+import StyledModal from '../common/StyledModal'
+import CalcTextField from '../common/CalcTextField'
+import type { Asset, AssetType, CreateAssetPayload } from '../../lib/api'
+import { useAssetTypes } from '../../hooks/useAssetTypes'
+import { useAccountsData } from '../../hooks/useAccountsData'
 
 interface AddAssetModalProps {
   open: boolean

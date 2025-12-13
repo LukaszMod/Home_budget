@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getOperations, createOperation, deleteOperation, splitOperation, unsplitOperation } from '../lib/api'
 import type { Operation, CreateOperationPayload, SplitOperationRequest } from '../lib/api'
-import { useNotifier } from '../components/Notifier'
+import { useNotifier } from '../components/common/Notifier'
 
 export const useOperations = () => {
   const qc = useQueryClient()

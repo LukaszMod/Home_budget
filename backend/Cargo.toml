@@ -19,3 +19,7 @@ uuid = { version = "1", features = ["serde", "v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 hyper = "0.14" 
 anyhow = "1.0.100"
+
+[dev-dependencies]
+tokio-test = "0.4"
+rust_decimal = "1.33"

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createTransfer, type TransferRequest, type TransferResponse } from '../lib/api'
-import { useNotifier } from '../components/Notifier'
+import { useNotifier } from '../components/common/Notifier'
 import { useTranslation } from 'react-i18next'
 
 export function useTransfer() {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Box, IconButton } from '@mui/material'
-import CalcTextField from './CalcTextField'
+import CalcTextField from '../common/CalcTextField'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 

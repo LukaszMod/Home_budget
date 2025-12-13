@@ -2,7 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Goal as APIGoal, CreateGoalPayload } from '../lib/api'
 import { useGoals } from '../hooks/useGoals'
-import CalcTextField from '../components/CalcTextField'
+import CalcTextField from '../components/common/CalcTextField'
 import {
   Typography,
   Paper,

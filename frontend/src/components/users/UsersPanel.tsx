@@ -2,7 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Paper, Typography, Box, Button, IconButton } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import type { User as APIUser, Account as APIAccount } from '../lib/api'
+import type { User as APIUser, Account as APIAccount } from '../../lib/api'
 
 interface UsersPanelProps {
   users: APIUser[]

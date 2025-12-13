@@ -1,8 +1,8 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, TextField, Stack } from '@mui/material'
-import StyledModal from './StyledModal'
-import type { Account } from '../lib/api'
+import StyledModal from '../common/StyledModal'
+import type { Account } from '../../lib/api'
 
 interface AddAccountModalProps {
   open: boolean

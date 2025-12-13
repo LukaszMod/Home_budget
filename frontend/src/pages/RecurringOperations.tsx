@@ -31,8 +31,8 @@ import { useTranslation } from 'react-i18next'
 import { useRecurringOperations, type RecurringOperation } from '../hooks/useRecurringOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useCategories } from '../hooks/useCategories'
-import { useNotifier } from '../components/Notifier'
-import CalcTextField from '../components/CalcTextField'
+import { useNotifier } from '../components/common/Notifier'
+import CalcTextField from '../components/common/CalcTextField'
 
 const RecurringOperations: React.FC = () => {
   const { t } = useTranslation()

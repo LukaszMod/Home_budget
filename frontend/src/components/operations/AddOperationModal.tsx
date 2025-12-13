@@ -12,12 +12,12 @@ import {
   type Account,
   type Category,
   type SplitItem,
-} from '../lib/api'
-import { useNotifier } from './Notifier'
-import StyledModal from './StyledModal'
-import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions'
-import CalcTextField from './CalcTextField'
-import { useHashtags } from '../hooks/useHashtags'
+} from '../../lib/api'
+import { useNotifier } from '../common/Notifier'
+import StyledModal from '../common/StyledModal'
+import TextFieldWithHashtagSuggestions from '../operations/TextFieldWithHashtagSuggestions'
+import CalcTextField from '../common/CalcTextField'
+import { useHashtags } from '../../hooks/useHashtags'
 import {
   TextField,
   Stack,

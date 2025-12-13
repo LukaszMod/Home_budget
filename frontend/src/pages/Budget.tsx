@@ -8,10 +8,10 @@ import SaveIcon from '@mui/icons-material/Save'
 import { useBudgetData } from '../hooks/useBudgetData'
 import { getBudgetData } from '../lib/api'
 import type { Category, BudgetWithCategory } from '../lib/api'
-import BudgetStatisticsBar from '../components/BudgetStatisticsBar'
-import BudgetTable from '../components/BudgetTable'
-import type { BudgetRow } from '../components/BudgetTable'
-import BudgetCalendar from '../components/BudgetCalendar'
+import BudgetStatisticsBar from '../components/budget/BudgetStatisticsBar'
+import BudgetTable from '../components/budget/BudgetTable'
+import type { BudgetRow } from '../components/budget/BudgetTable'
+import BudgetCalendar from '../components/budget/BudgetCalendar'
 
 const Budget: React.FC = () => {
   const { t } = useTranslation()

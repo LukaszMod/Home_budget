@@ -13,13 +13,13 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material'
-import StyledModal from './StyledModal'
-import CalcTextField from './CalcTextField'
-import { useAssets } from '../hooks/useAssets'
-import { useAssetTypes } from '../hooks/useAssetTypes'
-import { useAccountsData } from '../hooks/useAccountsData'
+import StyledModal from '../common/StyledModal'
+import CalcTextField from '../common/CalcTextField'
+import { useAssets } from '../../hooks/useAssets'
+import { useAssetTypes } from '../../hooks/useAssetTypes'
+import { useAccountsData } from '../../hooks/useAccountsData'
 import { useTranslation } from 'react-i18next'
-import type { AssetType } from '../lib/api'
+import type { AssetType } from '../../lib/api'
 
 interface TransferDialogProps {
   open: boolean

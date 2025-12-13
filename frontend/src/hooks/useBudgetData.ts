@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCategories, getBudgetData, updateBudget, createBudget } from '../lib/api'
 import type { Category, Budget as BudgetType, CreateBudgetPayload, BudgetDataResponse } from '../lib/api'
-import { useNotifier } from '../components/Notifier'
+import { useNotifier } from '../components/common/Notifier'
 
 export const useBudgetData = (month: string) => {
   const qc = useQueryClient()
