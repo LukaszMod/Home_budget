@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getOperations, createOperation, deleteOperation } from '../lib/api'
-import type { Operation, CreateOperationPayload } from '../lib/api'
+import { getOperations, createOperation, deleteOperation, splitOperation, unsplitOperation } from '../lib/api'
+import type { Operation, CreateOperationPayload, SplitOperationRequest } from '../lib/api'
 import { useNotifier } from '../components/Notifier'
 
 export const useOperations = () => {
@@ -29,9 +29,27 @@ export const useOperations = () => {
     },
   })
 
+  const splitMutation = useMutation<Operation[], Error, { id: number; request: SplitOperationRequest }>({
+    mutationFn: ({ id, request }) => splitOperation(id, request),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['operations'] })
+      notifier.notify('Operation split', 'success')
+    },
+  })
+
+  const unsplitMutation = useMutation<void, Error, number>({
+    mutationFn: (id: number) => unsplitOperation(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['operations'] })
+      notifier.notify('Operation unsplit', 'success')
+    },
+  })
+
   return {
     operationsQuery,
     createMutation,
     deleteMutation,
+    splitMutation,
+    unsplitMutation,
   }
 }

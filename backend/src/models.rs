@@ -147,6 +147,8 @@ pub struct Operation {
     pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: NaiveDate,
+    pub parent_operation_id: Option<i32>,
+    pub is_split: bool,
 }
 
 #[derive(Serialize)]
@@ -159,6 +161,8 @@ pub struct OperationWithHashtags {
     pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: NaiveDate,
+    pub parent_operation_id: Option<i32>,
+    pub is_split: bool,
     pub hashtags: Vec<Hashtag>,
 }
 
@@ -176,6 +180,8 @@ pub struct OperationWithDetails {
     pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: NaiveDate,
+    pub parent_operation_id: Option<i32>,
+    pub is_split: bool,
     pub hashtags: Vec<Hashtag>,
 }
 
@@ -189,6 +195,20 @@ pub struct CreateOperation {
     pub amount: BigDecimal,
     pub operation_type: String,
     pub operation_date: String,
+    pub split_items: Option<Vec<SplitItem>>,
+}
+
+// Split operations
+#[derive(Deserialize)]
+pub struct SplitOperationRequest {
+    pub items: Vec<SplitItem>,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct SplitItem {
+    pub category_id: i32,
+    pub amount: BigDecimal,
+    pub description: Option<String>,
 }
 
 #[derive(Serialize, FromRow)]

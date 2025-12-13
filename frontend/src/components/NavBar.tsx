@@ -1,4 +1,5 @@
 import React from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
@@ -10,15 +11,18 @@ import { useTranslation } from 'react-i18next'
 
 const NavBar: React.FC = () => {
   const { t, i18n } = useTranslation()
-  const tab = useStore((s) => s.tab)
-  const setTab = useStore((s) => s.setTab)
+  const location = useLocation()
+  const navigate = useNavigate()
   const theme = useStore((s) => s.theme)
   const toggleTheme = useStore((s) => s.toggleTheme)
   const lang = useStore((s) => s.lang)
   const setLang = useStore((s) => s.setLang)
 
+  // Derive current tab from URL path
+  const currentTab = location.pathname.slice(1) || 'budget'
+
   const handleChange = (_: React.SyntheticEvent, newValue: string) => {
-    setTab(newValue as any)
+    navigate(`/${newValue}`)
   }
 
   const handleLangChange = (value: string) => {
@@ -32,7 +36,7 @@ const NavBar: React.FC = () => {
         <Typography variant="h6" sx={{ mr: 2 }}>
           {t('Home Budget')}
         </Typography>
-        <Tabs value={tab} onChange={handleChange} textColor="inherit" indicatorColor="secondary">
+        <Tabs value={currentTab} onChange={handleChange} textColor="inherit" indicatorColor="secondary">
           <Tab label={t('Budget')} value="budget" />
           <Tab label={t('Users')} value="users" />
           <Tab label={t('Assets')} value="assets" />

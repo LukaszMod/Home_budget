@@ -43,7 +43,7 @@ pub async fn transfer_operation(
             let from_op = sqlx::query_as::<_, Operation>(
                 "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
                  VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
-                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
             )
             .bind(None::<i32>)
             .bind(payload.description.as_ref().unwrap_or(&format!("Przelew do aktywa #{}", to_asset_id)))
@@ -61,7 +61,7 @@ pub async fn transfer_operation(
             let to_op = sqlx::query_as::<_, Operation>(
                 "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
                  VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
-                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
             )
             .bind(None::<i32>)
             .bind(payload.description.as_ref().unwrap_or(&format!("Przelew z aktywa #{}", payload.from_asset_id)))
@@ -133,7 +133,7 @@ pub async fn transfer_operation(
                 let from_op = sqlx::query_as::<_, Operation>(
                     "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
                      VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
-                     RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                     RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
                 )
                 .bind(payload.from_asset_id)
                 .bind(-payload.amount.clone())
@@ -197,7 +197,7 @@ pub async fn transfer_operation(
                 let from_op = sqlx::query_as::<_, Operation>(
                     "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
                      VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
-                     RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                     RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
                 )
                 .bind(payload.from_asset_id)
                 .bind(-payload.amount.clone())
@@ -252,7 +252,7 @@ pub async fn transfer_operation(
             let from_op = sqlx::query_as::<_, Operation>(
                 "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
                  VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
-                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
             )
             .bind(payload.from_asset_id)
             .bind(-payload.amount.clone())
@@ -280,7 +280,7 @@ pub async fn transfer_operation(
             let from_op = sqlx::query_as::<_, Operation>(
                 "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
                  VALUES ($1, $2, 'expense'::operation_type, $3::date, $4)
-                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
             )
             .bind(payload.from_asset_id)
             .bind(-payload.amount.clone())
@@ -296,7 +296,7 @@ pub async fn transfer_operation(
             let to_op = sqlx::query_as::<_, Operation>(
                 "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
                  VALUES ($1, $2, 'income'::operation_type, $3::date, $4)
-                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date"
+                 RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
             )
             .bind(to_asset_id)
             .bind(payload.amount.clone())

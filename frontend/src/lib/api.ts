@@ -226,6 +226,8 @@ export type Operation = {
   amount: number | string
   operation_type: OperationType
   operation_date: string
+  parent_operation_id?: number | null
+  is_split: boolean
   hashtags?: Hashtag[]
 }
 
@@ -241,6 +243,7 @@ export type CreateOperationPayload = {
   amount: number
   operation_type: OperationType
   operation_date: string
+  split_items?: SplitItem[]
 }
 
 export const createOperation = async (payload: CreateOperationPayload): Promise<Operation> => {
@@ -251,8 +254,43 @@ export const createOperation = async (payload: CreateOperationPayload): Promise<
   })
 }
 
+export const updateOperation = async (id: number, payload: CreateOperationPayload): Promise<Operation> => {
+  return fetchJson(`${API}/operations/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export const deleteOperation = async (id: number): Promise<void> => {
   await fetchJson(`${API}/operations/${id}`, { method: 'DELETE' })
+}
+
+// --- Split Operations
+export type SplitItem = {
+  category_id: number
+  amount: number
+  description?: string | null
+}
+
+export type SplitOperationRequest = {
+  items: SplitItem[]
+}
+
+export const splitOperation = async (id: number, request: SplitOperationRequest): Promise<Operation[]> => {
+  return fetchJson(`${API}/operations/${id}/split`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+}
+
+export const unsplitOperation = async (id: number): Promise<void> => {
+  await fetchJson(`${API}/operations/${id}/unsplit`, { method: 'DELETE' })
+}
+
+export const getOperationChildren = async (id: number): Promise<Operation[]> => {
+  return fetchJson(`${API}/operations/${id}/children`)
 }
 
 // --- Transfers

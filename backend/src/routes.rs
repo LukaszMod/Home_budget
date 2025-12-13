@@ -34,8 +34,11 @@ pub fn router() -> Router<AppState> {
         .route("/asset-valuations/:id", delete(asset_handlers::delete_asset_valuation))
         // Operations
         .route("/operations", post(create_operation).get(list_operations))
-        .route("/operations/:id", get(get_operation).put(update_operation).delete(delete_operation))
         .route("/operations/transfer", post(transfer_operation))
+        .route("/operations/:id/split", post(split_operation))
+        .route("/operations/:id/unsplit", delete(unsplit_operation))
+        .route("/operations/:id/children", get(get_operation_children))
+        .route("/operations/:id", get(get_operation).put(update_operation).delete(delete_operation))
         // Budgets
         .route("/budgets", post(create_budget).get(list_budgets))
         .route("/budgets/data/:month", get(get_budget_data_for_month))

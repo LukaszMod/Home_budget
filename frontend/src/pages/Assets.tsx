@@ -162,6 +162,15 @@ const Assets: React.FC = () => {
     
     if (!assetType) return null
     
+    // For liquid and liability assets, use current_valuation from database (auto-calculated by trigger)
+    if (assetType.category === 'liquid' || assetType.category === 'liability') {
+      if (asset.current_valuation !== null && asset.current_valuation !== undefined) {
+        const val = typeof asset.current_valuation === 'string' ? parseFloat(asset.current_valuation) : asset.current_valuation
+        return isNaN(val) ? 0 : val
+      }
+      return 0
+    }
+    
     // For investments, calculate current value from quantity and last price
     if (assetType.category === 'investment') {
       if (asset.quantity && asset.average_purchase_price) {
@@ -183,7 +192,6 @@ const Assets: React.FC = () => {
       return null
     }
     
-    // For liquid/liability, we don't track value in asset itself
     return null
   }
 

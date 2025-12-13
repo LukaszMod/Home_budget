@@ -11,6 +11,7 @@ interface TextFieldWithHashtagSuggestionsProps {
   multiline?: boolean
   rows?: number
   fullWidth?: boolean
+  disabled?: boolean
 }
 
 const TextFieldWithHashtagSuggestions: React.FC<TextFieldWithHashtagSuggestionsProps> = ({
@@ -22,6 +23,7 @@ const TextFieldWithHashtagSuggestions: React.FC<TextFieldWithHashtagSuggestionsP
   multiline = true,
   rows = 3,
   fullWidth = true,
+  disabled = false,
 }) => {
   const { t } = useTranslation()
   const [cursorPos, setCursorPos] = useState(0)
@@ -122,6 +124,7 @@ const TextFieldWithHashtagSuggestions: React.FC<TextFieldWithHashtagSuggestionsP
         multiline={multiline}
         rows={rows}
         fullWidth={fullWidth}
+        disabled={disabled}
         helperText={t('operations.fields.descriptionHint') || 'Use #hashtag to tag this operation'}
       />
 

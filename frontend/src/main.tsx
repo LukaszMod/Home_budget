@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './style.css'
 import { NotifierProvider } from './components/Notifier'
@@ -12,7 +13,9 @@ const root = createRoot(rootEl)
 root.render(
 	<QueryClientProvider client={queryClient}>
 		<NotifierProvider>
-			<App />
+			<BrowserRouter>
+				<App />
+			</BrowserRouter>
 		</NotifierProvider>
 	</QueryClientProvider>
 )

@@ -33,7 +33,7 @@ function computeStartDate(preset: string): Date | null {
 
 const Operations: React.FC = () => {
   const { t } = useTranslation()
-  const { operationsQuery, deleteMutation } = useOperations()
+  const { operationsQuery, deleteMutation, splitMutation, unsplitMutation } = useOperations()
   const { accountsQuery } = useAccountsData()
   const { categoriesQuery } = useCategories()
   const { hashtags } = useHashtags()
@@ -120,7 +120,8 @@ const Operations: React.FC = () => {
     category_id: o.category_id, 
     category_name: o.category_name,
     parent_category_name: o.parent_category_name,
-    operation_type: o.operation_type 
+    operation_type: o.operation_type,
+    is_split: o.is_split
   })), [operations])
 
   const filteredRows = React.useMemo(() => {
@@ -178,12 +179,44 @@ const Operations: React.FC = () => {
     { field: 'operation_date', headerName: t('operations.fields.date'), width: 150, valueGetter: (p: any) => p.row.operation_date ? new Date(p.row.operation_date).toLocaleString() : '', sortable: true },
     { field: 'asset_name', headerName: t('operations.fields.account'), width: 180 },
     { field: 'amount', headerName: t('operations.fields.amount'), width: 120 },
-    { field: 'description', headerName: t('operations.fields.description'), flex: 1 },
+    { 
+      field: 'description', 
+      headerName: t('operations.fields.description'), 
+      flex: 1,
+      renderCell: (params: GridRenderCellParams<any>) => {
+        const op = operations.find(o => o.id === params.row.id)
+        if (!op) return params.row.description
+        
+        if (op.parent_operation_id) {
+          const parent = operations.find(o => o.id === op.parent_operation_id)
+          return (
+            <Box>
+              <Chip 
+                label={`${t('operations.partOf')}: ${parent?.description || `#${op.parent_operation_id}`}`} 
+                size="small" 
+                color="info" 
+                sx={{ mr: 1 }} 
+              />
+              {op.description}
+            </Box>
+          )
+        }
+        return params.row.description
+      }
+    },
     { 
       field: 'category_name', 
       headerName: t('operations.fields.category'), 
       width: 200,
       valueGetter: (p: any) => {
+        // Show "Dzielona" for split operations (check FIRST before category_id check)
+        if (p.row.is_split) {
+          return t('operations.splitCategory') ?? 'Dzielona'
+        }
+        // Show "Przelew" for transfers (operations without category and NOT split)
+        if (!p.row.category_id && !p.row.is_split) {
+          return t('operations.transfer') ?? 'Przelew'
+        }
         if (!p.row.category_name) return ''
         return p.row.parent_category_name 
           ? `${p.row.parent_category_name} → ${p.row.category_name}`
@@ -191,7 +224,7 @@ const Operations: React.FC = () => {
       }
     },
     { field: 'operation_type', headerName: t('operations.fields.type'), width: 160 },
-    { field: 'actions', headerName: '', width: 120, sortable: false, filterable: false, renderCell: (params: GridRenderCellParams<any>) => {
+    { field: 'actions', headerName: '', width: 180, sortable: false, filterable: false, renderCell: (params: GridRenderCellParams<any>) => {
       const id = params.row.id as number
       const op = operations.find(o => o.id === id)
       return (<div>
