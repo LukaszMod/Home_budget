@@ -54,5 +54,8 @@ pub fn router() -> Router<AppState> {
         // Recurring Operations
         .route("/recurring-operations", post(create_recurring_operation).get(list_recurring_operations))
         .route("/recurring-operations/:id", get(get_recurring_operation).put(update_recurring_operation).delete(delete_recurring_operation))
+        // Import Templates
+        .route("/import-templates", post(create_import_template).get(list_import_templates))
+        .route("/import-templates/:id", get(get_import_template).put(update_import_template).delete(delete_import_template))
 }
 

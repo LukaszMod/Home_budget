@@ -12,6 +12,7 @@ import {
   OperationsTable, 
   OperationDetailsDrawer 
 } from '../components'
+import ImportCSVDialog from '../components/operations/ImportCSVDialog'
 import type { TransferData } from '../components/operations/TransferDialog'
 import { Typography, Paper, Box, Button, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -19,7 +20,10 @@ import { DatePickerProvider, getDateFormat } from '../components/common/DatePick
 import dayjs from 'dayjs'
 import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
+import UploadIcon from '@mui/icons-material/Upload'
 import { useTranslation } from 'react-i18next'
+import { useNotifier } from '../components/common/Notifier'
+import { createOperation } from '../lib/api'
 
 function computeStartDate(preset: string): Date | null {
   const now = new Date()
@@ -41,6 +45,7 @@ const Operations: React.FC = () => {
   const { categoriesQuery } = useCategories()
   const { hashtags } = useHashtags()
   const transferMutation = useTransfer()
+  const notifier = useNotifier()
 
   const operations = operationsQuery.data ?? []
   const accounts = accountsQuery.data ?? []
@@ -55,6 +60,7 @@ const Operations: React.FC = () => {
   const [modalOpen, setModalOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<APIOperation | null>(null)
   const [transferDialogOpen, setTransferDialogOpen] = React.useState(false)
+  const [importDialogOpen, setImportDialogOpen] = React.useState(false)
   const [selectedOperation, setSelectedOperation] = React.useState<APIOperation | null>(null)
   const [datePreset, setDatePreset] = React.useState<string>('thisMonth')
   const [customDateFrom, setCustomDateFrom] = React.useState<string>('')
@@ -67,10 +73,47 @@ const Operations: React.FC = () => {
   const openNew = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (op: APIOperation) => { setEditing(op); setModalOpen(true) }
   const openTransfer = () => { setTransferDialogOpen(true) }
+  const openImport = () => { setImportDialogOpen(true) }
 
   const handleTransfer = async (data: TransferData) => {
     await transferMutation.mutateAsync(data)
     setTransferDialogOpen(false)
+  }
+
+  const handleImport = async (operations: any[]) => {
+    try {
+      let successCount = 0
+      let errorCount = 0
+
+      for (const op of operations) {
+        try {
+          await createOperation(op)
+          successCount++
+        } catch (error) {
+          errorCount++
+          console.error('Error importing operation:', error)
+        }
+      }
+
+      notifier.notify(
+        t('import.success', `Zaimportowano {{count}} operacji`, { count: successCount }),
+        'success'
+      )
+      
+      if (errorCount > 0) {
+        notifier.notify(
+          t('import.partialError', `Nie udało się zaimportować {{count}} operacji`, { count: errorCount }),
+          'warning'
+        )
+      }
+
+      // Refresh the operations list
+      await operationsQuery.refetch()
+      setImportDialogOpen(false)
+    } catch (error: any) {
+      notifier.notify(error.message || t('import.error', 'Błąd podczas importu'), 'error')
+      throw error
+    }
   }
 
   // Grupowanie kategorii - główne i podkategorie
@@ -185,6 +228,9 @@ const Operations: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h4">{t('operations.title') ?? 'Operacje'}</Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" startIcon={<UploadIcon />} onClick={openImport}>
+              {t('operations.import', 'Import CSV')}
+            </Button>
             <Button variant="outlined" startIcon={<SwapHorizIcon />} onClick={openTransfer}>
               {t('operations.transfer', 'Przelew')}
             </Button>
@@ -408,6 +454,13 @@ const Operations: React.FC = () => {
         open={transferDialogOpen} 
         onClose={() => setTransferDialogOpen(false)}
         onTransfer={handleTransfer}
+      />
+      <ImportCSVDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImport={handleImport}
+        accounts={accounts}
+        categories={categories}
       />
       <OperationDetailsDrawer
         open={!!selectedOperation}

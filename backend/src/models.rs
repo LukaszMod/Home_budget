@@ -380,3 +380,26 @@ pub struct TransferResponse {
     pub new_asset_id: Option<i32>,
     pub investment_transaction_id: Option<i32>,
 }
+
+// Import Templates
+#[derive(Serialize, FromRow)]
+pub struct ImportTemplate {
+    pub id: i32,
+    pub user_id: i32,
+    pub name: String,
+    pub template_data: sqlx::types::JsonValue,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateImportTemplate {
+    pub name: String,
+    pub template_data: serde_json::Value,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateImportTemplate {
+    pub name: Option<String>,
+    pub template_data: Option<serde_json::Value>,
+}

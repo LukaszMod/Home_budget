@@ -25,6 +25,8 @@ const resources = {
         cancel: 'Cancel',
         delete: 'Delete',
         edit: 'Edit',
+        back: 'Back',
+        next: 'Next',
         confirmDelete: 'Confirm delete?',
         loading: 'Loading...',
         actions: 'Actions'
@@ -245,6 +247,52 @@ const resources = {
         },
         plannedWarning: 'Planned operation - scheduled for a future date'
       },
+      import: {
+        title: 'Import Operations from CSV',
+        steps: {
+          upload: 'Upload CSV',
+          mapColumns: 'Map Columns',
+          preview: 'Preview & Edit'
+        },
+        uploadDescription: 'Select a CSV file with operation data. The file should contain headers in the first row.',
+        columnMapping: 'Column Mapping',
+        selectFile: 'Select CSV File',
+        dragDrop: 'or drag and drop file here',
+        csvFormat: 'CSV Format:',
+        csvTip1: 'First row should contain column headers',
+        csvTip2: 'Separator: semicolon (;) - auto-detected',
+        csvTip3: 'Encoding: UTF-8 (recommended) or Windows-1250',
+        csvTip4: 'Numbers: both dot (100.50) and comma (100,50) accepted',
+        encodingWarning: 'Problems with Polish characters?',
+        encodingTip: 'If you see strange characters (e.g. £ instead of Ł), convert file to UTF-8. In Excel: File → Save As → CSV UTF-8 (comma delimited).',
+        mapDescription: 'Match CSV columns to application fields',
+        saveTemplate: 'Save Template',
+        savedTemplates: 'Saved templates:',
+        saveTemplateTitle: 'Save Template',
+        templateName: 'Template Name',
+        preview: 'Preview (first 3 rows)',
+        previewDescription: 'Review and edit data before import',
+        operations: 'operations',
+        noData: 'No data to display',
+        import: 'Import',
+        importing: 'Importing...',
+        fields: {
+          date: 'Date',
+          description: 'Description',
+          amount: 'Amount',
+          operationType: 'Type',
+          sourceAccount: 'Account',
+          category: 'Category',
+          dateFormat: 'Date Format'
+        },
+        errors: {
+          invalidFile: 'Invalid file format. Select a CSV file.',
+          emptyFile: 'CSV file is empty',
+          noData: 'No data to import',
+          readError: 'Error reading file: ',
+          noValidOperations: 'No valid operations to import. Make sure amount, date and account columns are correctly mapped.'
+        }
+      },
       Operations: 'Operations',
       Categories: 'Categories',
       'Home Budget': 'Home Budget',
@@ -434,6 +482,8 @@ const resources = {
         cancel: 'Anuluj',
         delete: 'Usuń',
         edit: 'Edytuj',
+        back: 'Wstecz',
+        next: 'Dalej',
         confirmDelete: 'Potwierdź usunięcie?',
         loading: 'Ładowanie...',
         actions: 'Akcje'
@@ -656,8 +706,52 @@ const resources = {
           fillRequired: 'Uzupełnij wymagane pola'
         },
         plannedWarning: 'Operacja zaplanowana - przeznaczona na przyszłą datę'
-      },
-      Operations: 'Operacje',
+      },      import: {
+        title: 'Import operacji z CSV',
+        steps: {
+          upload: 'Wczytaj CSV',
+          mapColumns: 'Mapuj kolumny',
+          preview: 'Podgląd i edycja'
+        },
+        uploadDescription: 'Wybierz plik CSV z danymi operacji. Plik powinien zawierać nagłówki w pierwszym wierszu.',
+        columnMapping: 'Mapowanie kolumn',
+        selectFile: 'Wybierz plik CSV',
+        dragDrop: 'lub przeciągnij i upuść plik tutaj',
+        csvFormat: 'Format CSV:',
+        csvTip1: 'Pierwszy wiersz powinien zawierać nagłówki kolumn',
+        csvTip2: 'Separator: średnik (;) - automatycznie wykrywany',
+        csvTip3: 'Kodowanie: UTF-8 (polecane) lub Windows-1250',
+        csvTip4: 'Liczby: akceptowane zarówno z kropką (100.50) jak i przecinkiem (100,50)',
+        encodingWarning: 'Problem z polskimi znakami?',
+        encodingTip: 'Jeśli widzisz dziwne znaki (np. £ zamiast Ł), przekonwertuj plik do UTF-8. W Excel: Plik → Zapisz jako → CSV UTF-8 (rozdzielany przecinkami).',
+        mapDescription: 'Dopasuj kolumny z CSV do pól w aplikacji',
+        saveTemplate: 'Zapisz szablon',
+        savedTemplates: 'Zapisane szablony:',
+        saveTemplateTitle: 'Zapisz szablon',
+        templateName: 'Nazwa szablonu',
+        preview: 'Podgląd (pierwsze 3 wiersze)',
+        previewDescription: 'Sprawdź i edytuj dane przed importem',
+        operations: 'operacji',
+        noData: 'Brak danych do wyświetlenia',
+        import: 'Importuj',
+        importing: 'Importowanie...',
+        fields: {
+          date: 'Data',
+          description: 'Opis',
+          amount: 'Kwota',
+          operationType: 'Typ',
+          sourceAccount: 'Konto',
+          category: 'Kategoria',
+          dateFormat: 'Format daty'
+        },
+        errors: {
+          invalidFile: 'Nieprawidłowy format pliku. Wybierz plik CSV.',
+          emptyFile: 'Plik CSV jest pusty',
+          noData: 'Brak danych do zaimportowania',
+          readError: 'Błąd podczas odczytu pliku: ',
+          noValidOperations: 'Brak poprawnych operacji do zaimportowania. Upewnij się, że kolumny kwota, data i konto są poprawnie zmapowane.'
+        }
+      },      Operations: 'Operacje',
       Categories: 'Kategorie',
       'Home Budget': 'Domowy budżet',
       budget: {

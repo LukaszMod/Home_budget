@@ -71,6 +71,7 @@ const CategoryAutocomplete: React.FC<CategoryAutocompleteProps> = ({
         <TextField
           {...params}
           label={label || t('operations.fields.category') || 'Kategoria'}
+          size="small"
           required={required}
         />
       )}

@@ -502,4 +502,54 @@ export const extractHashtagsFromText = async (text: string): Promise<string[]> =
   })
 }
 
-export default { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations, getCategories, createCategory, updateCategory, deleteCategory, getBudgets, createBudget, updateBudget, deleteBudget, getGoals, createGoal, updateGoal, deleteGoal, completeGoal, getHashtags, createHashtag, deleteHashtag, extractHashtagsFromText }
+// --- Import Templates
+export type ImportTemplate = {
+  id: number
+  user_id: number
+  name: string
+  template_data: {
+    columnMapping: {
+      amount?: number
+      description?: number
+      date?: number
+      dateFormat?: string
+      sourceAccount?: number
+      targetAccount?: number
+      category?: number
+      operationType?: number
+    }
+  }
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export type CreateImportTemplatePayload = {
+  name: string
+  template_data: ImportTemplate['template_data']
+}
+
+export const getImportTemplates = async (userId: number): Promise<ImportTemplate[]> => {
+  return fetchJson(`${API}/import-templates?user_id=${userId}`)
+}
+
+export const createImportTemplate = async (userId: number, payload: CreateImportTemplatePayload): Promise<ImportTemplate> => {
+  return fetchJson(`${API}/import-templates?user_id=${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export const updateImportTemplate = async (id: number, payload: Partial<CreateImportTemplatePayload>): Promise<ImportTemplate> => {
+  return fetchJson(`${API}/import-templates/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export const deleteImportTemplate = async (id: number): Promise<void> => {
+  await fetchJson(`${API}/import-templates/${id}`, { method: 'DELETE' })
+}
+
+export default { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations, getCategories, createCategory, updateCategory, deleteCategory, getBudgets, createBudget, updateBudget, deleteBudget, getGoals, createGoal, updateGoal, deleteGoal, completeGoal, getHashtags, createHashtag, deleteHashtag, extractHashtagsFromText, getImportTemplates, createImportTemplate, updateImportTemplate, deleteImportTemplate }
