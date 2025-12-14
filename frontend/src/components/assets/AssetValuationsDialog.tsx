@@ -16,9 +16,14 @@ import {
   IconButton,
   Box
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
+import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CalcTextField from '../common/ui/CalcTextField'
 import { useAssetValuations } from '../../hooks/useAssetValuations'
+import { useTranslation } from 'react-i18next'
+import { formatDate } from '../common/DatePickerProvider'
 
 interface AssetValuationsDialogProps {
   open: boolean
@@ -35,6 +40,7 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
   assetName,
   currency,
 }) => {
+  const { i18n } = useTranslation()
   const { valuations, createValuation, deleteValuation, isLoading } = useAssetValuations(assetId)
   
   const [valuation, setValuation] = useState('')
@@ -68,7 +74,8 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
 
   const formatValue = (value: number | string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value
-    return new Intl.NumberFormat('pl-PL', {
+    const locale = i18n.language === 'pl' ? 'pl-PL' : 'en-US'
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
     }).format(numValue)
@@ -94,14 +101,15 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
                 fullWidth
               />
 
-              <TextField
-                label="Data wyceny"
-                type="date"
-                value={valuationDate}
-                onChange={(e) => setValuationDate(e.target.value)}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
+              <DatePickerProvider>
+                <DatePicker
+                  label="Data wyceny"
+                  value={valuationDate ? dayjs(valuationDate) : null}
+                  onChange={(d) => setValuationDate(d ? d.format('YYYY-MM-DD') : '')}
+                  format={getDateFormat(i18n.language)}
+                  slotProps={{ textField: { fullWidth: true, InputLabelProps: { shrink: true } } }}
+                />
+              </DatePickerProvider>
 
               <TextField
                 label="Notatki"
@@ -148,7 +156,7 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
                     .map((val) => (
                       <TableRow key={val.id}>
                         <TableCell>
-                          {new Date(val.valuation_date).toLocaleDateString('pl-PL')}
+                          {formatDate(val.valuation_date, i18n.language)}
                         </TableCell>
                         <TableCell align="right">
                           <strong>{formatValue(val.value)}</strong>

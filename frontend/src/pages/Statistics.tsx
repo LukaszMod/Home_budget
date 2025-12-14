@@ -22,8 +22,11 @@ import {
   ListItemText,
   ListItemButton,
   Chip,
-  TextField,
+  // TextField removed (not used for dates anymore)
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { DatePickerProvider, getDateFormat, formatDate } from '../components/common/DatePickerProvider'
+import dayjs from 'dayjs'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { useOperations } from '../hooks/useOperations'
@@ -49,7 +52,7 @@ interface ComparisonPeriod {
 }
 
 const Statistics: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { operationsQuery } = useOperations()
   const { categoriesQuery } = useCategories()
   const { accountsQuery } = useAccountsData()
@@ -184,8 +187,8 @@ const Statistics: React.FC = () => {
       income,
       expense,
       balance: income - expense,
-      periodStart: startDate.toLocaleDateString(),
-      periodEnd: endDate.toLocaleDateString(),
+      periodStart: formatDate(startDate, i18n.language),
+      periodEnd: formatDate(endDate, i18n.language),
     }
   }, [operations, filters])
 
@@ -539,26 +542,24 @@ const Statistics: React.FC = () => {
 
             {/* Custom dates */}
             {filters.period === 'custom' && (
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  label={t('operations.dateFilter.from') ?? 'From'}
-                  type="date"
-                  value={filters.customDateFrom}
-                  onChange={e => setFilters({ ...filters, customDateFrom: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  size="small"
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  label={t('operations.dateFilter.to') ?? 'To'}
-                  type="date"
-                  value={filters.customDateTo}
-                  onChange={e => setFilters({ ...filters, customDateTo: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  size="small"
-                  sx={{ flex: 1 }}
-                />
-              </Stack>
+              <DatePickerProvider>
+                <Stack direction="row" spacing={1}>
+                  <DatePicker
+                    label={t('operations.dateFilter.from') ?? 'From'}
+                    value={filters.customDateFrom ? dayjs(filters.customDateFrom) : null}
+                    onChange={(d) => setFilters({ ...filters, customDateFrom: d ? d.format('YYYY-MM-DD') : '' })}
+                    format={getDateFormat(i18n.language)}
+                    slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
+                  />
+                  <DatePicker
+                    label={t('operations.dateFilter.to') ?? 'To'}
+                    value={filters.customDateTo ? dayjs(filters.customDateTo) : null}
+                    onChange={(d) => setFilters({ ...filters, customDateTo: d ? d.format('YYYY-MM-DD') : '' })}
+                    format={getDateFormat(i18n.language)}
+                    slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
+                  />
+                </Stack>
+              </DatePickerProvider>
             )}
 
             {/* Konta */}

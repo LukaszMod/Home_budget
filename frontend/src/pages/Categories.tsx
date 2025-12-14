@@ -4,7 +4,7 @@ import { useCategories } from '../hooks/useCategories'
 import StyledModal from '../components/common/StyledModal'
 import CategoriesTable from '../components/categories/CategoriesTable'
 import StyledIncomeSwitch from '../components/common/ui/StyledIncomeSwitch'
-import { Typography, Paper, Stack, Button, TextField, Box } from '@mui/material'
+import { Typography, Paper, Stack, Button, Box, TextField } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
 import { useNotifier } from '../components/common/Notifier'
@@ -32,29 +32,7 @@ const Categories: React.FC = () => {
     }
   }, [modalOpen])
 
-  const descendantsOfEditing = React.useMemo(() => {
-    if (!editing) return new Set<number>()
-    const childrenMap = new Map<number, number[]>()
-    for (const c of categories) childrenMap.set(c.id, [])
-    for (const c of categories) if (c.parent_id != null) {
-      const arr = childrenMap.get(c.parent_id) ?? []
-      arr.push(c.id)
-      childrenMap.set(c.parent_id, arr)
-    }
-    const res = new Set<number>()
-    const stack = [editing.id]
-    while (stack.length) {
-      const id = stack.pop() as number
-      const childs = childrenMap.get(id) ?? []
-      for (const ch of childs) {
-        if (!res.has(ch)) {
-          res.add(ch)
-          stack.push(ch)
-        }
-      }
-    }
-    return res
-  }, [categories, editing])
+  // descendant calculation was removed -- not needed anymore
 
   const openNew = () => {
     setEditing(null)
@@ -135,7 +113,7 @@ const Categories: React.FC = () => {
           fullWidth 
           label={t('categories.fields.name')} 
           value={name} 
-          onChange={(e) => setName(e.target.value)} 
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setName(e.target.value)} 
           sx={{ mb: 2 }} 
           required
         />
@@ -145,7 +123,7 @@ const Categories: React.FC = () => {
           SelectProps={{ native: true }} 
           label={t('categories.fields.parent')} 
           value={parentId ?? ''} 
-          onChange={(e) => setParentId(e.target.value === '' ? null : Number(e.target.value))} 
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setParentId(e.target.value === '' ? null : Number(e.target.value))} 
           sx={{ mt: 2 }}
           InputLabelProps={{ shrink: true }}
         >

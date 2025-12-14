@@ -17,10 +17,15 @@ import {
   IconButton,
   Box
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
+import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CalcTextField from '../common/ui/CalcTextField'
 import type { InvestmentTransaction, InvestmentTransactionType } from '../../lib/api'
 import { useInvestmentTransactions } from '../../hooks/useInvestmentTransactions'
+import { useTranslation } from 'react-i18next'
+import { formatDate } from '../common/DatePickerProvider'
 
 interface InvestmentTransactionsDialogProps {
   open: boolean
@@ -35,6 +40,7 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
   assetId,
   assetName,
 }) => {
+  const { i18n } = useTranslation()
   const { transactions, createTransaction, deleteTransaction, isLoading } = useInvestmentTransactions(assetId)
   
   const [transactionType, setTransactionType] = useState<InvestmentTransactionType>('buy')
@@ -137,14 +143,15 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
                 />
               </Stack>
 
-              <TextField
-                label="Data transakcji"
-                type="date"
-                value={transactionDate}
-                onChange={(e) => setTransactionDate(e.target.value)}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
+              <DatePickerProvider>
+                <DatePicker
+                  label="Data transakcji"
+                  value={transactionDate ? dayjs(transactionDate) : null}
+                  onChange={(d) => setTransactionDate(d ? d.format('YYYY-MM-DD') : '')}
+                  format={getDateFormat(i18n.language)}
+                  slotProps={{ textField: { fullWidth: true, InputLabelProps: { shrink: true } } }}
+                />
+              </DatePickerProvider>
 
               <TextField
                 label="Notatki"
@@ -191,19 +198,19 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
-                        {new Date(transaction.transaction_date).toLocaleDateString('pl-PL')}
+                        {formatDate(transaction.transaction_date, i18n.language)}
                       </TableCell>
                       <TableCell>{transactionTypeLabels[transaction.transaction_type]}</TableCell>
                       <TableCell align="right">{formatQuantity(transaction.quantity)}</TableCell>
                       <TableCell align="right">
-                        {transaction.price_per_unit ? parseValue(transaction.price_per_unit).toLocaleString('pl-PL', {
+                        {transaction.price_per_unit ? parseValue(transaction.price_per_unit).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         }) : '-'}
                       </TableCell>
                       <TableCell align="right">
                         <strong>
-                          {totalValue(transaction).toLocaleString('pl-PL', {
+                          {totalValue(transaction).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}

@@ -63,7 +63,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Assets: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [selectedTab, setSelectedTab] = useState(0)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -141,7 +141,8 @@ const Assets: React.FC = () => {
     if (value === null || value === undefined) return '-'
     const numValue = typeof value === 'string' ? parseFloat(value) : value
     if (isNaN(numValue)) return '-'
-    return new Intl.NumberFormat('pl-PL', {
+    const locale = i18n.language === 'pl' ? 'pl-PL' : 'en-US'
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency
     }).format(numValue)
@@ -484,7 +485,7 @@ const Assets: React.FC = () => {
                     {t('assets.summary.startValue') ?? 'Wartość początkowa'}
                   </Typography>
                   <Typography variant="h6">
-                    {summary.startValue.toLocaleString('pl-PL', {
+                    {summary.startValue.toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
                       style: 'currency',
                       currency: 'PLN'
                     })}
@@ -499,7 +500,7 @@ const Assets: React.FC = () => {
                     variant="h6"
                     color={summary.difference >= 0 ? 'success.main' : 'error.main'}
                   >
-                    {summary.difference >= 0 ? '+' : ''}{summary.difference.toLocaleString('pl-PL', {
+                    {summary.difference >= 0 ? '+' : ''}{summary.difference.toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
                       style: 'currency',
                       currency: 'PLN'
                     })}
@@ -511,7 +512,7 @@ const Assets: React.FC = () => {
                     {t('assets.summary.currentValue') ?? 'Obecna wartość'}
                   </Typography>
                   <Typography variant="h5" fontWeight="bold">
-                    {summary.totalValue.toLocaleString('pl-PL', {
+                    {summary.totalValue.toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
                       style: 'currency',
                       currency: 'PLN'
                     })}

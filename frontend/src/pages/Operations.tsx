@@ -13,7 +13,10 @@ import {
   OperationDetailsDrawer 
 } from '../components'
 import type { TransferData } from '../components/operations/TransferDialog'
-import { Typography, Paper, Box, Button, TextField, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
+import { Typography, Paper, Box, Button, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { DatePickerProvider, getDateFormat } from '../components/common/DatePickerProvider'
+import dayjs from 'dayjs'
 import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import { useTranslation } from 'react-i18next'
@@ -32,7 +35,7 @@ function computeStartDate(preset: string): Date | null {
 }
 
 const Operations: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { operationsQuery, deleteMutation } = useOperations()
   const { accountsQuery } = useAccountsData()
   const { categoriesQuery } = useCategories()
@@ -203,10 +206,22 @@ const Operations: React.FC = () => {
             </FormControl>
 
             {datePreset === 'custom' && (
-              <>
-                <TextField label={t('operations.dateFilter.from') ?? 'Od'} type="date" value={customDateFrom} onChange={e => setCustomDateFrom(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 150 }} />
-                <TextField label={t('operations.dateFilter.to') ?? 'Do'} type="date" value={customDateTo} onChange={e => setCustomDateTo(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 150 }} />
-              </>
+              <DatePickerProvider>
+                <DatePicker
+                  label={t('operations.dateFilter.from') ?? 'Od'}
+                  value={customDateFrom ? dayjs(customDateFrom) : null}
+                  onChange={(d) => setCustomDateFrom(d ? d.format('YYYY-MM-DD') : '')}
+                  format={getDateFormat(i18n.language)}
+                  slotProps={{ textField: { InputLabelProps: { shrink: true }, sx: { minWidth: 150 } } }}
+                />
+                <DatePicker
+                  label={t('operations.dateFilter.to') ?? 'Do'}
+                  value={customDateTo ? dayjs(customDateTo) : null}
+                  onChange={(d) => setCustomDateTo(d ? d.format('YYYY-MM-DD') : '')}
+                  format={getDateFormat(i18n.language)}
+                  slotProps={{ textField: { InputLabelProps: { shrink: true }, sx: { minWidth: 150 } } }}
+                />
+              </DatePickerProvider>
             )}
 
             <FormControl sx={{ width: 200, flex: '0 0 auto' }}>
@@ -359,7 +374,7 @@ const Operations: React.FC = () => {
             {t('operations.summary.totalIncome') ?? 'Przychody'}
           </Typography>
           <Typography variant="h6" fontWeight="bold" sx={{ color: 'success.main' }}>
-            {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+            {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'center' }}>
@@ -367,7 +382,7 @@ const Operations: React.FC = () => {
             {t('operations.summary.totalExpense') ?? 'Wydatki'}
           </Typography>
           <Typography variant="h6" fontWeight="bold" sx={{ color: 'error.main' }}>
-            {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+            {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'center' }}>
@@ -383,7 +398,7 @@ const Operations: React.FC = () => {
                 : 'error.main' 
             }}
           >
-            {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+            {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
       </Paper>

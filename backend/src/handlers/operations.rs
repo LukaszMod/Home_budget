@@ -343,6 +343,7 @@ async fn get_operations_hashtags_batch(pool: &sqlx::PgPool, operation_ids: &[i32
             id: row.id,
             name: row.name,
             created_date: row.created_date,
+            usage_count: 0, // Not relevant for operation hashtags
         };
         map.entry(row.operation_id).or_insert_with(Vec::new).push(hashtag);
     }

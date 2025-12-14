@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use chrono::{NaiveDateTime, NaiveDate};
 use sqlx::FromRow;
-use bigdecimal::BigDecimal;
+use sqlx::types::BigDecimal;
 
 #[derive(Serialize, FromRow)]
 pub struct User {

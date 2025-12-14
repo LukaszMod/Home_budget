@@ -27,6 +27,9 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import StyledIncomeSwitch from '../components/common/ui/StyledIncomeSwitch'
 import CategoryAutocomplete from '../components/common/ui/CategoryAutocomplete'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
+import { DatePickerProvider, getDateFormat, formatDate } from '../components/common/DatePickerProvider'
 import { useTranslation } from 'react-i18next'
 import { useRecurringOperations, type RecurringOperation } from '../hooks/useRecurringOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
@@ -35,7 +38,7 @@ import { useNotifier } from '../components/common/Notifier'
 import CalcTextField from '../components/common/ui/CalcTextField'
 
 const RecurringOperations: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const notifier = useNotifier()
   const { query, createMutation, updateMutation, deleteMutation } = useRecurringOperations()
   const { accountsQuery } = useAccountsData()
@@ -209,8 +212,8 @@ const RecurringOperations: React.FC = () => {
                 <TableCell>
                   {frequencies.find(f => f.key === op.frequency)?.label ?? op.frequency}
                 </TableCell>
-                <TableCell>{new Date(op.start_date).toLocaleDateString()}</TableCell>
-                <TableCell>{op.end_date ? new Date(op.end_date).toLocaleDateString() : '-'}</TableCell>
+                <TableCell>{formatDate(op.start_date, i18n.language)}</TableCell>
+                <TableCell>{op.end_date ? formatDate(op.end_date, i18n.language) : '-'}</TableCell>
                 <TableCell>
                   <Chip
                     label={op.is_active ? 'Active' : 'Inactive'}
@@ -304,26 +307,36 @@ const RecurringOperations: React.FC = () => {
                   </Select>
                 </FormControl>
 
-                <TextField
-                  label={t('recurringOperations.fields.startDate') ?? 'Start Date'}
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  required
-                />
+                <DatePickerProvider>
+                  <DatePicker
+                    label={t('recurringOperations.fields.startDate') ?? 'Start Date'}
+                    value={startDate ? dayjs(startDate) : null}
+                    onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
+                    format={getDateFormat(i18n.language)}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        required: true
+                      }
+                    }}
+                  />
+                </DatePickerProvider>
               </>
             )}
 
-            <TextField
-              label={t('recurringOperations.fields.endDate') ?? 'End Date (optional)'}
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
+            <DatePickerProvider>
+              <DatePicker
+                label={t('recurringOperations.fields.endDate') ?? 'End Date (optional)'}
+                value={endDate ? dayjs(endDate) : null}
+                onChange={(date) => setEndDate(date ? date.format('YYYY-MM-DD') : '')}
+                format={getDateFormat(i18n.language)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
+              />
+            </DatePickerProvider>
           </Stack>
         </DialogContent>
         <DialogActions>

@@ -20,6 +20,9 @@ import CalcTextField from '../common/ui/CalcTextField'
 import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
 import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
 import { useHashtags } from '../../hooks/useHashtags'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
+import dayjs from 'dayjs'
 import {
   TextField,
   Stack,
@@ -70,7 +73,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
 }) => {
   const qc = useQueryClient()
   const notifier = useNotifier()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { hashtags } = useHashtags()
 
   // Debug log
@@ -378,14 +381,20 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
                 name="operationDate"
                 control={control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label={t('operations.fields.date') ?? 'Data'}
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                    required
-                  />
+                  <DatePickerProvider>
+                    <DatePicker
+                      label={t('operations.fields.date') ?? 'Data'}
+                      value={field.value ? dayjs(field.value) : null}
+                      onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : '')}
+                      format={getDateFormat(i18n.language)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: true
+                        }
+                      }}
+                    />
+                  </DatePickerProvider>
                 )}
               />
 

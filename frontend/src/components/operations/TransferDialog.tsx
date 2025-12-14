@@ -13,6 +13,9 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
+import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
 import StyledModal from '../common/StyledModal'
 import CalcTextField from '../common/ui/CalcTextField'
 import AccountSelect from '../common/ui/AccountSelect'
@@ -62,7 +65,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
   onTransfer,
   preselectedAssetId,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const notifier = useNotifier()
   const { assets } = useAssets()
   const { assetTypes } = useAssetTypes()
@@ -509,14 +512,15 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
         />
 
         {/* Operation Date */}
-        <TextField
-          label={t('transfer.date', 'Data operacji')}
-          type="date"
-          value={operationDate}
-          onChange={(e) => setOperationDate(e.target.value)}
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-        />
+        <DatePickerProvider>
+          <DatePicker
+            label={t('transfer.date', 'Data operacji')}
+            value={operationDate ? dayjs(operationDate) : null}
+            onChange={(d) => setOperationDate(d ? d.format('YYYY-MM-DD') : '')}
+            format={getDateFormat(i18n.language)}
+            slotProps={{ textField: { fullWidth: true, InputLabelProps: { shrink: true } } }}
+          />
+        </DatePickerProvider>
 
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>

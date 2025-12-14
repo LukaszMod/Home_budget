@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import type { Goal as APIGoal, CreateGoalPayload } from '../lib/api'
 import { useGoals } from '../hooks/useGoals'
 import CalcTextField from '../components/common/ui/CalcTextField'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
+import { DatePickerProvider, getDateFormat, formatDate } from '../components/common/DatePickerProvider'
 import {
   Typography,
   Paper,
@@ -30,7 +33,7 @@ import { useNotifier } from '../components/common/Notifier'
 type Goal = APIGoal
 
 const Goals: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const notifier = useNotifier()
   
   const { 
@@ -157,16 +160,11 @@ const Goals: React.FC = () => {
     return (target - current) / monthsRemaining
   }
 
-  const calculateDaysRemaining = (goal: Goal) => {
-    const targetDate = new Date(goal.target_date)
+  const calculateDaysRemaining = (dateString: string) => {
+    const targetDate = new Date(dateString)
     const today = new Date()
     const daysRemaining = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     return Math.max(0, daysRemaining)
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString()
   }
 
   return (
@@ -193,7 +191,7 @@ const Goals: React.FC = () => {
             {goals.map((goal) => {
             const progress = calculateProgress(goal)
             const monthlyNeeded = calculateMonthlyNeeded(goal)
-            const daysRemaining = calculateDaysRemaining(goal)
+            const daysRemaining = calculateDaysRemaining(goal.target_date)
             const account = accounts.find((a) => a.id === goal.asset_id)
             const user = users.find((u) => u.id === goal.user_id)
 
@@ -259,7 +257,7 @@ const Goals: React.FC = () => {
                         <Typography variant="caption" color="textSecondary">
                           {t('goals.targetDate') || 'Data celu'}
                         </Typography>
-                        <Typography variant="body2">{formatDate(goal.target_date)}</Typography>
+                        <Typography variant="body2">{formatDate(goal.target_date, i18n.language)}</Typography>
                       </div>
                       <div>
                         <Typography variant="caption" color="textSecondary">
@@ -279,7 +277,7 @@ const Goals: React.FC = () => {
                             {t('goals.completedOn') || 'Ukończone'}
                           </Typography>
                           <Typography variant="body2">
-                            {goal.completed_date ? formatDate(goal.completed_date) : 'N/A'}
+                            {goal.completed_date ? formatDate(goal.completed_date, i18n.language) : 'N/A'}
                           </Typography>
                         </div>
                       )}
@@ -340,14 +338,19 @@ const Goals: React.FC = () => {
               onChange={(val: number) => setTargetAmount(String(val))}
               fullWidth
             />
-            <TextField
-              label={t('goals.targetDate') || 'Data celu'}
-              type="date"
-              value={targetDate}
-              onChange={(e) => setTargetDate(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
+            <DatePickerProvider>
+              <DatePicker
+                label={t('goals.targetDate') || 'Data celu'}
+                value={targetDate ? dayjs(targetDate) : null}
+                onChange={(date) => setTargetDate(date ? date.format('YYYY-MM-DD') : '')}
+                format={getDateFormat(i18n.language)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
+              />
+            </DatePickerProvider>
           </Stack>
         </DialogContent>
         <DialogActions>

@@ -4,9 +4,10 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslation } from 'react-i18next'
 import { useHashtags } from '../hooks/useHashtags'
+import { formatDate } from '../components/common/DatePickerProvider'
 
 const Hashtags: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { hashtags, createHashtagMut, deleteHashtagMut } = useHashtags()
   const [newHashtagName, setNewHashtagName] = React.useState('')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
@@ -174,7 +175,7 @@ const Hashtags: React.FC = () => {
                       >
                         <TableCell>#{hashtag.name}</TableCell>
                         <TableCell>
-                          {hashtag.created_date ? new Date(hashtag.created_date).toLocaleDateString() : '-'}
+                          {hashtag.created_date ? formatDate(hashtag.created_date, i18n.language) : '-'}
                         </TableCell>
                         <TableCell align="right">
                           <IconButton

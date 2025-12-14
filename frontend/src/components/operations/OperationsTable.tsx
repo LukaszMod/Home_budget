@@ -15,6 +15,7 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Operation } from '../../lib/api'
+import { formatDate as formatDateHelper } from '../common/DatePickerProvider'
 
 interface OperationsTableProps {
   operations: Operation[]
@@ -31,11 +32,10 @@ const OperationsTable: React.FC<OperationsTableProps> = ({
   onSelect,
   selectedOperationId,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('pl-PL')
+    return formatDateHelper(dateString, i18n.language)
   }
 
   const formatAmount = (amount: number | string | undefined | null): string => {
