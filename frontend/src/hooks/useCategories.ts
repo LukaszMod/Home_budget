@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCategories, createCategory, updateCategory, deleteCategory, getOperations, reorderCategories } from '../lib/api'
+import { getCategories, createCategory, updateCategory, deleteCategory, getOperations, reorderCategories, toggleCategoryHidden } from '../lib/api'
 import type { Category as APICategory, CreateCategoryPayload, Operation as APIOperation } from '../lib/api'
 import { useNotifier } from '../components/common/Notifier'
 
@@ -54,6 +54,14 @@ export const useCategories = () => {
     onError: (e: any) => notifier.notify(String(e), 'error'),
   })
 
+  const toggleHiddenMut = useMutation<APICategory, Error, number>({
+    mutationFn: (id) => toggleCategoryHidden(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['categories'] })
+    },
+    onError: (e: any) => notifier.notify(String(e), 'error'),
+  })
+
   return {
     categoriesQuery,
     operationsQuery,
@@ -61,5 +69,6 @@ export const useCategories = () => {
     updateMut,
     deleteMut,
     reorderMut,
+    toggleHiddenMut,
   }
 }

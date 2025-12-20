@@ -26,6 +26,7 @@ pub struct Category {
     pub r#type: String,
     pub sort_order: i32,
     pub is_system: bool,
+    pub is_hidden: bool,
 }
 
 #[derive(Deserialize)]

@@ -338,7 +338,7 @@ export const createTransfer = async (payload: TransferRequest): Promise<Transfer
 }
 
 // --- Categories
-export type Category = { id: number; name: string; parent_id?: number | null; type: 'income' | 'expense'; sort_order?: number; is_system?: boolean }
+export type Category = { id: number; name: string; parent_id?: number | null; type: 'income' | 'expense'; sort_order?: number; is_system?: boolean; is_hidden?: boolean }
 export type CreateCategoryPayload = { name: string; parent_id?: number | null; type: 'income' | 'expense' }
 
 export const getCategories = async (): Promise<Category[]> => {
@@ -371,6 +371,10 @@ export const reorderCategories = async (items: { id: number; sort_order: number 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
   })
+}
+
+export const toggleCategoryHidden = async (id: number): Promise<Category> => {
+  return fetchJson(`${API}/categories/${id}/toggle-hidden`, { method: 'POST' })
 }
 
 // --- Budgets

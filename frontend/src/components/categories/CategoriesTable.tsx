@@ -17,6 +17,8 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import type { Category } from '../../lib/api'
 
 import {
@@ -44,6 +46,7 @@ interface CategoriesTableProps {
   canDelete: (id: number) => boolean
   onAddSubcategory: (parentId: number) => void
   onReorder: (items: { id: number; sort_order: number }[]) => void
+  onToggleHidden: (id: number) => void
 }
 
 interface SortableRowProps {
@@ -57,6 +60,7 @@ interface SortableRowProps {
   onDelete: (id: number) => void
   canDelete: (id: number) => boolean
   onAddSubcategory?: (id: number) => void
+  onToggleHidden: (id: number) => void
   childrenRows?: React.ReactNode
 }
 
@@ -71,6 +75,7 @@ const SortableRow = ({
   onDelete,
   canDelete,
   onAddSubcategory,
+  onToggleHidden,
   childrenRows,
 }: SortableRowProps) => {
   const { t } = useTranslation()
@@ -86,7 +91,7 @@ const SortableRow = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : category.is_hidden ? 0.5 : 1,
     backgroundColor: isDragging ? 'rgba(0, 0, 0, 0.05)' : undefined,
   }
 
@@ -158,6 +163,15 @@ const SortableRow = ({
                 <AddIcon fontSize="small" />
               </IconButton>
             )}
+            {!category.is_system && (
+              <IconButton
+                size="small"
+                onClick={() => onToggleHidden(category.id)}
+                title={category.is_hidden ? t('categories.show', 'Pokaż') : t('categories.hide', 'Ukryj')}
+              >
+                {category.is_hidden ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+              </IconButton>
+            )}
             <IconButton size="small" onClick={() => onEdit(category)} title={t('common.edit')}>
               <EditIcon fontSize="small" />
             </IconButton>
@@ -184,6 +198,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   canDelete,
   onAddSubcategory,
   onReorder,
+  onToggleHidden,
 }) => {
   const { t } = useTranslation()
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({})
@@ -317,6 +332,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
                   onDelete={onDelete}
                   canDelete={canDelete}
                   onAddSubcategory={onAddSubcategory}
+                  onToggleHidden={onToggleHidden}
                   childrenRows={
                     children.length > 0 ? (
                       <SortableContext
@@ -332,6 +348,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
                             onEdit={onEdit}
                             onDelete={onDelete}
                             canDelete={canDelete}
+                            onToggleHidden={onToggleHidden}
                           />
                         ))}
                       </SortableContext>

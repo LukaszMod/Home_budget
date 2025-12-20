@@ -11,7 +11,7 @@ import { useNotifier } from '../components/common/Notifier'
 
 const Categories: React.FC = () => {
   const { t } = useTranslation()
-  const { categoriesQuery, operationsQuery, createMut, updateMut, deleteMut, reorderMut } = useCategories()
+  const { categoriesQuery, operationsQuery, createMut, updateMut, deleteMut, reorderMut, toggleHiddenMut } = useCategories()
   const notifier = useNotifier()
 
   const categories = categoriesQuery.data ?? []
@@ -107,6 +107,10 @@ const Categories: React.FC = () => {
     await deleteMut.mutateAsync(id)
   }
 
+  const handleToggleHidden = async (id: number) => {
+    await toggleHiddenMut.mutateAsync(id)
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
       <Paper sx={{ p: 2 }}>
@@ -124,6 +128,7 @@ const Categories: React.FC = () => {
           canDelete={canDelete}
           onAddSubcategory={handleAddSubcategory}
           onReorder={handleReorder}
+          onToggleHidden={handleToggleHidden}
         />
       </Box>
 

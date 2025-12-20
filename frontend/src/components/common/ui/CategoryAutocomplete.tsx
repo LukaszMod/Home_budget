@@ -27,7 +27,7 @@ const CategoryAutocomplete: React.FC<CategoryAutocompleteProps> = ({
   // Filter main categories and subcategories
   const mainCategories = useMemo(
     () => {
-      const mains = categories.filter((c) => c.parent_id === null || c.parent_id === undefined)
+      const mains = categories.filter((c) => (c.parent_id === null || c.parent_id === undefined) && !c.is_hidden)
       mains.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       return mains
     },
@@ -37,7 +37,7 @@ const CategoryAutocomplete: React.FC<CategoryAutocompleteProps> = ({
   const subcategoriesByParent = useMemo(() => {
     const map = new Map<number, Category[]>()
     mainCategories.forEach((main) => {
-      const subs = categories.filter((c) => c.parent_id === main.id)
+      const subs = categories.filter((c) => c.parent_id === main.id && !c.is_hidden)
       subs.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       map.set(main.id, subs)
     })
