@@ -5,7 +5,7 @@ import { useGoals } from '../hooks/useGoals'
 import CalcTextField from '../components/common/ui/CalcTextField'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
-import { DatePickerProvider, getDateFormat, formatDate } from '../components/common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat, useFormatDate } from '../components/common/DatePickerProvider'
 import {
   Typography,
   Paper,
@@ -29,12 +29,19 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { useNotifier } from '../components/common/Notifier'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 
 type Goal = APIGoal
 
 const Goals: React.FC = () => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const dateFormat = useDateFormat()
+  const formatDate = useFormatDate()
   const notifier = useNotifier()
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [goalToDelete, setGoalToDelete] = React.useState<number | null>(null)
+  const [completeConfirmOpen, setCompleteConfirmOpen] = React.useState(false)
+  const [goalToComplete, setGoalToComplete] = React.useState<number | null>(null)
   
   const { 
     goals, 
@@ -119,15 +126,13 @@ const Goals: React.FC = () => {
   }
 
   const handleDelete = (goal: Goal) => {
-    if (window.confirm(t('common.confirmDelete') || 'Potwierdź usunięcie')) {
-      deleteGoal(goal.id)
-    }
+    setGoalToDelete(goal.id)
+    setDeleteConfirmOpen(true)
   }
 
   const handleComplete = (goal: Goal) => {
-    if (window.confirm(t('goals.confirmComplete') || 'Potwierdź ukończenie celu')) {
-      completeGoal(goal.id)
-    }
+    setGoalToComplete(goal.id)
+    setCompleteConfirmOpen(true)
   }
 
   const parseAmount = (amount: number | string | undefined): number => {
@@ -257,7 +262,7 @@ const Goals: React.FC = () => {
                         <Typography variant="caption" color="textSecondary">
                           {t('goals.targetDate') || 'Data celu'}
                         </Typography>
-                        <Typography variant="body2">{formatDate(goal.target_date, i18n.language)}</Typography>
+                        <Typography variant="body2">{formatDate(goal.target_date)}</Typography>
                       </div>
                       <div>
                         <Typography variant="caption" color="textSecondary">
@@ -277,7 +282,7 @@ const Goals: React.FC = () => {
                             {t('goals.completedOn') || 'Ukończone'}
                           </Typography>
                           <Typography variant="body2">
-                            {goal.completed_date ? formatDate(goal.completed_date, i18n.language) : 'N/A'}
+                            {goal.completed_date ? formatDate(goal.completed_date) : 'N/A'}
                           </Typography>
                         </div>
                       )}
@@ -343,7 +348,7 @@ const Goals: React.FC = () => {
                 label={t('goals.targetDate') || 'Data celu'}
                 value={targetDate ? dayjs(targetDate) : null}
                 onChange={(date) => setTargetDate(date ? date.format('YYYY-MM-DD') : '')}
-                format={getDateFormat(i18n.language)}
+                format={dateFormat}
                 slotProps={{
                   textField: {
                     fullWidth: true
@@ -360,6 +365,40 @@ const Goals: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message={t('common.confirmDelete') || 'Potwierdź usunięcie'}
+        onConfirm={() => {
+          if (goalToDelete !== null) {
+            deleteGoal(goalToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setGoalToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setGoalToDelete(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={completeConfirmOpen}
+        message={t('goals.confirmComplete') || 'Potwierdź ukończenie celu'}
+        confirmText={t('goals.markComplete') || 'Ukończ'}
+        confirmColor="success"
+        onConfirm={() => {
+          if (goalToComplete !== null) {
+            completeGoal(goalToComplete)
+          }
+          setCompleteConfirmOpen(false)
+          setGoalToComplete(null)
+        }}
+        onCancel={() => {
+          setCompleteConfirmOpen(false)
+          setGoalToComplete(null)
+        }}
+      />
     </Box>
   )
 }

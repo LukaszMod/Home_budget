@@ -15,13 +15,14 @@ import { useOperations } from '../hooks/useOperations'
 import { useCategories } from '../hooks/useCategories'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useHashtags } from '../hooks/useHashtags'
-import { formatDate } from '../components/common/DatePickerProvider'
+import { useFormatDate } from '../components/common/DatePickerProvider'
 import StatisticsFiltersDialog, { type FilterState } from '../components/statistics/StatisticsFiltersDialog'
 import ComparisonCards, { type ComparisonPeriod } from '../components/statistics/ComparisonCards'
 import CategoryExpenseChart from '../components/statistics/CategoryExpenseChart'
 
 const Statistics: React.FC = () => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const formatDate = useFormatDate()
   const { operationsQuery } = useOperations()
   const { categoriesQuery } = useCategories()
   const { accountsQuery } = useAccountsData()
@@ -156,8 +157,8 @@ const Statistics: React.FC = () => {
       income,
       expense,
       balance: income - expense,
-      periodStart: formatDate(startDate, i18n.language),
-      periodEnd: formatDate(endDate, i18n.language),
+      periodStart: formatDate(startDate),
+      periodEnd: formatDate(endDate),
     }
   }, [operations, filters])
 

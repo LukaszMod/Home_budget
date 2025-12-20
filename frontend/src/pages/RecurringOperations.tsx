@@ -29,7 +29,7 @@ import StyledIncomeSwitch from '../components/common/ui/StyledIncomeSwitch'
 import CategoryAutocomplete from '../components/common/ui/CategoryAutocomplete'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
-import { DatePickerProvider, getDateFormat, formatDate } from '../components/common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat, useFormatDate } from '../components/common/DatePickerProvider'
 import { useTranslation } from 'react-i18next'
 import { useRecurringOperations, type RecurringOperation } from '../hooks/useRecurringOperations'
 import { useAccountsData } from '../hooks/useAccountsData'
@@ -38,7 +38,9 @@ import { useNotifier } from '../components/common/Notifier'
 import CalcTextField from '../components/common/ui/CalcTextField'
 
 const RecurringOperations: React.FC = () => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const dateFormat = useDateFormat()
+  const formatDate = useFormatDate()
   const notifier = useNotifier()
   const { query, createMutation, updateMutation, deleteMutation } = useRecurringOperations()
   const { accountsQuery } = useAccountsData()
@@ -212,8 +214,8 @@ const RecurringOperations: React.FC = () => {
                 <TableCell>
                   {frequencies.find(f => f.key === op.frequency)?.label ?? op.frequency}
                 </TableCell>
-                <TableCell>{formatDate(op.start_date, i18n.language)}</TableCell>
-                <TableCell>{op.end_date ? formatDate(op.end_date, i18n.language) : '-'}</TableCell>
+                <TableCell>{formatDate(op.start_date)}</TableCell>
+                <TableCell>{op.end_date ? formatDate(op.end_date) : '-'}</TableCell>
                 <TableCell>
                   <Chip
                     label={op.is_active ? 'Active' : 'Inactive'}
@@ -312,7 +314,7 @@ const RecurringOperations: React.FC = () => {
                     label={t('recurringOperations.fields.startDate') ?? 'Start Date'}
                     value={startDate ? dayjs(startDate) : null}
                     onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
-                    format={getDateFormat(i18n.language)}
+                    format={dateFormat}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -329,7 +331,7 @@ const RecurringOperations: React.FC = () => {
                 label={t('recurringOperations.fields.endDate') ?? 'End Date (optional)'}
                 value={endDate ? dayjs(endDate) : null}
                 onChange={(date) => setEndDate(date ? date.format('YYYY-MM-DD') : '')}
-                format={getDateFormat(i18n.language)}
+                format={dateFormat}
                 slotProps={{
                   textField: {
                     fullWidth: true

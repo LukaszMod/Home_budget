@@ -25,6 +25,7 @@ import StyledModal from '../components/common/StyledModal'
 import AddAccountModal from '../components/users/AddAccountModal'
 import UsersPanel from '../components/users/UsersPanel'
 import AccountsSummary from '../components/users/AccountsSummary'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 
 type Account = APIAccount
 
@@ -60,6 +61,10 @@ const Accounts: React.FC = () => {
   const [name, setName] = React.useState('')
   const [userId, setUserId] = React.useState<number | ''>('')
   const [accountNumber, setAccountNumber] = React.useState('')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [accountToDelete, setAccountToDelete] = React.useState<number | null>(null)
+  const [userDeleteConfirmOpen, setUserDeleteConfirmOpen] = React.useState(false)
+  const [userToDelete, setUserToDelete] = React.useState<number | null>(null)
 
   // react-query handles loading
 
@@ -92,8 +97,8 @@ const Accounts: React.FC = () => {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm(t('accounts.confirmDelete'))) return
-    await deleteAccountMut.mutateAsync(id)
+    setAccountToDelete(id)
+    setDeleteConfirmOpen(true)
   }
 
   const handleToggleClosed = async (id: number) => {
@@ -101,8 +106,8 @@ const Accounts: React.FC = () => {
   }
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm('Usuń użytkownika?')) return
-    await deleteUserMut.mutateAsync(id)
+    setUserToDelete(id)
+    setUserDeleteConfirmOpen(true)
   }
 
   const handleSave = async () => {
@@ -221,6 +226,38 @@ const Accounts: React.FC = () => {
         accountNumber={accountNumber}
         onAccountNumberChange={setAccountNumber}
         onSave={handleSave}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message={t('accounts.confirmDelete') || 'Czy na pewno chcesz usunąć to konto?'}
+        onConfirm={async () => {
+          if (accountToDelete !== null) {
+            await deleteAccountMut.mutateAsync(accountToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setAccountToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setAccountToDelete(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={userDeleteConfirmOpen}
+        message="Czy na pewno chcesz usunąć tego użytkownika?"
+        onConfirm={async () => {
+          if (userToDelete !== null) {
+            await deleteUserMut.mutateAsync(userToDelete)
+          }
+          setUserDeleteConfirmOpen(false)
+          setUserToDelete(null)
+        }}
+        onCancel={() => {
+          setUserDeleteConfirmOpen(false)
+          setUserToDelete(null)
+        }}
       />
     </Paper>
   )

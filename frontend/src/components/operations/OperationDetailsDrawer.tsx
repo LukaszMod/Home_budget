@@ -12,7 +12,7 @@ import {
 import { Close as CloseIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Operation } from '../../lib/api'
-import { formatDate as formatDateHelper } from '../common/DatePickerProvider'
+import { useFormatDate } from '../common/DatePickerProvider'
 
 interface OperationDetailsDrawerProps {
   open: boolean
@@ -25,13 +25,10 @@ const OperationDetailsDrawer: React.FC<OperationDetailsDrawerProps> = ({
   operation,
   onClose,
 }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const formatDate = useFormatDate()
 
   if (!operation) return null
-
-  const formatDate = (dateString: string) => {
-    return formatDateHelper(dateString, i18n.language)
-  }
 
   const formatAmount = (amount: number | string | undefined | null): string => {
     if (amount === undefined || amount === null) return '0.00'

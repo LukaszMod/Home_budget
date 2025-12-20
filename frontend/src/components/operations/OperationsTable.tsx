@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Table,
   TableBody,
@@ -15,7 +15,8 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Operation } from '../../lib/api'
-import { formatDate as formatDateHelper } from '../common/DatePickerProvider'
+import { useFormatDate } from '../common/DatePickerProvider'
+import ConfirmDialog from '../common/ConfirmDialog'
 
 interface OperationsTableProps {
   operations: Operation[]
@@ -32,11 +33,10 @@ const OperationsTable: React.FC<OperationsTableProps> = ({
   onSelect,
   selectedOperationId,
 }) => {
-  const { t, i18n } = useTranslation()
-
-  const formatDate = (dateString: string) => {
-    return formatDateHelper(dateString, i18n.language)
-  }
+  const { t } = useTranslation()
+  const formatDate = useFormatDate()
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [operationToDelete, setOperationToDelete] = useState<number | null>(null)
 
   const formatAmount = (amount: number | string | undefined | null): string => {
     if (amount === undefined || amount === null) return '0.00'
@@ -149,9 +149,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({
                   color="error"
                   onClick={(e) => {
                     e.stopPropagation()
-                    if (window.confirm(t('operations.confirmDelete') || 'Delete this operation?')) {
-                      onDelete(operation.id)
-                    }
+                    setOperationToDelete(operation.id)
+                    setDeleteConfirmOpen(true)
                   }}
                 >
                   <DeleteIcon fontSize="small" />
@@ -161,6 +160,22 @@ const OperationsTable: React.FC<OperationsTableProps> = ({
           ))}
         </TableBody>
       </Table>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message={t('operations.confirmDelete') || 'Delete this operation?'}
+        onConfirm={() => {
+          if (operationToDelete !== null) {
+            onDelete(operationToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setOperationToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setOperationToDelete(null)
+        }}
+      />
       {operations.length === 0 && (
         <Box sx={{ p: 3, textAlign: 'center' }}>
           <Typography color="text.secondary">

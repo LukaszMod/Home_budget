@@ -13,7 +13,7 @@ import {
   Switch,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat } from '../common/DatePickerProvider'
 import dayjs from 'dayjs'
 import CalcTextField from '../common/ui/CalcTextField'
 import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
@@ -50,7 +50,8 @@ const OperationBasicFields: React.FC<OperationBasicFieldsProps> = ({
   isSplit,
   onSplitToggle,
 }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const dateFormat = useDateFormat()
 
   return (
     <Stack spacing={2}>
@@ -81,7 +82,7 @@ const OperationBasicFields: React.FC<OperationBasicFieldsProps> = ({
               label={t('operations.fields.date') ?? 'Data'}
               value={field.value ? dayjs(field.value) : null}
               onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : '')}
-              format={getDateFormat(i18n.language)}
+              format={dateFormat}
               slotProps={{
                 textField: {
                   fullWidth: true,

@@ -29,7 +29,7 @@ async fn test_split_operations_creation() {
     let parent = sqlx::query!(
         r#"
         INSERT INTO operations (description, asset_id, amount, operation_type, operation_date, is_split)
-        VALUES ($1, $2, $3, $4::operation_type, $5::date, TRUE)
+        VALUES ($1, $2, $3, $4::TEXT::operation_type, $5::date, TRUE)
         RETURNING id
         "#,
         "Test Split Operation",
@@ -46,7 +46,7 @@ async fn test_split_operations_creation() {
     let child1 = sqlx::query!(
         r#"
         INSERT INTO operations (description, asset_id, amount, operation_type, operation_date, category_id, parent_operation_id)
-        VALUES ($1, $2, $3, $4::operation_type, $5::date, $6, $7)
+        VALUES ($1, $2, $3, $4::TEXT::operation_type, $5::date, $6, $7)
         RETURNING id
         "#,
         "Child 1",
@@ -64,7 +64,7 @@ async fn test_split_operations_creation() {
     let child2 = sqlx::query!(
         r#"
         INSERT INTO operations (description, asset_id, amount, operation_type, operation_date, category_id, parent_operation_id)
-        VALUES ($1, $2, $3, $4::operation_type, $5::date, $6, $7)
+        VALUES ($1, $2, $3, $4::TEXT::operation_type, $5::date, $6, $7)
         RETURNING id
         "#,
         "Child 2",
@@ -123,13 +123,13 @@ async fn test_account_balance_trigger() {
     .await
     .expect("Failed to get initial balance");
 
-    let initial = initial_balance.current_valuation.unwrap_or(rust_decimal::Decimal::ZERO);
+    let initial = initial_balance.current_valuation.unwrap_or_else(|| bigdecimal::BigDecimal::from(0));
 
     // Create income operation
     let op = sqlx::query!(
         r#"
         INSERT INTO operations (description, asset_id, amount, operation_type, operation_date)
-        VALUES ($1, $2, $3, $4::operation_type, $5::date)
+        VALUES ($1, $2, $3, $4::TEXT::operation_type, $5::date)
         RETURNING id
         "#,
         "Test Income",
@@ -150,11 +150,11 @@ async fn test_account_balance_trigger() {
     .await
     .expect("Failed to get balance after income");
 
-    let after = after_income.current_valuation.unwrap_or(rust_decimal::Decimal::ZERO);
-    
+    let after = after_income.current_valuation.unwrap_or_else(|| bigdecimal::BigDecimal::from(0));
+
     assert_eq!(
-        after, 
-        initial + rust_decimal::Decimal::from(500),
+        after,
+        initial + bigdecimal::BigDecimal::from(500),
         "Balance should increase by 500"
     );
 
@@ -184,13 +184,13 @@ async fn test_split_children_not_counted_in_balance() {
     .await
     .expect("Failed to get initial balance");
 
-    let initial = initial_balance.current_valuation.unwrap_or(rust_decimal::Decimal::ZERO);
+    let initial = initial_balance.current_valuation.unwrap_or_else(|| bigdecimal::BigDecimal::from(0));
 
     // Create split parent
     let parent = sqlx::query!(
         r#"
         INSERT INTO operations (description, asset_id, amount, operation_type, operation_date, is_split)
-        VALUES ($1, $2, $3, $4::operation_type, $5::date, TRUE)
+        VALUES ($1, $2, $3, $4::TEXT::operation_type, $5::date, TRUE)
         RETURNING id
         "#,
         "Split Test",
@@ -207,7 +207,7 @@ async fn test_split_children_not_counted_in_balance() {
     let child = sqlx::query!(
         r#"
         INSERT INTO operations (description, asset_id, amount, operation_type, operation_date, category_id, parent_operation_id)
-        VALUES ($1, $2, $3, $4::operation_type, $5::date, $6, $7)
+        VALUES ($1, $2, $3, $4::TEXT::operation_type, $5::date, $6, $7)
         RETURNING id
         "#,
         "Child",
@@ -230,11 +230,11 @@ async fn test_split_children_not_counted_in_balance() {
     .await
     .expect("Failed to get balance after split");
 
-    let after = after_split.current_valuation.unwrap_or(rust_decimal::Decimal::ZERO);
-    
+    let after = after_split.current_valuation.unwrap_or_else(|| bigdecimal::BigDecimal::from(0));
+
     assert_eq!(
         after,
-        initial - rust_decimal::Decimal::from(100),
+        initial - bigdecimal::BigDecimal::from(100),
         "Balance should decrease by parent amount only (100), not counting children"
     );
 

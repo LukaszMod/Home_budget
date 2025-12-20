@@ -29,39 +29,18 @@ const resources = {
         next: 'Next',
         confirmDelete: 'Confirm delete?',
         loading: 'Loading...',
-        actions: 'Actions'
+        actions: 'Actions',
+        close: 'Close'
+      },
+      settings: {
+        title: 'Settings',
+        language: 'Language',
+        dateFormat: 'Date Format',
+        currency: 'Default Currency',
+        hint: 'Settings are saved in your browser'
       },
       Budget: 'Budget',
-      Accounts: 'Accounts',
       Assets: 'Assets',
-      accounts: {
-        title: 'Accounts',
-        addButton: 'Add account',
-        confirmDelete: 'Delete account?',
-        activeAccounts: 'Active Accounts',
-        closedAccounts: 'Closed Accounts',
-        closeAccount: 'Close account',
-        reopenAccount: 'Reopen account',
-        table: {
-          id: 'ID',
-          name: 'Name',
-          owner: 'Owner (user id)',
-          accountNumber: 'Account number'
-        },
-        dialog: {
-          edit: 'Edit account',
-          new: 'New account'
-        },
-        fields: {
-          name: 'Name',
-          owner: 'Owner (user id)',
-          accountNumber: 'Account number'
-        },
-      messages: {
-        created: 'Account created',
-        updated: 'Account updated',
-        deleted: 'Account deleted'
-      },
       users: {
         title: 'Users',
         add: 'Add user',
@@ -71,7 +50,6 @@ const resources = {
         messages: {
           created: 'User created'
         }
-      }
       },
       assets: {
         title: 'Assets',
@@ -486,48 +464,26 @@ const resources = {
         next: 'Dalej',
         confirmDelete: 'Potwierdź usunięcie?',
         loading: 'Ładowanie...',
-        actions: 'Akcje'
+        actions: 'Akcje',
+        close: 'Zamknij'
+      },
+      settings: {
+        title: 'Ustawienia',
+        language: 'Język',
+        dateFormat: 'Format daty',
+        currency: 'Waluta domyślna',
+        hint: 'Ustawienia są zapisywane w przeglądarce'
       },
       Budget: 'Budżet',
-      Accounts: 'Konta',
       Assets: 'Majątek',
-      accounts: {
-        title: 'Konta',
-        addButton: 'Dodaj konto',
-        confirmDelete: 'Usuń konto?',
-        activeAccounts: 'Aktywne konta',
-        closedAccounts: 'Zamknięte konta',
-        closeAccount: 'Zamknij konto',
-        reopenAccount: 'Otwórz konto',
-        table: {
-          id: 'ID',
-          name: 'Nazwa',
-          owner: 'Właściciel (id użytkownika)',
-          accountNumber: 'Nr konta'
-        },
-        dialog: {
-          edit: 'Edytuj konto',
-          new: 'Nowe konto'
-        },
-        fields: {
-          name: 'Nazwa',
-          owner: 'Właściciel (id użytkownika)',
-          accountNumber: 'Nr konta'
+      users: {
+        title: 'Użytkownicy',
+        add: 'Dodaj użytkownika',
+        validation: {
+          fillRequired: 'Wypełnij wszystkie pola'
         },
         messages: {
-          created: 'Konto utworzone',
-          updated: 'Konto zaktualizowane',
-          deleted: 'Konto usunięte'
-        },
-        users: {
-          title: 'Użytkownicy',
-          add: 'Dodaj użytkownika',
-          validation: {
-            fillRequired: 'Wypełnij wszystkie pola'
-          },
-          messages: {
-            created: 'Użytkownik utworzony'
-          }
+          created: 'Użytkownik utworzony'
         }
       },
       assets: {

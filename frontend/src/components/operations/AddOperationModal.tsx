@@ -15,17 +15,43 @@ import {
 } from '../../lib/api'
 import { useNotifier } from '../common/Notifier'
 import StyledModal from '../common/StyledModal'
-import OperationBasicFields from './OperationBasicFields'
-import SplitOperationFields from './SplitOperationFields'
 import { useHashtags } from '../../hooks/useHashtags'
-import { Button, Grid } from '@mui/material'
+import ConfirmDialog from '../common/ConfirmDialog'
+import { 
+  Button, 
+  Grid, 
+  Stack, 
+  Box, 
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Switch,
+  Paper,
+  IconButton,
+  CircularProgress,
+  Autocomplete,
+  Divider,
+  TextField
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { DatePickerProvider, useDateFormat } from '../common/DatePickerProvider'
+import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material'
+import dayjs from 'dayjs'
+import CalcTextField from '../common/ui/CalcTextField'
+import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
+import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
+import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions'
 
 interface AddOperationModalProps {
   open: boolean
   onClose: () => void
   accounts: Account[]
   categories: Category[]
+  onSwitchToTransfer?: () => void
   editing?: APIOperation | null
 }
 
@@ -45,11 +71,14 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
   accounts,
   categories,
   editing,
+  onSwitchToTransfer,
 }) => {
   const qc = useQueryClient()
   const notifier = useNotifier()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { hashtags } = useHashtags()
+  const dateFormat = useDateFormat()
+  const [unsplitConfirmOpen, setUnsplitConfirmOpen] = React.useState(false)
 
   // Debug log
   React.useEffect(() => {
@@ -333,6 +362,29 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     >
       <form onSubmit={handleSubmit((data) => handleSave(data, false))}>
         <Grid container spacing={2}>
+          {/* Switch to Transfer */}
+          {onSwitchToTransfer && !editing && (
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={false}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          onClose()
+                          onSwitchToTransfer()
+                        }
+                      }}
+                    />
+                  }
+                  label={t('operations.switchToTransfer') ?? 'Przełącz na przelew'}
+                  labelPlacement="start"
+                />
+              </Box>
+            </Grid>
+          )}
+          
           {/* Left Column: Main Form */}
           <Grid item xs={12} md={(isSplit || (editing && editing.is_split)) ? 6 : 12}>
             <Stack spacing={2}>
@@ -361,7 +413,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
                       label={t('operations.fields.date') ?? 'Data'}
                       value={field.value ? dayjs(field.value) : null}
                       onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : '')}
-                      format={getDateFormat(i18n.language)}
+                      format={dateFormat}
                       slotProps={{
                         textField: {
                           fullWidth: true,
@@ -619,16 +671,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
                 <Button
                   variant="outlined"
                   color="warning"
-                  onClick={async () => {
-                    if (confirm(t('operations.confirmUnsplit') ?? 'Czy na pewno chcesz cofnąć podział? Dzieci zostaną usunięte.')) {
-                      try {
-                        await unsplitMut.mutateAsync(editing.id)
-                        onClose()
-                      } catch (e: any) {
-                        notifier.notify(String(e), 'error')
-                      }
-                    }
-                  }}
+                  onClick={() => setUnsplitConfirmOpen(true)}
                 >
                   {t('operations.unsplit') ?? 'Cofnij podział'}
                 </Button>
@@ -648,6 +691,25 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
           </Grid>
         </Grid>
       </form>
+
+      <ConfirmDialog
+        open={unsplitConfirmOpen}
+        message={t('operations.confirmUnsplit') ?? 'Czy na pewno chcesz cofnąć podział? Dzieci zostaną usunięte.'}
+        confirmText={t('operations.unsplit') ?? 'Cofnij podział'}
+        confirmColor="warning"
+        onConfirm={async () => {
+          if (editing) {
+            try {
+              await unsplitMut.mutateAsync(editing.id)
+              onClose()
+            } catch (e: any) {
+              notifier.notify(String(e), 'error')
+            }
+          }
+          setUnsplitConfirmOpen(false)
+        }}
+        onCancel={() => setUnsplitConfirmOpen(false)}
+      />
     </StyledModal>
   )
 }

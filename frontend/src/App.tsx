@@ -14,6 +14,7 @@ import Statistics from './pages/Statistics'
 import useStore from './store'
 import { getTheme } from './theme'
 import i18n from './i18n'
+import { SettingsProvider } from './contexts/SettingsContext'
 
 
 const App: React.FC = () => {
@@ -28,8 +29,9 @@ const App: React.FC = () => {
   }, [lang])
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <SettingsProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
       <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <NavBar />
         <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
@@ -58,7 +60,8 @@ const App: React.FC = () => {
           </Routes>
         </Box>
       </Box>
-    </ThemeProvider>
+      </ThemeProvider>
+    </SettingsProvider>
   )
 }
 

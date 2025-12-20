@@ -8,6 +8,7 @@ import { Typography, Paper, Stack, Button, Box, TextField } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
 import { useNotifier } from '../components/common/Notifier'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 
 const Categories: React.FC = () => {
   const { t } = useTranslation()
@@ -22,6 +23,8 @@ const Categories: React.FC = () => {
   const [name, setName] = React.useState('')
   const [parentId, setParentId] = React.useState<number | null>(null)
   const [type, setType] = React.useState<'income' | 'expense'>('expense')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [categoryToDelete, setCategoryToDelete] = React.useState<number | null>(null)
 
   React.useEffect(() => {
     if (!modalOpen) {
@@ -103,8 +106,8 @@ const Categories: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!canDelete(id)) return
-    if (!confirm('Delete?')) return
-    await deleteMut.mutateAsync(id)
+    setCategoryToDelete(id)
+    setDeleteConfirmOpen(true)
   }
 
   const handleToggleHidden = async (id: number) => {
@@ -160,6 +163,22 @@ const Categories: React.FC = () => {
           {categories.filter(c => c.parent_id === null).map(c => (<option key={c.id} value={c.id} disabled={!!editing && editing.id === c.id}>{c.name}</option>))}
         </TextField>
       </StyledModal>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message={t('categories.confirmDelete') || 'Czy na pewno chcesz usunąć tę kategorię?'}
+        onConfirm={async () => {
+          if (categoryToDelete !== null) {
+            await deleteMut.mutateAsync(categoryToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setCategoryToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setCategoryToDelete(null)
+        }}
+      />
     </Box>
   )
 }

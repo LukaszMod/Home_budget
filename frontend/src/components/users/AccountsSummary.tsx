@@ -1,7 +1,6 @@
 import React from 'react'
 import { Paper, Typography, Box, FormControl, InputLabel, Select, MenuItem, Stack } from '@mui/material'
-import { useTranslation } from 'react-i18next'
-import { formatDate } from '../common/DatePickerProvider'
+import { useFormatDate } from '../common/DatePickerProvider'
 import type { Operation } from '../../lib/api'
 
 type RangeKey = 'month' | 'quarter' | 'year'
@@ -29,7 +28,7 @@ function formatCurrency(n: number) {
 }
 
 const AccountsSummary: React.FC<{ operations: Operation[] }> = ({ operations }) => {
-  const { i18n } = useTranslation()
+  const formatDate = useFormatDate()
   const [range, setRange] = React.useState<RangeKey>('month')
 
   const { start, end } = React.useMemo(() => rangeFor(range), [range])
@@ -85,7 +84,7 @@ const AccountsSummary: React.FC<{ operations: Operation[] }> = ({ operations }) 
           <Typography variant="h6">{formatCurrency(cashflow)}</Typography>
         </Box>
 
-        <Typography variant="caption">Zakres: {formatDate(start, i18n.language)} – {formatDate(new Date(end.getTime() - 1), i18n.language)}</Typography>
+        <Typography variant="caption">Zakres: {formatDate(start)} – {formatDate(new Date(end.getTime() - 1))}</Typography>
       </Stack>
     </Paper>
   )

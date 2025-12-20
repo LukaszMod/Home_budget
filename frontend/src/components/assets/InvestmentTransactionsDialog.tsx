@@ -19,13 +19,12 @@ import {
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
-import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat, useFormatDate, useLocale } from '../common/DatePickerProvider'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CalcTextField from '../common/ui/CalcTextField'
 import type { InvestmentTransaction, InvestmentTransactionType } from '../../lib/api'
 import { useInvestmentTransactions } from '../../hooks/useInvestmentTransactions'
-import { useTranslation } from 'react-i18next'
-import { formatDate } from '../common/DatePickerProvider'
+import ConfirmDialog from '../common/ConfirmDialog'
 
 interface InvestmentTransactionsDialogProps {
   open: boolean
@@ -40,7 +39,9 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
   assetId,
   assetName,
 }) => {
-  const { i18n } = useTranslation()
+  const dateFormat = useDateFormat()
+  const formatDate = useFormatDate()
+  const locale = useLocale()
   const { transactions, createTransaction, deleteTransaction, isLoading } = useInvestmentTransactions(assetId)
   
   const [transactionType, setTransactionType] = useState<InvestmentTransactionType>('buy')
@@ -48,6 +49,8 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
   const [pricePerUnit, setPricePerUnit] = useState('')
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [transactionToDelete, setTransactionToDelete] = useState<number | null>(null)
 
   // Helper to parse string or number
   const parseValue = (value: number | string | null | undefined): number => {
@@ -86,9 +89,8 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
   }
 
   const handleDelete = (transactionId: number) => {
-    if (confirm('Czy na pewno chcesz usunąć tę transakcję?')) {
-      deleteTransaction(transactionId)
-    }
+    setTransactionToDelete(transactionId)
+    setDeleteConfirmOpen(true)
   }
 
   const totalValue = (transaction: InvestmentTransaction) => {
@@ -148,7 +150,7 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
                   label="Data transakcji"
                   value={transactionDate ? dayjs(transactionDate) : null}
                   onChange={(d) => setTransactionDate(d ? d.format('YYYY-MM-DD') : '')}
-                  format={getDateFormat(i18n.language)}
+                  format={dateFormat}
                   slotProps={{ textField: { fullWidth: true, InputLabelProps: { shrink: true } } }}
                 />
               </DatePickerProvider>
@@ -198,19 +200,19 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
-                        {formatDate(transaction.transaction_date, i18n.language)}
+                        {formatDate(transaction.transaction_date)}
                       </TableCell>
                       <TableCell>{transactionTypeLabels[transaction.transaction_type]}</TableCell>
                       <TableCell align="right">{formatQuantity(transaction.quantity)}</TableCell>
                       <TableCell align="right">
-                        {transaction.price_per_unit ? parseValue(transaction.price_per_unit).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
+                        {transaction.price_per_unit ? parseValue(transaction.price_per_unit).toLocaleString(locale, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         }) : '-'}
                       </TableCell>
                       <TableCell align="right">
                         <strong>
-                          {totalValue(transaction).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
+                          {totalValue(transaction).toLocaleString(locale, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
@@ -239,6 +241,22 @@ const InvestmentTransactionsDialog: React.FC<InvestmentTransactionsDialogProps> 
       <DialogActions>
         <Button onClick={onClose}>Zamknij</Button>
       </DialogActions>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message="Czy na pewno chcesz usunąć tę transakcję?"
+        onConfirm={() => {
+          if (transactionToDelete !== null) {
+            deleteTransaction(transactionToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setTransactionToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setTransactionToDelete(null)
+        }}
+      />
     </Dialog>
   )
 }

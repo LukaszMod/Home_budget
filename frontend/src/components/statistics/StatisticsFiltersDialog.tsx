@@ -20,7 +20,7 @@ import {
   Checkbox,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat } from '../common/DatePickerProvider'
 import dayjs from 'dayjs'
 import type { Account, Category, Hashtag } from '../../lib/api'
 
@@ -54,7 +54,8 @@ const StatisticsFiltersDialog: React.FC<StatisticsFiltersDialogProps> = ({
   hashtags,
   activeAccountIds,
 }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const dateFormat = useDateFormat()
 
   const subcategories = categories.filter(c => c.parent_id !== null).sort((a, b) => a.name.localeCompare(b.name))
 
@@ -103,14 +104,14 @@ const StatisticsFiltersDialog: React.FC<StatisticsFiltersDialogProps> = ({
                   label={t('operations.dateFilter.from') ?? 'From'}
                   value={filters.customDateFrom ? dayjs(filters.customDateFrom) : null}
                   onChange={(d) => onFiltersChange({ ...filters, customDateFrom: d ? d.format('YYYY-MM-DD') : '' })}
-                  format={getDateFormat(i18n.language)}
+                  format={dateFormat}
                   slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
                 />
                 <DatePicker
                   label={t('operations.dateFilter.to') ?? 'To'}
                   value={filters.customDateTo ? dayjs(filters.customDateTo) : null}
                   onChange={(d) => onFiltersChange({ ...filters, customDateTo: d ? d.format('YYYY-MM-DD') : '' })}
-                  format={getDateFormat(i18n.language)}
+                  format={dateFormat}
                   slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
                 />
               </Stack>

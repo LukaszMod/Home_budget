@@ -19,6 +19,7 @@ import StyledModal from '../components/common/StyledModal'
 import { TextField } from '@mui/material'
 import { useNotifier } from '../components/common/Notifier'
 import { useTranslation } from 'react-i18next'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 
 const Users: React.FC = () => {
   const { t } = useTranslation()
@@ -30,6 +31,8 @@ const Users: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [fullName, setFullName] = useState('')
   const [nick, setNick] = useState('')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<number | null>(null)
 
   const handleAddUser = async () => {
     if (!fullName || !nick) {
@@ -55,9 +58,8 @@ const Users: React.FC = () => {
   }
 
   const handleDeleteUser = async (id: number) => {
-    if (confirm('Czy na pewno chcesz usunąć użytkownika?')) {
-      await deleteUserMut.mutateAsync(id)
-    }
+    setUserToDelete(id)
+    setDeleteConfirmOpen(true)
   }
 
   return (
@@ -134,6 +136,22 @@ const Users: React.FC = () => {
           />
         </Stack>
       </StyledModal>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message="Czy na pewno chcesz usunąć tego użytkownika?"
+        onConfirm={async () => {
+          if (userToDelete !== null) {
+            await deleteUserMut.mutateAsync(userToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setUserToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setUserToDelete(null)
+        }}
+      />
     </Box>
   )
 }

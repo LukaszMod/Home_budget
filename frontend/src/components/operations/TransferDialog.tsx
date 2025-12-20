@@ -12,10 +12,11 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Switch,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
-import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat } from '../common/DatePickerProvider'
 import StyledModal from '../common/StyledModal'
 import CalcTextField from '../common/ui/CalcTextField'
 import AccountSelect from '../common/ui/AccountSelect'
@@ -31,6 +32,7 @@ interface TransferDialogProps {
   onClose: () => void
   onTransfer: (data: TransferData) => void
   preselectedAssetId?: number
+  onSwitchToOperation?: () => void
 }
 
 export interface TransferData {
@@ -65,13 +67,15 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
   onClose,
   onTransfer,
   preselectedAssetId,
+  onSwitchToOperation,
 }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const notifier = useNotifier()
   const { assets } = useAssets()
   const { assetTypes } = useAssetTypes()
   const { usersQuery } = useAccountsData()
   const users = usersQuery.data ?? []
+  const dateFormat = useDateFormat()
 
   // Form state
   const [fromAssetId, setFromAssetId] = useState<number | ''>(preselectedAssetId || '')
@@ -472,6 +476,27 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
       </Typography>
 
       <Stack spacing={3}>
+        {/* Switch to Operation */}
+        {onSwitchToOperation && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={false}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      onClose()
+                      onSwitchToOperation()
+                    }
+                  }}
+                />
+              }
+              label={t('operations.switchToOperation') ?? 'Przełącz na operację'}
+              labelPlacement="start"
+            />
+          </Box>
+        )}
+
         {/* Transfer Type */}
         <FormControl fullWidth>
           <InputLabel>{t('transfer.type', 'Typ transferu')}</InputLabel>
@@ -538,7 +563,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
             label={t('transfer.date', 'Data operacji')}
             value={operationDate ? dayjs(operationDate) : null}
             onChange={(d) => setOperationDate(d ? d.format('YYYY-MM-DD') : '')}
-            format={getDateFormat(i18n.language)}
+            format={dateFormat}
             slotProps={{ textField: { fullWidth: true, InputLabelProps: { shrink: true } } }}
           />
         </DatePickerProvider>

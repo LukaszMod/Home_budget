@@ -18,12 +18,11 @@ import {
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
-import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat, useFormatDate, useLocale } from '../common/DatePickerProvider'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CalcTextField from '../common/ui/CalcTextField'
 import { useAssetValuations } from '../../hooks/useAssetValuations'
-import { useTranslation } from 'react-i18next'
-import { formatDate } from '../common/DatePickerProvider'
+import ConfirmDialog from '../common/ConfirmDialog'
 
 interface AssetValuationsDialogProps {
   open: boolean
@@ -40,12 +39,16 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
   assetName,
   currency,
 }) => {
-  const { i18n } = useTranslation()
+  const dateFormat = useDateFormat()
+  const formatDate = useFormatDate()
+  const locale = useLocale()
   const { valuations, createValuation, deleteValuation, isLoading } = useAssetValuations(assetId)
   
   const [valuation, setValuation] = useState('')
   const [valuationDate, setValuationDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [valuationToDelete, setValuationToDelete] = useState<number | null>(null)
 
   const handleAddValuation = () => {
     if (!valuation) {
@@ -67,14 +70,12 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
   }
 
   const handleDelete = (valuationId: number) => {
-    if (confirm('Czy na pewno chcesz usunąć tę wycenę?')) {
-      deleteValuation(valuationId)
-    }
+    setValuationToDelete(valuationId)
+    setDeleteConfirmOpen(true)
   }
 
   const formatValue = (value: number | string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value
-    const locale = i18n.language === 'pl' ? 'pl-PL' : 'en-US'
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
@@ -106,7 +107,7 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
                   label="Data wyceny"
                   value={valuationDate ? dayjs(valuationDate) : null}
                   onChange={(d) => setValuationDate(d ? d.format('YYYY-MM-DD') : '')}
-                  format={getDateFormat(i18n.language)}
+                  format={dateFormat}
                   slotProps={{ textField: { fullWidth: true, InputLabelProps: { shrink: true } } }}
                 />
               </DatePickerProvider>
@@ -156,7 +157,7 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
                     .map((val) => (
                       <TableRow key={val.id}>
                         <TableCell>
-                          {formatDate(val.valuation_date, i18n.language)}
+                          {formatDate(val.valuation_date)}
                         </TableCell>
                         <TableCell align="right">
                           <strong>{formatValue(val.value)}</strong>
@@ -184,6 +185,22 @@ const AssetValuationsDialog: React.FC<AssetValuationsDialogProps> = ({
       <DialogActions>
         <Button onClick={onClose}>Zamknij</Button>
       </DialogActions>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        message="Czy na pewno chcesz usunąć tę wycenę?"
+        onConfirm={() => {
+          if (valuationToDelete !== null) {
+            deleteValuation(valuationToDelete)
+          }
+          setDeleteConfirmOpen(false)
+          setValuationToDelete(null)
+        }}
+        onCancel={() => {
+          setDeleteConfirmOpen(false)
+          setValuationToDelete(null)
+        }}
+      />
     </Dialog>
   )
 }

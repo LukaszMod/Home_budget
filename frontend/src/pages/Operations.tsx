@@ -16,7 +16,7 @@ import ImportCSVDialog from '../components/operations/ImportCSVDialog'
 import type { TransferData } from '../components/operations/TransferDialog'
 import { Typography, Paper, Box, Button, Stack, MenuItem, Select, FormControl, InputLabel, Chip, Checkbox, ListItemText } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePickerProvider, getDateFormat } from '../components/common/DatePickerProvider'
+import { DatePickerProvider, useDateFormat, useLocale } from '../components/common/DatePickerProvider'
 import dayjs from 'dayjs'
 import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
@@ -39,13 +39,15 @@ function computeStartDate(preset: string): Date | null {
 }
 
 const Operations: React.FC = () => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const locale = useLocale()
   const { operationsQuery, deleteMutation } = useOperations()
   const { accountsQuery } = useAccountsData()
   const { categoriesQuery } = useCategories()
   const { hashtags } = useHashtags()
   const transferMutation = useTransfer()
   const notifier = useNotifier()
+  const dateFormat = useDateFormat()
 
   const operations = operationsQuery.data ?? []
   const accounts = accountsQuery.data ?? []
@@ -257,14 +259,14 @@ const Operations: React.FC = () => {
                   label={t('operations.dateFilter.from') ?? 'Od'}
                   value={customDateFrom ? dayjs(customDateFrom) : null}
                   onChange={(d) => setCustomDateFrom(d ? d.format('YYYY-MM-DD') : '')}
-                  format={getDateFormat(i18n.language)}
+                  format={dateFormat}
                   slotProps={{ textField: { InputLabelProps: { shrink: true }, sx: { minWidth: 150 } } }}
                 />
                 <DatePicker
                   label={t('operations.dateFilter.to') ?? 'Do'}
                   value={customDateTo ? dayjs(customDateTo) : null}
                   onChange={(d) => setCustomDateTo(d ? d.format('YYYY-MM-DD') : '')}
-                  format={getDateFormat(i18n.language)}
+                  format={dateFormat}
                   slotProps={{ textField: { InputLabelProps: { shrink: true }, sx: { minWidth: 150 } } }}
                 />
               </DatePickerProvider>
@@ -420,7 +422,7 @@ const Operations: React.FC = () => {
             {t('operations.summary.totalIncome') ?? 'Przychody'}
           </Typography>
           <Typography variant="h6" fontWeight="bold" sx={{ color: 'success.main' }}>
-            {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' })}
+            {filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString(locale, { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'center' }}>
@@ -428,7 +430,7 @@ const Operations: React.FC = () => {
             {t('operations.summary.totalExpense') ?? 'Wydatki'}
           </Typography>
           <Typography variant="h6" fontWeight="bold" sx={{ color: 'error.main' }}>
-            {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' })}
+            {filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0).toLocaleString(locale, { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'center' }}>
@@ -444,16 +446,30 @@ const Operations: React.FC = () => {
                 : 'error.main' 
             }}
           >
-            {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' })}
+            {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString(locale, { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
       </Paper>
 
-      <AddOperationModal open={modalOpen} onClose={() => setModalOpen(false)} accounts={accounts} categories={categories} editing={editing} />
+      <AddOperationModal 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        accounts={accounts} 
+        categories={categories} 
+        editing={editing}
+        onSwitchToTransfer={() => {
+          setModalOpen(false)
+          setTransferDialogOpen(true)
+        }}
+      />
       <TransferDialog 
         open={transferDialogOpen} 
         onClose={() => setTransferDialogOpen(false)}
         onTransfer={handleTransfer}
+        onSwitchToOperation={() => {
+          setTransferDialogOpen(false)
+          setModalOpen(true)
+        }}
       />
       <ImportCSVDialog
         open={importDialogOpen}

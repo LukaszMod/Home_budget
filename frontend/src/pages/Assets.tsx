@@ -4,6 +4,8 @@ import type { Asset, AssetType, AssetCategory, CreateAssetPayload } from '../lib
 import { useAssets } from '../hooks/useAssets'
 import { useAssetTypes } from '../hooks/useAssetTypes'
 import { useAccountsData } from '../hooks/useAccountsData'
+import { useSettings } from '../contexts/SettingsContext'
+import { useExchangeRates } from '../hooks/useExchangeRates'
 import {
   Typography,
   Paper,
@@ -25,6 +27,7 @@ import AssetValuationsDialog from '../components/assets/AssetValuationsDialog'
 import AssetsTable from '../components/assets/AssetsTable'
 import CorrectBalanceDialog from '../components/assets/CorrectBalanceDialog'
 import DeleteAssetDialog from '../components/assets/DeleteAssetDialog'
+import { useLocale } from '../components/common/DatePickerProvider'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -50,7 +53,10 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Assets: React.FC = () => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const locale = useLocale()
+  const { settings } = useSettings()
+  const { convert } = useExchangeRates(settings.currency)
   const [selectedTab, setSelectedTab] = useState(0)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -139,7 +145,6 @@ const Assets: React.FC = () => {
     if (value === null || value === undefined) return '-'
     const numValue = typeof value === 'string' ? parseFloat(value) : value
     if (isNaN(numValue)) return '-'
-    const locale = i18n.language === 'pl' ? 'pl-PL' : 'en-US'
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency
@@ -208,15 +213,29 @@ const Assets: React.FC = () => {
 
   const calculateSummary = () => {
     const selectedAssets = assets.filter(a => selectedAssetIds.has(a.id))
-    const totalValue = selectedAssets.reduce((sum, asset) => {
+    
+    // Group by currency (original amounts)
+    const byCurrency: Record<string, number> = {}
+    
+    selectedAssets.forEach(asset => {
       const value = getCurrentValue(asset)
-      return sum + (value || 0)
-    }, 0)
+      if (value !== null) {
+        const currency = asset.currency || 'PLN'
+        byCurrency[currency] = (byCurrency[currency] || 0) + value
+      }
+    })
+    
+    // Convert all to system currency
+    let totalValue = 0
+    Object.entries(byCurrency).forEach(([currency, value]) => {
+      const converted = convert(value, currency, settings.currency)
+      totalValue += converted
+    })
     
     return {
       count: selectedAssets.length,
       totalValue,
-      // TODO: Implementacja zmiany wartości według okresu wymaga dodatkowych danych historycznych
+      byCurrency,
       startValue: totalValue, // Placeholder
       difference: 0 // Placeholder
     }
@@ -355,11 +374,20 @@ const Assets: React.FC = () => {
                     {t('assets.summary.startValue') ?? 'Wartość początkowa'}
                   </Typography>
                   <Typography variant="h6">
-                    {summary.startValue.toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
+                    {summary.startValue.toLocaleString(locale, {
                       style: 'currency',
-                      currency: 'PLN'
+                      currency: settings.currency
                     })}
                   </Typography>
+                  {/* Show other currencies if present */}
+                  {Object.entries(summary.byCurrency).filter(([curr]) => curr !== settings.currency).map(([currency, value]) => (
+                    <Typography key={currency} variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                      ({value.toLocaleString(locale, {
+                        style: 'currency',
+                        currency: currency
+                      })})
+                    </Typography>
+                  ))}
                 </Box>
 
                 <Box>
@@ -370,9 +398,9 @@ const Assets: React.FC = () => {
                     variant="h6"
                     color={summary.difference >= 0 ? 'success.main' : 'error.main'}
                   >
-                    {summary.difference >= 0 ? '+' : ''}{summary.difference.toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
+                    {summary.difference >= 0 ? '+' : ''}{summary.difference.toLocaleString(locale, {
                       style: 'currency',
-                      currency: 'PLN'
+                      currency: settings.currency
                     })}
                   </Typography>
                 </Box>
@@ -382,11 +410,20 @@ const Assets: React.FC = () => {
                     {t('assets.summary.currentValue') ?? 'Obecna wartość'}
                   </Typography>
                   <Typography variant="h5" fontWeight="bold">
-                    {summary.totalValue.toLocaleString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', {
+                    {summary.totalValue.toLocaleString(locale, {
                       style: 'currency',
-                      currency: 'PLN'
+                      currency: settings.currency
                     })}
                   </Typography>
+                  {/* Show other currencies if present */}
+                  {Object.entries(summary.byCurrency).filter(([curr]) => curr !== settings.currency).map(([currency, value]) => (
+                    <Typography key={currency} variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
+                      ({value.toLocaleString(locale, {
+                        style: 'currency',
+                        currency: currency
+                      })})
+                    </Typography>
+                  ))}
                 </Box>
 
                 <Button

@@ -3,6 +3,7 @@ export { default as NavBar } from './common/NavBar'
 export { default as Sidebar } from './common/Sidebar'
 export { default as StyledModal } from './common/StyledModal'
 export { default as CalcTextField } from './common/ui/CalcTextField'
+export { default as ConfirmDialog } from './common/ConfirmDialog'
 export { NotifierProvider, useNotifier } from './common/Notifier'
 
 // Budget components
