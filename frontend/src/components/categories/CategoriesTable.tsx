@@ -46,7 +46,6 @@ interface CategoriesTableProps {
   onReorder: (items: { id: number; sort_order: number }[]) => void
 }
 
-// Sortable Row Component
 interface SortableRowProps {
   category: Category
   isMain: boolean
@@ -196,7 +195,6 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
     })
   )
 
-  // Build tree structure
   const tree = React.useMemo(() => {
     const mainCategories = categories.filter(
       (c) => c.parent_id === null || c.parent_id === undefined

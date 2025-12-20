@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Asset, AssetType, AssetCategory } from '../lib/api'
+import type { Asset, AssetType, AssetCategory, CreateAssetPayload } from '../lib/api'
 import { useAssets } from '../hooks/useAssets'
 import { useAssetTypes } from '../hooks/useAssetTypes'
 import { useAccountsData } from '../hooks/useAccountsData'
@@ -10,36 +10,21 @@ import {
   Box,
   Tabs,
   Tab,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   Button,
-  IconButton,
-  Chip,
-  Stack,
-  Checkbox,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Grid
+  Grid,
+  Stack
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
-import ShowChartIcon from '@mui/icons-material/ShowChart'
-import HistoryIcon from '@mui/icons-material/History'
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
-import StyledModal from '../components/common/StyledModal'
 import AddAssetModal from '../components/assets/AddAssetModal'
 import InvestmentTransactionsDialog from '../components/assets/InvestmentTransactionsDialog'
 import AssetValuationsDialog from '../components/assets/AssetValuationsDialog'
-import CalcTextField from '../components/common/ui/CalcTextField'
-import type { CreateAssetPayload } from '../lib/api'
+import AssetsTable from '../components/assets/AssetsTable'
+import CorrectBalanceDialog from '../components/assets/CorrectBalanceDialog'
+import DeleteAssetDialog from '../components/assets/DeleteAssetDialog'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -292,183 +277,39 @@ const Assets: React.FC = () => {
 
             {categories.map((category, index) => (
               <TabPanel key={category} value={selectedTab} index={index} sx={{ flexGrow: 1, overflow: 'auto' }}>
-                <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox"></TableCell>
-                  <TableCell>{t('assets.table.type') ?? 'Typ'}</TableCell>
-                  <TableCell>{t('assets.table.name') ?? 'Nazwa'}</TableCell>
-                  <TableCell>{t('assets.table.user') ?? 'Użytkownik'}</TableCell>
-                  {category === 'liquid' || category === 'liability' ? (
-                    <TableCell>{t('assets.table.accountNumber') ?? 'Numer konta'}</TableCell>
-                  ) : null}
-                  {category === 'investment' ? (
-                    <>
-                      <TableCell align="right">{t('assets.table.quantity') ?? 'Ilość'}</TableCell>
-                      <TableCell align="right">{t('assets.table.avgPurchasePrice') ?? 'Śr. cena zakupu'}</TableCell>
-                    </>
-                  ) : null}
-                  {category === 'property' || category === 'vehicle' || category === 'valuable' ? (
-                    <TableCell align="right">{t('assets.table.valuation') ?? 'Wycena'}</TableCell>
-                  ) : null}
-                  <TableCell align="right">{t('assets.table.currentValue') ?? 'Obecna wartość'}</TableCell>
-                  <TableCell>{t('assets.table.currency') ?? 'Waluta'}</TableCell>
-                  <TableCell>{t('assets.table.status') ?? 'Status'}</TableCell>
-                  <TableCell align="right">{t('assets.table.actions') ?? 'Akcje'}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {assetsByCategory(category).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} align="center">
-                      <Typography color="textSecondary">
-                        Brak aktywów w tej kategorii
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  assetsByCategory(category).map((asset) => {
-                    const assetType = getAssetType(asset.asset_type_id)
-                    const currentValue = getCurrentValue(asset)
-                    return (
-                      <TableRow key={asset.id}>
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            checked={selectedAssetIds.has(asset.id)}
-                            onChange={() => handleToggleAssetSelection(asset.id)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <span>{assetType?.icon}</span>
-                            <Typography variant="body2">{assetType?.name}</Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell>{asset.name}</TableCell>
-                        <TableCell>
-                          <Chip label={getUserNick(asset.user_id)} size="small" variant="outlined" />
-                        </TableCell>
-                        {category === 'liquid' || category === 'liability' ? (
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                              {asset.account_number || '-'}
-                            </Typography>
-                          </TableCell>
-                        ) : null}
-                        {category === 'investment' ? (
-                          <>
-                            <TableCell align="right">
-                              {formatQuantity(asset.quantity, 4)}
-                            </TableCell>
-                            <TableCell align="right">
-                              {formatValue(asset.average_purchase_price, asset.currency)}
-                            </TableCell>
-                          </>
-                        ) : null}
-                        {category === 'property' || category === 'vehicle' || category === 'valuable' ? (
-                          <TableCell align="right">
-                            {formatValue(asset.current_valuation, asset.currency)}
-                          </TableCell>
-                        ) : null}
-                        <TableCell align="right">
-                          <Typography variant="body2" fontWeight="bold">
-                            {formatValue(currentValue, asset.currency)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{asset.currency}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={asset.is_active ? (t('assets.status.active') ?? 'Aktywne') : (t('assets.status.inactive') ?? 'Nieaktywne')}
-                            color={asset.is_active ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                            {/* Investment transactions button */}
-                            {assetType?.category === 'investment' && (
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => {
-                                  setSelectedAsset(asset)
-                                  setTransactionsDialogOpen(true)
-                                }}
-                                title={t('assets.actions.transactions') ?? 'Transakcje'}
-                              >
-                                <ShowChartIcon />
-                              </IconButton>
-                            )}
-                            
-                            {/* Balance correction button for liquid assets */}
-                            {assetType?.category === 'liquid' && (
-                              <IconButton
-                                size="small"
-                                color="secondary"
-                                onClick={() => {
-                                  setSelectedAsset(asset)
-                                  setTargetBalance('')
-                                  setCorrectBalanceDialogOpen(true)
-                                }}
-                                title={t('assets.actions.correctBalance') ?? 'Wyrównaj saldo'}
-                              >
-                                <AccountBalanceIcon />
-                              </IconButton>
-                            )}
-                            
-                            {/* Valuations button */}
-                            {(assetType?.category === 'property' || 
-                              assetType?.category === 'vehicle' || 
-                              assetType?.category === 'valuable') && (
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => {
-                                  setSelectedAsset(asset)
-                                  setValuationsDialogOpen(true)
-                                }}
-                                title={t('assets.actions.valuationHistory') ?? 'Historia wycen'}
-                              >
-                                <HistoryIcon />
-                              </IconButton>
-                            )}
-                            
-                            <IconButton
-                              size="small"
-                              onClick={() => handleToggleActive(asset)}
-                              title={asset.is_active ? (t('assets.actions.deactivate') ?? 'Dezaktywuj') : (t('assets.actions.activate') ?? 'Aktywuj')}
-                            >
-                              {asset.is_active ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setSelectedAsset(asset)
-                                setEditModalOpen(true)
-                              }}
-                              title={t('assets.actions.edit') ?? 'Edytuj'}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => {
-                                setSelectedAsset(asset)
-                                setDeleteModalOpen(true)
-                              }}
-                              title={t('assets.actions.delete') ?? 'Usuń'}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
+                <AssetsTable
+                  assets={assetsByCategory(category)}
+                  assetTypes={assetTypes}
+                  category={category}
+                  selectedAssetIds={selectedAssetIds}
+                  onToggleSelection={handleToggleAssetSelection}
+                  onOpenTransactions={(asset: Asset) => {
+                    setSelectedAsset(asset)
+                    setTransactionsDialogOpen(true)
+                  }}
+                  onCorrectBalance={(asset: Asset) => {
+                    setSelectedAsset(asset)
+                    setTargetBalance('')
+                    setCorrectBalanceDialogOpen(true)
+                  }}
+                  onOpenValuations={(asset: Asset) => {
+                    setSelectedAsset(asset)
+                    setValuationsDialogOpen(true)
+                  }}
+                  onToggleActive={handleToggleActive}
+                  onEdit={(asset: Asset) => {
+                    setSelectedAsset(asset)
+                    setEditModalOpen(true)
+                  }}
+                  onDelete={(asset: Asset) => {
+                    setSelectedAsset(asset)
+                    setDeleteModalOpen(true)
+                  }}
+                  formatValue={formatValue}
+                  formatQuantity={formatQuantity}
+                  getCurrentValue={getCurrentValue}
+                  getUserNick={getUserNick}
+                />
               </TabPanel>
             ))}
           </Paper>
@@ -563,40 +404,15 @@ const Assets: React.FC = () => {
       </Grid>
 
       {/* Delete Confirmation Modal */}
-      <StyledModal
+      <DeleteAssetDialog
         open={deleteModalOpen}
+        asset={selectedAsset}
         onClose={() => {
           setDeleteModalOpen(false)
           setSelectedAsset(null)
         }}
-        title={t('assets.deleteModal.title') ?? 'Usuń aktywo'}
-      >
-        <Box>
-          <Typography sx={{ mb: 2 }}>
-            {t('assets.deleteModal.confirmMessage') ?? 'Czy na pewno chcesz usunąć aktywo'} <strong>{selectedAsset?.name}</strong>?
-          </Typography>
-          <Typography variant="body2" color="error" sx={{ mb: 3 }}>
-            {t('assets.deleteModal.warning') ?? 'Ta operacja jest nieodwracalna i usunie wszystkie powiązane transakcje.'}
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              onClick={() => {
-                setDeleteModalOpen(false)
-                setSelectedAsset(null)
-              }}
-            >
-              {t('common.cancel') ?? 'Anuluj'}
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleDeleteAsset}
-            >
-              {t('common.delete') ?? 'Usuń'}
-            </Button>
-          </Stack>
-        </Box>
-      </StyledModal>
+        onConfirm={handleDeleteAsset}
+      />
 
       {/* Add/Edit Asset Modal */}
       <AddAssetModal
@@ -638,56 +454,19 @@ const Assets: React.FC = () => {
       )}
 
       {/* Correct Balance Dialog */}
-      <StyledModal
+      <CorrectBalanceDialog
         open={correctBalanceDialogOpen}
+        asset={selectedAsset}
+        targetBalance={targetBalance}
+        onTargetBalanceChange={setTargetBalance}
         onClose={() => {
           setCorrectBalanceDialogOpen(false)
           setSelectedAsset(null)
           setTargetBalance('')
         }}
-        title={t('assets.correctBalance.title') ?? 'Wyrównanie salda'}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Typography variant="body2" color="textSecondary">
-            {t('assets.correctBalance.description') ?? 'Podaj docelowe saldo konta. Zostanie utworzona operacja korygująca różnicę.'}
-          </Typography>
-          
-          {selectedAsset && (
-            <Typography variant="body2">
-              <strong>{t('assets.correctBalance.currentBalance') ?? 'Aktualne saldo'}:</strong>{' '}
-              {formatValue(selectedAsset.current_valuation, selectedAsset.currency)}
-            </Typography>
-          )}
-          
-          <CalcTextField
-            label={t('assets.correctBalance.targetBalance') ?? 'Docelowe saldo'}
-            value={targetBalance}
-            onChange={(val) => setTargetBalance(String(val))}
-            fullWidth
-            required
-            autoFocus
-          />
-
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              onClick={() => {
-                setCorrectBalanceDialogOpen(false)
-                setSelectedAsset(null)
-                setTargetBalance('')
-              }}
-            >
-              {t('common.cancel') ?? 'Anuluj'}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleCorrectBalance}
-              disabled={!targetBalance}
-            >
-              {t('assets.correctBalance.confirm') ?? 'Wyrównaj'}
-            </Button>
-          </Stack>
-        </Box>
-      </StyledModal>
+        onConfirm={handleCorrectBalance}
+        formatValue={formatValue}
+      />
     </Box>
   )
 }

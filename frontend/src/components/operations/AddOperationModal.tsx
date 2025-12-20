@@ -15,35 +15,10 @@ import {
 } from '../../lib/api'
 import { useNotifier } from '../common/Notifier'
 import StyledModal from '../common/StyledModal'
-import TextFieldWithHashtagSuggestions from '../operations/TextFieldWithHashtagSuggestions'
-import CalcTextField from '../common/ui/CalcTextField'
-import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
-import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
+import OperationBasicFields from './OperationBasicFields'
+import SplitOperationFields from './SplitOperationFields'
 import { useHashtags } from '../../hooks/useHashtags'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePickerProvider, getDateFormat } from '../common/DatePickerProvider'
-import dayjs from 'dayjs'
-import {
-  TextField,
-  Stack,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Button,
-  FormControlLabel,
-  Switch,
-  Box,
-  Typography,
-  Autocomplete,
-  IconButton,
-  Divider,
-  Paper,
-  CircularProgress,
-  Grid,
-} from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
+import { Button, Grid } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 interface AddOperationModalProps {

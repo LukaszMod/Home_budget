@@ -1,55 +1,24 @@
 import React, { useMemo, useState } from 'react'
 import {
   Paper,
-  Stack,
   Typography,
   Box,
   Grid,
   Card,
   CardContent,
-  FormControl,
-  Select,
-  MenuItem,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Checkbox,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
   Chip,
-  // TextField removed (not used for dates anymore)
+  Stack,
 } from '@mui/material'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePickerProvider, getDateFormat, formatDate } from '../components/common/DatePickerProvider'
-import dayjs from 'dayjs'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { useOperations } from '../hooks/useOperations'
 import { useCategories } from '../hooks/useCategories'
 import { useAccountsData } from '../hooks/useAccountsData'
 import { useHashtags } from '../hooks/useHashtags'
-
-interface FilterState {
-  period: 'currentMonth' | 'lastMonth' | 'lastQuarter' | 'lastYear' | 'custom'
-  customDateFrom: string
-  customDateTo: string
-  selectedAccounts: number[]
-  selectedCategories: number[]
-  selectedHashtags: number[]
-}
-
-interface ComparisonPeriod {
-  key: 'lastMonth' | 'lastQuarter' | 'lastYear'
-  label: string
-  income: number
-  expense: number
-  balance: number
-}
+import { formatDate } from '../components/common/DatePickerProvider'
+import StatisticsFiltersDialog, { type FilterState } from '../components/statistics/StatisticsFiltersDialog'
+import ComparisonCards, { type ComparisonPeriod } from '../components/statistics/ComparisonCards'
+import CategoryExpenseChart from '../components/statistics/CategoryExpenseChart'
 
 const Statistics: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -275,12 +244,6 @@ const Statistics: React.FC = () => {
       }))
   }, [operations, filters])
 
-  const COLORS = ['#ff7c7c', '#8884d8', '#82ca9d', '#ffc658', '#ff85a2', '#a4de6c', '#d084d0', '#ffb347', '#87ceeb', '#f0e68c']
-
-  const subcategories = categories.filter(c => c.parent_id !== null).sort((a, b) => a.name.localeCompare(b.name))
-
-  // Count active filters
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Paper sx={{ p: 2 }}>
@@ -434,256 +397,23 @@ const Statistics: React.FC = () => {
 
       {/* Porównanie 3 okresów */}
       {comparisonEnabled && (
-        <Grid container spacing={2}>
-          {comparisonStats.map(period => (
-            <Grid item xs={12} sm={6} md={4} key={period.key}>
-              <Paper sx={{ p: 2, bgcolor: '#fafafa' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  {period.label}
-                </Typography>
-                <Stack spacing={1}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">
-                      {t('operations.summary.totalIncome') ?? 'Income'}:
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
-                      {formatAmount(period.income)} zł
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">
-                      {t('operations.summary.totalExpense') ?? 'Expense'}:
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 'bold' }}>
-                      {formatAmount(period.expense)} zł
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ddd', pt: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                      {t('operations.summary.net') ?? 'Balance'}:
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: period.balance >= 0 ? '#4caf50' : '#f44336', fontWeight: 'bold' }}
-                    >
-                      {formatAmount(period.balance)} zł
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
+        <ComparisonCards comparisonStats={comparisonStats} formatAmount={formatAmount} />
       )}
 
       {/* Wykres słupkowy - Wydatki po kategoriach */}
-      {chartData.length > 0 && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            💰 {t('statistics.expensesByCategory') ?? 'Expenses by Category'}
-          </Typography>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
-                angle={-45}
-                textAnchor="end"
-                height={100}
-              />
-              <YAxis />
-              <Tooltip
-                formatter={(value: any) => `${formatAmount(value)} zł`}
-                labelFormatter={() => 'Wartość'}
-              />
-              <Bar dataKey="value" fill="#8884d8" name={t('operations.summary.totalExpense') ?? 'Expense'}>
-                {chartData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
-      )}
-
-      {chartData.length === 0 && (
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="textSecondary">
-            {t('statistics.noData') ?? 'No data to display for selected filters'}
-          </Typography>
-        </Paper>
-      )}
+      <CategoryExpenseChart chartData={chartData} formatAmount={formatAmount} />
 
       {/* Modal do edycji filtrów */}
-      <Dialog open={filterModalOpen} onClose={() => setFilterModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>
-          {t('statistics.editFilters') ?? 'Edit Filters'}
-        </DialogTitle>
-        <DialogContent dividers sx={{ overflow: 'visible' }}>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            {/* Okres */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                {t('operations.dateFilter.label') ?? 'Period'}
-              </Typography>
-              <FormControl fullWidth>
-                <Select
-                  value={filters.period}
-                  onChange={e => setFilters({ ...filters, period: e.target.value as any })}
-                >
-                  <MenuItem value="currentMonth">{t('statistics.period.currentMonth') ?? 'Current Month'}</MenuItem>
-                  <MenuItem value="lastMonth">{t('statistics.period.lastMonth') ?? 'Last Month'}</MenuItem>
-                  <MenuItem value="lastQuarter">{t('statistics.period.lastQuarter') ?? 'Last Quarter'}</MenuItem>
-                  <MenuItem value="lastYear">{t('statistics.period.lastYear') ?? 'Last Year'}</MenuItem>
-                  <MenuItem value="custom">{t('operations.dateFilter.custom') ?? 'Custom'}</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            {/* Custom dates */}
-            {filters.period === 'custom' && (
-              <DatePickerProvider>
-                <Stack direction="row" spacing={1}>
-                  <DatePicker
-                    label={t('operations.dateFilter.from') ?? 'From'}
-                    value={filters.customDateFrom ? dayjs(filters.customDateFrom) : null}
-                    onChange={(d) => setFilters({ ...filters, customDateFrom: d ? d.format('YYYY-MM-DD') : '' })}
-                    format={getDateFormat(i18n.language)}
-                    slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
-                  />
-                  <DatePicker
-                    label={t('operations.dateFilter.to') ?? 'To'}
-                    value={filters.customDateTo ? dayjs(filters.customDateTo) : null}
-                    onChange={(d) => setFilters({ ...filters, customDateTo: d ? d.format('YYYY-MM-DD') : '' })}
-                    format={getDateFormat(i18n.language)}
-                    slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
-                  />
-                </Stack>
-              </DatePickerProvider>
-            )}
-
-            {/* Konta */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                {t('operations.fields.account') ?? 'Accounts'}
-              </Typography>
-              <List sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid #ddd', bgcolor: '#fafafa' }}>
-                {accounts.filter(a => !a.is_closed).map(account => (
-                  <ListItem key={account.id} dense disablePadding>
-                    <ListItemButton
-                      onClick={() => {
-                        const isSelected = filters.selectedAccounts.includes(account.id)
-                        setFilters({
-                          ...filters,
-                          selectedAccounts: isSelected
-                            ? filters.selectedAccounts.filter(id => id !== account.id)
-                            : [...filters.selectedAccounts, account.id],
-                        })
-                      }}
-                    >
-                      <ListItemIcon>
-                        <Checkbox checked={filters.selectedAccounts.includes(account.id)} size="small" />
-                      </ListItemIcon>
-                      <ListItemText primary={account.name} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-
-            {/* Kategorie */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                {t('operations.fields.category') ?? 'Categories'}
-              </Typography>
-              <List sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid #ddd', bgcolor: '#fafafa' }}>
-                {subcategories.map(cat => {
-                  const parent = categories.find(c => c.id === cat.parent_id)
-                  const label = parent ? `${parent.name} → ${cat.name}` : cat.name
-                  return (
-                    <ListItem key={cat.id} dense disablePadding>
-                      <ListItemButton
-                        onClick={() => {
-                          const isSelected = filters.selectedCategories.includes(cat.id)
-                          setFilters({
-                            ...filters,
-                            selectedCategories: isSelected
-                              ? filters.selectedCategories.filter(id => id !== cat.id)
-                              : [...filters.selectedCategories, cat.id],
-                          })
-                        }}
-                      >
-                        <ListItemIcon>
-                          <Checkbox checked={filters.selectedCategories.includes(cat.id)} size="small" />
-                        </ListItemIcon>
-                        <ListItemText primary={label} />
-                      </ListItemButton>
-                    </ListItem>
-                  )
-                })}
-              </List>
-            </Box>
-
-            {/* Hashtagi */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                {t('statistics.hashtags') ?? 'Hashtags'}
-              </Typography>
-              {hashtags.length > 0 ? (
-                <List sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid #ddd', bgcolor: '#fafafa' }}>
-                  {hashtags.map(tag => (
-                    <ListItem key={tag.id} dense disablePadding>
-                      <ListItemButton
-                        onClick={() => {
-                          const isSelected = filters.selectedHashtags.includes(tag.id)
-                          setFilters({
-                            ...filters,
-                            selectedHashtags: isSelected
-                              ? filters.selectedHashtags.filter(id => id !== tag.id)
-                              : [...filters.selectedHashtags, tag.id],
-                          })
-                        }}
-                      >
-                        <ListItemIcon>
-                          <Checkbox checked={filters.selectedHashtags.includes(tag.id)} size="small" />
-                        </ListItemIcon>
-                        <ListItemText primary={`#${tag.name}`} />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography variant="body2" color="textSecondary">
-                  {t('statistics.noHashtags') ?? 'No hashtags available'}
-                </Typography>
-              )}
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFilterModalOpen(false)}>
-            {t('common.cancel') ?? 'Cancel'}
-          </Button>
-          <Button
-            onClick={() => {
-              setFilters({
-                period: 'currentMonth',
-                customDateFrom: '',
-                customDateTo: '',
-                selectedAccounts: activeAccountIds,
-                selectedCategories: [],
-                selectedHashtags: [],
-              })
-            }}
-            variant="outlined"
-          >
-            {t('statistics.resetFilters') ?? 'Reset'}
-          </Button>
-          <Button onClick={() => setFilterModalOpen(false)} variant="contained">
-            {t('common.save') ?? 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <StatisticsFiltersDialog
+        open={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+        accounts={accounts}
+        categories={categories}
+        hashtags={hashtags}
+        activeAccountIds={activeAccountIds}
+      />
     </Box>
   )
 }
