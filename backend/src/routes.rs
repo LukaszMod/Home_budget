@@ -15,6 +15,7 @@ pub fn router() -> Router<AppState> {
         .route("/users/:id", get(get_user).put(update_user).delete(delete_user))
         // Categories
         .route("/categories", post(create_category).get(list_categories))
+        .route("/categories/reorder", post(reorder_categories))
         .route("/categories/:id", get(get_category).put(update_category).delete(delete_category))
         // Accounts (backward compatibility - maps to liquid assets)
         .route("/accounts", get(list_accounts_compat))
@@ -24,6 +25,7 @@ pub fn router() -> Router<AppState> {
         .route("/assets", post(asset_handlers::create_asset).get(asset_handlers::list_assets))
         .route("/assets/:id", get(asset_handlers::get_asset).put(asset_handlers::update_asset).delete(asset_handlers::delete_asset))
         .route("/assets/:id/toggle-active", post(asset_handlers::toggle_asset_active))
+        .route("/assets/:id/correct-balance", post(asset_handlers::correct_balance))
         // Investment Transactions
         .route("/investment-transactions", post(asset_handlers::create_investment_transaction))
         .route("/assets/:id/investment-transactions", get(asset_handlers::list_investment_transactions))

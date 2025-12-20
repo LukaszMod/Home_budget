@@ -53,6 +53,7 @@ export type CreateAssetPayload = {
   average_purchase_price?: number | null
   current_valuation?: number | null
   currency?: string
+  initial_balance?: number
 }
 
 export const getAssets = async (): Promise<Asset[]> => {
@@ -81,6 +82,14 @@ export const deleteAsset = async (id: number): Promise<void> => {
 
 export const toggleAssetActive = async (id: number): Promise<Asset> => {
   return fetchJson(`${API}/assets/${id}/toggle-active`, { method: 'POST' })
+}
+
+export const correctAssetBalance = async (id: number, target_balance: number): Promise<Asset> => {
+  return fetchJson(`${API}/assets/${id}/correct-balance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_balance }),
+  })
 }
 
 // --- Investment Transactions
@@ -329,7 +338,7 @@ export const createTransfer = async (payload: TransferRequest): Promise<Transfer
 }
 
 // --- Categories
-export type Category = { id: number; name: string; parent_id?: number | null; type: 'income' | 'expense' }
+export type Category = { id: number; name: string; parent_id?: number | null; type: 'income' | 'expense'; sort_order?: number; is_system?: boolean }
 export type CreateCategoryPayload = { name: string; parent_id?: number | null; type: 'income' | 'expense' }
 
 export const getCategories = async (): Promise<Category[]> => {
@@ -354,6 +363,14 @@ export const updateCategory = async ({ id, payload }: { id: number; payload: Cre
 
 export const deleteCategory = async (id: number): Promise<void> => {
   await fetchJson(`${API}/categories/${id}`, { method: 'DELETE' })
+}
+
+export const reorderCategories = async (items: { id: number; sort_order: number }[]): Promise<void> => {
+  await fetchJson(`${API}/categories/reorder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  })
 }
 
 // --- Budgets
@@ -552,4 +569,4 @@ export const deleteImportTemplate = async (id: number): Promise<void> => {
   await fetchJson(`${API}/import-templates/${id}`, { method: 'DELETE' })
 }
 
-export default { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations, getCategories, createCategory, updateCategory, deleteCategory, getBudgets, createBudget, updateBudget, deleteBudget, getGoals, createGoal, updateGoal, deleteGoal, completeGoal, getHashtags, createHashtag, deleteHashtag, extractHashtagsFromText, getImportTemplates, createImportTemplate, updateImportTemplate, deleteImportTemplate }
+export default { getAccounts, createAccount, updateAccount, deleteAccount, getUsers, createUser, deleteUser, getOperations, getCategories, createCategory, updateCategory, deleteCategory, reorderCategories, getBudgets, createBudget, updateBudget, deleteBudget, getGoals, createGoal, updateGoal, deleteGoal, completeGoal, getHashtags, createHashtag, deleteHashtag, extractHashtagsFromText, getImportTemplates, createImportTemplate, updateImportTemplate, deleteImportTemplate }

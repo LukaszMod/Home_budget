@@ -1,5 +1,7 @@
 use axum::{extract::{State, Path}, Json};
 use crate::{AppState, models::*};
+use crate::handlers::categories::ensure_debt_categories;
+use bigdecimal::{BigDecimal, FromPrimitive};
 
 fn db_err<E: std::fmt::Display>(e: E) -> (axum::http::StatusCode, String) {
     (axum::http::StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e))
@@ -16,6 +18,20 @@ pub async fn list_asset_types(State(state): State<AppState>) -> Result<Json<Vec<
 // ASSETS
 pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<CreateAsset>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
     let currency = payload.currency.unwrap_or_else(|| "PLN".to_string());
+    
+    // Check if this is a liability asset type
+    let asset_type_category: String = sqlx::query_scalar(
+        "SELECT category FROM asset_types WHERE id = $1"
+    )
+    .bind(payload.asset_type_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+    
+    // If creating a liability, ensure debt categories exist
+    if asset_type_category == "liability" {
+        ensure_debt_categories(&state.pool).await?;
+    }
     
     let asset = sqlx::query_as::<_, Asset>(
         "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency)
@@ -34,6 +50,25 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
     .fetch_one(&state.pool)
     .await
     .map_err(db_err)?;
+    
+    // If initial balance is provided for liquid assets, create a balance correction operation
+    if asset_type_category == "liquid" {
+        if let Some(initial_balance) = payload.initial_balance {
+            if initial_balance != 0.0 {
+                let operation_type = if initial_balance > 0.0 { "income" } else { "expense" };
+                sqlx::query(
+                    "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+                     VALUES ($1, $2, $3::operation_type, CURRENT_DATE, 'Korekta salda')"
+                )
+                .bind(asset.id)
+                .bind(initial_balance)
+                .bind(operation_type)
+                .execute(&state.pool)
+                .await
+                .map_err(db_err)?;
+            }
+        }
+    }
     
     Ok(Json(asset))
 }
@@ -92,6 +127,63 @@ pub async fn toggle_asset_active(State(state): State<AppState>, Path(id): Path<i
          RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(asset))
+}
+
+pub async fn correct_balance(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CorrectBalanceRequest>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
+    // Get asset and verify it's a liquid asset
+    let _asset = sqlx::query_as::<_, Asset>(
+        "SELECT a.id, a.user_id, a.asset_type_id, a.name, a.description, a.account_number, a.quantity, a.average_purchase_price, a.current_valuation, a.currency, a.is_active, a.created_date 
+         FROM assets a
+         INNER JOIN asset_types at ON a.asset_type_id = at.id
+         WHERE a.id = $1 AND at.category = 'liquid'"
+    )
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|_| (axum::http::StatusCode::NOT_FOUND, "Asset not found or not a liquid asset".to_string()))?;
+
+    // Get current balance
+    let current_balance: Option<BigDecimal> = sqlx::query_scalar(
+        "SELECT current_valuation FROM assets WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+
+    let current = current_balance.unwrap_or_else(|| BigDecimal::from_f64(0.0).unwrap());
+    let target = BigDecimal::from_f64(payload.target_balance)
+        .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "Invalid target balance".to_string()))?;
+
+    // Calculate difference
+    let difference = &target - &current;
+    
+    if difference != BigDecimal::from(0) {
+        let operation_type = if difference > BigDecimal::from(0) { "income" } else { "expense" };
+        
+        sqlx::query(
+            "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
+             VALUES ($1, $2, $3::operation_type, CURRENT_DATE, 'Korekta salda')"
+        )
+        .bind(id)
+        .bind(difference)
+        .bind(operation_type)
+        .execute(&state.pool)
+        .await
+        .map_err(db_err)?;
+    }
+
+    // Return updated asset
+    let updated_asset = sqlx::query_as::<_, Asset>(
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+         FROM assets WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+
+    Ok(Json(updated_asset))
 }
 
 // INVESTMENT TRANSACTIONS

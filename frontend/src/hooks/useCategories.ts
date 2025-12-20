@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCategories, createCategory, updateCategory, deleteCategory, getOperations } from '../lib/api'
+import { getCategories, createCategory, updateCategory, deleteCategory, getOperations, reorderCategories } from '../lib/api'
 import type { Category as APICategory, CreateCategoryPayload, Operation as APIOperation } from '../lib/api'
 import { useNotifier } from '../components/common/Notifier'
 
@@ -46,11 +46,20 @@ export const useCategories = () => {
     onError: (e: any) => notifier.notify(String(e), 'error'),
   })
 
+  const reorderMut = useMutation<void, Error, { id: number; sort_order: number }[]>({
+    mutationFn: (items) => reorderCategories(items),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['categories'] })
+    },
+    onError: (e: any) => notifier.notify(String(e), 'error'),
+  })
+
   return {
     categoriesQuery,
     operationsQuery,
     createMut,
     updateMut,
     deleteMut,
+    reorderMut,
   }
 }

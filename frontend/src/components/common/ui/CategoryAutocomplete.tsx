@@ -26,17 +26,20 @@ const CategoryAutocomplete: React.FC<CategoryAutocompleteProps> = ({
 
   // Filter main categories and subcategories
   const mainCategories = useMemo(
-    () => categories.filter((c) => c.parent_id === null || c.parent_id === undefined),
+    () => {
+      const mains = categories.filter((c) => c.parent_id === null || c.parent_id === undefined)
+      mains.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      return mains
+    },
     [categories]
   )
 
   const subcategoriesByParent = useMemo(() => {
     const map = new Map<number, Category[]>()
     mainCategories.forEach((main) => {
-      map.set(
-        main.id,
-        categories.filter((c) => c.parent_id === main.id)
-      )
+      const subs = categories.filter((c) => c.parent_id === main.id)
+      subs.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      map.set(main.id, subs)
     })
     return map
   }, [mainCategories, categories])

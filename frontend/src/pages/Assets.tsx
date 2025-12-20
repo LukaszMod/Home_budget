@@ -33,10 +33,12 @@ import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
 import HistoryIcon from '@mui/icons-material/History'
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import StyledModal from '../components/common/StyledModal'
 import AddAssetModal from '../components/assets/AddAssetModal'
 import InvestmentTransactionsDialog from '../components/assets/InvestmentTransactionsDialog'
 import AssetValuationsDialog from '../components/assets/AssetValuationsDialog'
+import CalcTextField from '../components/common/ui/CalcTextField'
 import type { CreateAssetPayload } from '../lib/api'
 
 interface TabPanelProps {
@@ -70,11 +72,13 @@ const Assets: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false)
   const [valuationsDialogOpen, setValuationsDialogOpen] = useState(false)
+  const [correctBalanceDialogOpen, setCorrectBalanceDialogOpen] = useState(false)
+  const [targetBalance, setTargetBalance] = useState('')
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set())
   const [summaryPeriod, setSummaryPeriod] = useState<string>('thisMonth')
 
-  const { assets, isLoading, isError, deleteAsset, toggleAssetActive, createAsset, updateAsset } = useAssets()
+  const { assets, isLoading, isError, deleteAsset, toggleAssetActive, createAsset, updateAsset, correctBalance } = useAssets()
   const { assetTypes } = useAssetTypes()
   const { usersQuery } = useAccountsData()
   const users = usersQuery.data ?? []
@@ -135,6 +139,15 @@ const Assets: React.FC = () => {
     setAddModalOpen(false)
     setEditModalOpen(false)
     setSelectedAsset(null)
+  }
+
+  const handleCorrectBalance = () => {
+    if (selectedAsset && targetBalance) {
+      correctBalance({ id: selectedAsset.id, target_balance: parseFloat(targetBalance) })
+      setCorrectBalanceDialogOpen(false)
+      setSelectedAsset(null)
+      setTargetBalance('')
+    }
   }
 
   const formatValue = (value: number | string | null | undefined, currency: string = 'PLN'): string => {
@@ -387,6 +400,22 @@ const Assets: React.FC = () => {
                               </IconButton>
                             )}
                             
+                            {/* Balance correction button for liquid assets */}
+                            {assetType?.category === 'liquid' && (
+                              <IconButton
+                                size="small"
+                                color="secondary"
+                                onClick={() => {
+                                  setSelectedAsset(asset)
+                                  setTargetBalance('')
+                                  setCorrectBalanceDialogOpen(true)
+                                }}
+                                title={t('assets.actions.correctBalance') ?? 'Wyrównaj saldo'}
+                              >
+                                <AccountBalanceIcon />
+                              </IconButton>
+                            )}
+                            
                             {/* Valuations button */}
                             {(assetType?.category === 'property' || 
                               assetType?.category === 'vehicle' || 
@@ -607,6 +636,58 @@ const Assets: React.FC = () => {
           currency={selectedAsset.currency}
         />
       )}
+
+      {/* Correct Balance Dialog */}
+      <StyledModal
+        open={correctBalanceDialogOpen}
+        onClose={() => {
+          setCorrectBalanceDialogOpen(false)
+          setSelectedAsset(null)
+          setTargetBalance('')
+        }}
+        title={t('assets.correctBalance.title') ?? 'Wyrównanie salda'}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="body2" color="textSecondary">
+            {t('assets.correctBalance.description') ?? 'Podaj docelowe saldo konta. Zostanie utworzona operacja korygująca różnicę.'}
+          </Typography>
+          
+          {selectedAsset && (
+            <Typography variant="body2">
+              <strong>{t('assets.correctBalance.currentBalance') ?? 'Aktualne saldo'}:</strong>{' '}
+              {formatValue(selectedAsset.current_valuation, selectedAsset.currency)}
+            </Typography>
+          )}
+          
+          <CalcTextField
+            label={t('assets.correctBalance.targetBalance') ?? 'Docelowe saldo'}
+            value={targetBalance}
+            onChange={(val) => setTargetBalance(String(val))}
+            fullWidth
+            required
+            autoFocus
+          />
+
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Button
+              onClick={() => {
+                setCorrectBalanceDialogOpen(false)
+                setSelectedAsset(null)
+                setTargetBalance('')
+              }}
+            >
+              {t('common.cancel') ?? 'Anuluj'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCorrectBalance}
+              disabled={!targetBalance}
+            >
+              {t('assets.correctBalance.confirm') ?? 'Wyrównaj'}
+            </Button>
+          </Stack>
+        </Box>
+      </StyledModal>
     </Box>
   )
 }

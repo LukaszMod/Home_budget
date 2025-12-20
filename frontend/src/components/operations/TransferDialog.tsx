@@ -48,6 +48,7 @@ export interface TransferData {
     currency?: string
   }
   investment_quantity?: number
+  interest_amount?: number
   investment_price_per_unit?: number
 }
 
@@ -93,6 +94,9 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
   const [investmentQuantity, setInvestmentQuantity] = useState('')
   const [investmentPricePerUnit, setInvestmentPricePerUnit] = useState('')
 
+  // Liability payment state
+  const [interestAmount, setInterestAmount] = useState('')
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
@@ -108,6 +112,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
       setNewAssetDescription('')
       setNewAssetAccountNumber('')
       setNewAssetCurrency('PLN')
+      setInterestAmount('')
       setNewAssetUserId(1)
       setInvestmentQuantity('')
       setInvestmentPricePerUnit('')
@@ -251,6 +256,14 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
       transferData.to_asset_id = toAssetId as number
     }
 
+    // Add interest amount for liability payments
+    if (transferType === 'liquid_to_liability' && interestAmount) {
+      const interestNum = parseFloat(interestAmount)
+      if (!isNaN(interestNum) && interestNum > 0) {
+        transferData.interest_amount = interestNum
+      }
+    }
+
     if (transferType === 'liquid_to_investment') {
       if (createNewAsset) {
         transferData.new_asset = {
@@ -357,13 +370,21 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
 
       case 'liquid_to_liability':
         return (
-          <AccountSelect
-            label={t('transfer.liability', 'Zobowiązanie')}
-            value={toAssetId}
-            onChange={setToAssetId}
-            assets={liabilityAssets}
-            required
-          />
+          <Stack spacing={2}>
+            <AccountSelect
+              label={t('transfer.liability', 'Zobowiązanie')}
+              value={toAssetId}
+              onChange={setToAssetId}
+              assets={liabilityAssets}
+              required
+            />
+            <CalcTextField
+              label={t('transfer.interest', 'Odsetki (opcjonalnie)')}
+              value={interestAmount}
+              onChange={(val) => setInterestAmount(String(val))}
+              fullWidth
+            />
+          </Stack>
         )
 
       default:

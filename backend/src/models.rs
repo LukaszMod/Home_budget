@@ -24,6 +24,8 @@ pub struct Category {
     pub parent_id: Option<i32>,
     #[sqlx(rename = "type")]
     pub r#type: String,
+    pub sort_order: i32,
+    pub is_system: bool,
 }
 
 #[derive(Deserialize)]
@@ -31,6 +33,17 @@ pub struct CreateCategory {
     pub name: String,
     pub parent_id: Option<i32>,
     pub r#type: String,
+}
+
+#[derive(Deserialize)]
+pub struct ReorderCategories {
+    pub items: Vec<ReorderItem>,
+}
+
+#[derive(Deserialize)]
+pub struct ReorderItem {
+    pub id: i32,
+    pub sort_order: i32,
 }
 
 // Asset Types
@@ -72,6 +85,7 @@ pub struct CreateAsset {
     pub average_purchase_price: Option<f64>,
     pub current_valuation: Option<f64>,
     pub currency: Option<String>,
+    pub initial_balance: Option<f64>,
 }
 
 // Investment Transactions
@@ -370,6 +384,9 @@ pub struct TransferRequest {
     
     // For investment transactions
     pub investment_quantity: Option<f64>,
+    
+    // For liability payments - interest amount
+    pub interest_amount: Option<f64>,
 }
 
 #[derive(Serialize)]
@@ -379,6 +396,7 @@ pub struct TransferResponse {
     pub to_operation_id: Option<i32>,
     pub new_asset_id: Option<i32>,
     pub investment_transaction_id: Option<i32>,
+    pub interest_operation_id: Option<i32>,
 }
 
 // Import Templates
@@ -402,4 +420,9 @@ pub struct CreateImportTemplate {
 pub struct UpdateImportTemplate {
     pub name: Option<String>,
     pub template_data: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize)]
+pub struct CorrectBalanceRequest {
+    pub target_balance: f64,
 }

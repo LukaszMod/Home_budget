@@ -1,5 +1,6 @@
 use axum::{extract::State, Json};
 use crate::{AppState, models::*, utils::db_err};
+use crate::handlers::categories::ensure_debt_categories;
 use bigdecimal::{BigDecimal, FromPrimitive};
 
 pub async fn transfer_operation(
@@ -25,6 +26,7 @@ pub async fn transfer_operation(
         to_operation_id: None,
         new_asset_id: None,
         investment_transaction_id: None,
+        interest_operation_id: None,
     };
 
     match payload.transfer_type.as_str() {
@@ -276,6 +278,9 @@ pub async fn transfer_operation(
                 .await
                 .map_err(|_| (axum::http::StatusCode::NOT_FOUND, "Liability asset not found".to_string()))?;
 
+            // Ensure debt categories exist and get interest category ID
+            let (_, interest_category_id) = ensure_debt_categories(&state.pool).await?;
+
             // Create outgoing operation from liquid asset
             let from_op = sqlx::query_as::<_, Operation>(
                 "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
@@ -307,6 +312,30 @@ pub async fn transfer_operation(
             .map_err(db_err)?;
 
             response.to_operation_id = Some(to_op.id);
+
+            // If interest amount is provided, create separate interest operation
+            if let Some(interest) = payload.interest_amount {
+                if interest > 0.0 {
+                    let interest_bd = BigDecimal::from_f64(interest)
+                        .ok_or_else(|| (axum::http::StatusCode::BAD_REQUEST, "Invalid interest amount".to_string()))?;
+
+                    let interest_op = sqlx::query_as::<_, Operation>(
+                        "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description, category_id)
+                         VALUES ($1, $2, 'expense'::operation_type, $3::date, $4, $5)
+                         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
+                    )
+                    .bind(payload.from_asset_id)
+                    .bind(-interest_bd)
+                    .bind(&payload.operation_date)
+                    .bind(format!("Odsetki - {}", payload.description.as_ref().unwrap_or(&format!("zobowiązanie #{}", to_asset_id))))
+                    .bind(interest_category_id)
+                    .fetch_one(&mut *tx)
+                    .await
+                    .map_err(db_err)?;
+
+                    response.interest_operation_id = Some(interest_op.id);
+                }
+            }
         },
 
         _ => {

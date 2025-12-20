@@ -1,2 +1,4 @@
 /target
 .env
+/reset_db.sql
+/backend.log

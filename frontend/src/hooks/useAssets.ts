@@ -4,7 +4,8 @@ import {
   createAsset, 
   updateAsset, 
   deleteAsset, 
-  toggleAssetActive
+  toggleAssetActive,
+  correctAssetBalance
 } from '../lib/api'
 
 export function useAssets() {
@@ -43,6 +44,15 @@ export function useAssets() {
     },
   })
 
+  const correctBalanceMutation = useMutation({
+    mutationFn: ({ id, target_balance }: { id: number; target_balance: number }) => 
+      correctAssetBalance(id, target_balance),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] })
+      queryClient.invalidateQueries({ queryKey: ['operations'] })
+    },
+  })
+
   return {
     assets,
     ...queryState,
@@ -50,9 +60,11 @@ export function useAssets() {
     updateAsset: updateMutation.mutate,
     deleteAsset: deleteMutation.mutate,
     toggleAssetActive: toggleActiveMutation.mutate,
+    correctBalance: correctBalanceMutation.mutate,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isTogglingActive: toggleActiveMutation.isPending,
+    isCorrectingBalance: correctBalanceMutation.isPending,
   }
 }

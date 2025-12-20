@@ -11,7 +11,7 @@ import { useNotifier } from '../components/common/Notifier'
 
 const Categories: React.FC = () => {
   const { t } = useTranslation()
-  const { categoriesQuery, operationsQuery, createMut, updateMut, deleteMut } = useCategories()
+  const { categoriesQuery, operationsQuery, createMut, updateMut, deleteMut, reorderMut } = useCategories()
   const notifier = useNotifier()
 
   const categories = categoriesQuery.data ?? []
@@ -42,6 +42,13 @@ const Categories: React.FC = () => {
   }
 
   const openEdit = (c: APICategory) => {
+    if (c.is_system) {
+      notifier.notify(
+        t('categories.messages.cannotEditSystem') ?? 'Nie można edytować kategorii systemowych',
+        'error'
+      )
+      return
+    }
     setEditing(c)
     setName(c.name)
     setParentId(c.parent_id ?? null)
@@ -49,7 +56,22 @@ const Categories: React.FC = () => {
     setModalOpen(true)
   }
 
-  const canDelete = (id: number) => !operations.some(op => op.category_id === id)
+  const handleAddSubcategory = (parentId: number) => {
+    setEditing(null)
+    setName('')
+    setParentId(parentId)
+    setModalOpen(true)
+  }
+
+  const handleReorder = async (items: { id: number; sort_order: number }[]) => {
+    await reorderMut.mutateAsync(items)
+  }
+
+  const canDelete = (id: number) => {
+    const category = categories.find(c => c.id === id)
+    if (category?.is_system) return false
+    return !operations.some(op => op.category_id === id)
+  }
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -100,6 +122,8 @@ const Categories: React.FC = () => {
           onEdit={openEdit}
           onDelete={handleDelete}
           canDelete={canDelete}
+          onAddSubcategory={handleAddSubcategory}
+          onReorder={handleReorder}
         />
       </Box>
 

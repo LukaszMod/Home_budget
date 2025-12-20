@@ -46,6 +46,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
   const [averagePurchasePrice, setAveragePurchasePrice] = useState('')
   const [currentValuation, setCurrentValuation] = useState('')
   const [currency, setCurrency] = useState('PLN')
+  const [initialBalance, setInitialBalance] = useState('')
 
   // Get selected asset type
   const selectedAssetType = assetTypes.find(t => t.id === assetTypeId)
@@ -62,6 +63,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
       setAveragePurchasePrice(editing.average_purchase_price?.toString() || '')
       setCurrentValuation(editing.current_valuation?.toString() || '')
       setCurrency(editing.currency)
+      setInitialBalance('')
     } else {
       setAssetTypeId('')
       setName('')
@@ -72,6 +74,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
       setAveragePurchasePrice('')
       setCurrentValuation('')
       setCurrency('PLN')
+      setInitialBalance('')
     }
   }, [editing, open])
 
@@ -94,6 +97,11 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
       average_purchase_price: averagePurchasePrice ? Number(averagePurchasePrice) : null,
       current_valuation: currentValuation ? Number(currentValuation) : null,
       currency,
+    }
+
+    // Only add initial_balance for liquid assets when creating (not editing)
+    if (!editing && selectedAssetType?.category === 'liquid' && initialBalance) {
+      payload.initial_balance = Number(initialBalance)
     }
 
     onSave(payload)
@@ -193,13 +201,24 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
 
         {/* Conditional Fields Based on Asset Type */}
         {selectedAssetType?.category === 'liquid' || selectedAssetType?.category === 'liability' ? (
-          <TextField
-            label="Numer konta / identyfikator"
-            value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
-            fullWidth
-            placeholder="np. PL61109010140000071219812870"
-          />
+          <>
+            <TextField
+              label="Numer konta / identyfikator"
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              fullWidth
+              placeholder="np. PL61109010140000071219812870"
+            />
+            {!editing && selectedAssetType?.category === 'liquid' && (
+              <CalcTextField
+                label="Początkowe saldo (opcjonalnie)"
+                value={initialBalance}
+                onChange={(val) => setInitialBalance(String(val))}
+                fullWidth
+                helperText="Zostanie dodana operacja 'Korekta salda'"
+              />
+            )}
+          </>
         ) : null}
 
         {selectedAssetType?.category === 'investment' ? (
