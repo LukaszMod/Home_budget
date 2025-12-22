@@ -53,6 +53,7 @@ const resources = {
       },
       assets: {
         title: 'Assets',
+        showInactive: 'Show inactive',
         categories: {
           liquid: 'Liquid',
           investment: 'Investments',
@@ -72,7 +73,8 @@ const resources = {
           currentValue: 'Current Value',
           currency: 'Currency',
           status: 'Status',
-          actions: 'Actions'
+          actions: 'Actions',
+          noAssets: 'No assets'
         },
         status: {
           active: 'Active',
@@ -124,6 +126,10 @@ const resources = {
         title: 'Categories',
         addButton: 'Add category',
         confirmDelete: 'Delete category?',
+        tabs: {
+          user: 'User Categories',
+          system: 'System Categories'
+        },
         table: {
           name: 'Name',
           type: 'Type',
@@ -142,7 +148,8 @@ const resources = {
           created: 'Category created',
           updated: 'Category updated',
           deleted: 'Category deleted',
-          cannotDelete: 'Cannot delete category, there are operations assigned'
+          cannotDelete: 'Cannot delete category, there are operations assigned',
+          cannotEditSystem: 'Cannot edit system categories'
         },
         validation: {
           nameRequired: 'Name field is required'
@@ -488,6 +495,7 @@ const resources = {
       },
       assets: {
         title: 'Majątek',
+        showInactive: 'Pokaż nieaktywne',
         categories: {
           liquid: 'Płynne',
           investment: 'Inwestycje',
@@ -507,7 +515,8 @@ const resources = {
           currentValue: 'Obecna wartość',
           currency: 'Waluta',
           status: 'Status',
-          actions: 'Akcje'
+          actions: 'Akcje',
+          noAssets: 'Brak aktywów'
         },
         status: {
           active: 'Aktywne',
@@ -559,6 +568,10 @@ const resources = {
         title: 'Kategorie',
         addButton: 'Dodaj kategorię',
         confirmDelete: 'Usuń kategorię?',
+        tabs: {
+          user: 'Kategorie użytkownika',
+          system: 'Kategorie systemowe'
+        },
         table: {
           name: 'Nazwa',
           type: 'Typ',
@@ -577,7 +590,8 @@ const resources = {
           created: 'Kategoria utworzona',
           updated: 'Kategoria zaktualizowana',
           deleted: 'Kategoria usunięta',
-          cannotDelete: 'Nie można usunąć kategorii, są do niej przypisane operacje'
+          cannotDelete: 'Nie można usunąć kategorii, są do niej przypisane operacje',
+          cannotEditSystem: 'Nie można edytować kategorii systemowych'
         },
         validation: {
           nameRequired: 'Pole Nazwa jest wymagane'

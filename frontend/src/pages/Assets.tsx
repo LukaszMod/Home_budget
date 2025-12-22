@@ -18,7 +18,9 @@ import {
   Select,
   MenuItem,
   Grid,
-  Stack
+  Stack,
+  FormControlLabel,
+  Switch
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import AddAssetModal from '../components/assets/AddAssetModal'
@@ -68,8 +70,9 @@ const Assets: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set())
   const [summaryPeriod, setSummaryPeriod] = useState<string>('thisMonth')
+  const [showInactive, setShowInactive] = useState(false)
 
-  const { assets, isLoading, isError, deleteAsset, toggleAssetActive, createAsset, updateAsset, correctBalance } = useAssets()
+  const { assets, isLoading, isError, deleteAsset, toggleAssetActive, createAsset, updateAsset, correctBalance, reorderAssets } = useAssets()
   const { assetTypes } = useAssetTypes()
   const { usersQuery } = useAccountsData()
   const users = usersQuery.data ?? []
@@ -99,7 +102,10 @@ const Assets: React.FC = () => {
       .filter(type => type.category === category)
       .map(type => type.id)
     
-    return assets.filter(asset => typeIdsInCategory.includes(asset.asset_type_id))
+    const categoryAssets = assets.filter(asset => typeIdsInCategory.includes(asset.asset_type_id))
+    
+    // Filter by is_active if showInactive is false
+    return showInactive ? categoryAssets : categoryAssets.filter(asset => asset.is_active)
   }
 
   // Get asset type info
@@ -139,6 +145,15 @@ const Assets: React.FC = () => {
       setSelectedAsset(null)
       setTargetBalance('')
     }
+  }
+
+  const handleReorder = (newAssets: Asset[]) => {
+    // Update sort_order based on new positions
+    const items = newAssets.map((asset, index) => ({
+      id: asset.id,
+      sort_order: index + 1
+    }))
+    reorderAssets(items)
   }
 
   const formatValue = (value: number | string | null | undefined, currency: string = 'PLN'): string => {
@@ -277,22 +292,33 @@ const Assets: React.FC = () => {
       <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden' }}>
         <Grid item xs={12} md={selectedAssetIds.size > 0 ? 9 : 12} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Tabs
-              value={selectedTab}
-              onChange={(_, newValue) => setSelectedTab(newValue)}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{ borderBottom: 1, borderColor: 'divider' }}
-            >
-              {categories.map((category, index) => (
-                <Tab
-                  key={category}
-                  label={categoryLabels[category]}
-                  id={`asset-tab-${index}`}
-                  aria-controls={`asset-tabpanel-${index}`}
-                />
-              ))}
-            </Tabs>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Tabs
+                value={selectedTab}
+                onChange={(_, newValue) => setSelectedTab(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                {categories.map((category, index) => (
+                  <Tab
+                    key={category}
+                    label={categoryLabels[category]}
+                    id={`asset-tab-${index}`}
+                    aria-controls={`asset-tabpanel-${index}`}
+                  />
+                ))}
+              </Tabs>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showInactive}
+                    onChange={(e) => setShowInactive(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label={t('assets.showInactive') ?? 'Pokaż nieaktywne'}
+              />
+            </Box>
 
             {categories.map((category, index) => (
               <TabPanel key={category} value={selectedTab} index={index} sx={{ flexGrow: 1, overflow: 'auto' }}>
@@ -324,6 +350,7 @@ const Assets: React.FC = () => {
                     setSelectedAsset(asset)
                     setDeleteModalOpen(true)
                   }}
+                  onReorder={handleReorder}
                   formatValue={formatValue}
                   formatQuantity={formatQuantity}
                   getCurrentValue={getCurrentValue}

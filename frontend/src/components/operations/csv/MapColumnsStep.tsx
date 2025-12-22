@@ -26,6 +26,7 @@ import { Save as SaveIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { CSVRow, ColumnMapping, ImportTemplate } from './types'
 import { getImportTemplates, createImportTemplate, deleteImportTemplate } from '../../../lib/api'
+import { useNotifier } from '../../common/Notifier'
 
 interface MapColumnsStepProps {
   headers: string[]
@@ -53,6 +54,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
   userId,
 }) => {
   const { t } = useTranslation()
+  const { notify } = useNotifier()
   const [mapping, setMapping] = useState<ColumnMapping>(initialMapping)
   const [dateFormat, setDateFormat] = useState<string>('YYYY-MM-DD')
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
@@ -65,12 +67,13 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
       try {
         const templates = await getImportTemplates(userId)
         setSavedTemplates(templates)
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load templates:', error)
+        notify('Nie udało się załadować szablonów', 'error')
       }
     }
     loadTemplates()
-  }, [userId])
+  }, [userId, notify])
 
   useEffect(() => {
     if (initialMapping.dateFormat) {
@@ -134,8 +137,11 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
       setSavedTemplates((prev) => [...prev, newTemplate])
       setTemplateName('')
       setTemplateDialogOpen(false)
-    } catch (error) {
+      notify('Szablon zapisany pomyślnie', 'success')
+    } catch (error: any) {
       console.error('Failed to save template:', error)
+      const errorMessage = error.message || 'Nieznany błąd'
+      notify(`Błąd podczas zapisywania szablonu: ${errorMessage}`, 'error')
     }
   }
 
@@ -154,8 +160,10 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
     try {
       await deleteImportTemplate(Number(templateId))
       setSavedTemplates((prev) => prev.filter((t) => t.id !== Number(templateId)))
-    } catch (error) {
+      notify('Szablon usunięty', 'success')
+    } catch (error: any) {
       console.error('Failed to delete template:', error)
+      notify('Nie udało się usunąć szablonu', 'error')
     }
   }
 
@@ -188,7 +196,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               variant="outlined"
               startIcon={<SaveIcon />}
               onClick={() => setTemplateDialogOpen(true)}
-              disabled={!mapping.amount || !mapping.date}
+              disabled={mapping.amount === undefined || mapping.date === undefined}
             >
               {t('import.saveTemplate', 'Zapisz szablon')}
             </Button>
@@ -239,7 +247,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               <InputLabel>{t('import.fields.amount', 'Kwota')}</InputLabel>
               <Select
                 value={mapping.amount ?? ''}
-                onChange={(e) => handleMappingChange('amount', e.target.value as number)}
+                onChange={(e) => handleMappingChange('amount', e.target.value === '' ? undefined : Number(e.target.value))}
                 label={t('import.fields.amount', 'Kwota')}
               >
                 <MenuItem value="">
@@ -257,7 +265,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               <InputLabel>{t('import.fields.date', 'Data')}</InputLabel>
               <Select
                 value={mapping.date ?? ''}
-                onChange={(e) => handleMappingChange('date', e.target.value as number)}
+                onChange={(e) => handleMappingChange('date', e.target.value === '' ? undefined : Number(e.target.value))}
                 label={t('import.fields.date', 'Data')}
               >
                 <MenuItem value="">
@@ -292,7 +300,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               <InputLabel>{t('import.fields.description', 'Opis')}</InputLabel>
               <Select
                 value={mapping.description ?? ''}
-                onChange={(e) => handleMappingChange('description', e.target.value as number)}
+                onChange={(e) => handleMappingChange('description', e.target.value === '' ? undefined : Number(e.target.value))}
                 label={t('import.fields.description', 'Opis')}
               >
                 <MenuItem value="">
@@ -310,7 +318,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               <InputLabel>{t('import.fields.sourceAccount', 'Konto źródłowe')}</InputLabel>
               <Select
                 value={mapping.sourceAccount ?? ''}
-                onChange={(e) => handleMappingChange('sourceAccount', e.target.value as number)}
+                onChange={(e) => handleMappingChange('sourceAccount', e.target.value === '' ? undefined : Number(e.target.value))}
                 label={t('import.fields.sourceAccount', 'Konto źródłowe')}
               >
                 <MenuItem value="">
@@ -328,7 +336,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               <InputLabel>{t('import.fields.category', 'Kategoria')}</InputLabel>
               <Select
                 value={mapping.category ?? ''}
-                onChange={(e) => handleMappingChange('category', e.target.value as number)}
+                onChange={(e) => handleMappingChange('category', e.target.value === '' ? undefined : Number(e.target.value))}
                 label={t('import.fields.category', 'Kategoria')}
               >
                 <MenuItem value="">
@@ -346,7 +354,7 @@ const MapColumnsStep: React.FC<MapColumnsStepProps> = ({
               <InputLabel>{t('import.fields.operationType', 'Typ operacji')}</InputLabel>
               <Select
                 value={mapping.operationType ?? ''}
-                onChange={(e) => handleMappingChange('operationType', e.target.value as number)}
+                onChange={(e) => handleMappingChange('operationType', e.target.value === '' ? undefined : Number(e.target.value))}
                 label={t('import.fields.operationType', 'Typ operacji')}
               >
                 <MenuItem value="">

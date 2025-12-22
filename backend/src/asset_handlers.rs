@@ -33,10 +33,17 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
         ensure_debt_categories(&state.pool).await?;
     }
     
+    let max_sort_order: Option<i32> = sqlx::query_scalar(
+        "SELECT COALESCE(MAX(sort_order), 0) FROM assets"
+    )
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_err)?;
+    
     let asset = sqlx::query_as::<_, Asset>(
-        "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+        "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order"
     )
     .bind(payload.user_id)
     .bind(payload.asset_type_id)
@@ -47,6 +54,7 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
     .bind(payload.average_purchase_price)
     .bind(payload.current_valuation)
     .bind(&currency)
+    .bind(max_sort_order.unwrap_or(0) + 1)
     .fetch_one(&state.pool)
     .await
     .map_err(db_err)?;
@@ -75,15 +83,15 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
 
 pub async fn list_assets(State(state): State<AppState>) -> Result<Json<Vec<Asset>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Asset>(
-        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
-         FROM assets ORDER BY id"
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order 
+         FROM assets ORDER BY sort_order"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
 }
 
 pub async fn get_asset(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
     let asset = sqlx::query_as::<_, Asset>(
-        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order 
          FROM assets WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(asset))
@@ -97,7 +105,7 @@ pub async fn update_asset(State(state): State<AppState>, Path(id): Path<i32>, Js
          SET user_id = $1, asset_type_id = $2, name = $3, description = $4, account_number = $5, 
              quantity = $6, average_purchase_price = $7, current_valuation = $8, currency = $9
          WHERE id = $10
-         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order"
     )
     .bind(payload.user_id)
     .bind(payload.asset_type_id)
@@ -121,10 +129,22 @@ pub async fn delete_asset(State(state): State<AppState>, Path(id): Path<i32>) ->
     Ok(())
 }
 
+pub async fn reorder_assets(State(state): State<AppState>, Json(payload): Json<ReorderAssets>) -> Result<(), (axum::http::StatusCode, String)> {
+    for item in payload.items {
+        sqlx::query("UPDATE assets SET sort_order = $1 WHERE id = $2")
+            .bind(item.sort_order)
+            .bind(item.id)
+            .execute(&state.pool)
+            .await
+            .map_err(db_err)?;
+    }
+    Ok(())
+}
+
 pub async fn toggle_asset_active(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
     let asset = sqlx::query_as::<_, Asset>(
         "UPDATE assets SET is_active = NOT is_active WHERE id = $1
-         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+         RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(asset))
 }
@@ -132,7 +152,7 @@ pub async fn toggle_asset_active(State(state): State<AppState>, Path(id): Path<i
 pub async fn correct_balance(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CorrectBalanceRequest>) -> Result<Json<Asset>, (axum::http::StatusCode, String)> {
     // Get asset and verify it's a liquid asset
     let _asset = sqlx::query_as::<_, Asset>(
-        "SELECT a.id, a.user_id, a.asset_type_id, a.name, a.description, a.account_number, a.quantity, a.average_purchase_price, a.current_valuation, a.currency, a.is_active, a.created_date 
+        "SELECT a.id, a.user_id, a.asset_type_id, a.name, a.description, a.account_number, a.quantity, a.average_purchase_price, a.current_valuation, a.currency, a.is_active, a.created_date, a.sort_order 
          FROM assets a
          INNER JOIN asset_types at ON a.asset_type_id = at.id
          WHERE a.id = $1 AND at.category = 'liquid'"
@@ -159,15 +179,33 @@ pub async fn correct_balance(State(state): State<AppState>, Path(id): Path<i32>,
     let difference = &target - &current;
     
     if difference != BigDecimal::from(0) {
-        let operation_type = if difference > BigDecimal::from(0) { "income" } else { "expense" };
+        // Determine operation type and category
+        let (operation_type, category_name) = if difference > BigDecimal::from(0) {
+            ("income", "Positive")
+        } else {
+            ("expense", "Negative")
+        };
+        
+        // Get category ID for Correction -> Positive/Negative
+        let category_id: Option<i32> = sqlx::query_scalar(
+            "SELECT c.id FROM categories c
+             INNER JOIN categories p ON c.parent_id = p.id
+             WHERE p.name = 'Correction' AND p.is_system = TRUE
+             AND c.name = $1 AND c.is_system = TRUE"
+        )
+        .bind(category_name)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(db_err)?;
         
         sqlx::query(
-            "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
-             VALUES ($1, $2, $3::operation_type, CURRENT_DATE, 'Korekta salda')"
+            "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description, category_id)
+             VALUES ($1, $2, $3::operation_type, CURRENT_DATE, 'Korekta salda', $4)"
         )
         .bind(id)
         .bind(difference)
         .bind(operation_type)
+        .bind(category_id)
         .execute(&state.pool)
         .await
         .map_err(db_err)?;
@@ -175,7 +213,7 @@ pub async fn correct_balance(State(state): State<AppState>, Path(id): Path<i32>,
 
     // Return updated asset
     let updated_asset = sqlx::query_as::<_, Asset>(
-        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order 
          FROM assets WHERE id = $1"
     )
     .bind(id)

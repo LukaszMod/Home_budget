@@ -1,12 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Box,
-  Button,
-  Stack,
-  Typography,
-} from '@mui/material'
-import StyledModal from '../common/StyledModal'
+import ConfirmDialog from '../common/ConfirmDialog'
 import type { Asset } from '../../lib/api'
 
 interface DeleteAssetDialogProps {
@@ -24,35 +18,19 @@ const DeleteAssetDialog: React.FC<DeleteAssetDialogProps> = ({
 }) => {
   const { t } = useTranslation()
 
+  const message = asset
+    ? `${t('assets.deleteModal.confirmMessage')} "${asset.name}"? ${t('assets.deleteModal.warning')}`
+    : t('assets.deleteModal.confirmMessage')
+
   return (
-    <StyledModal
+    <ConfirmDialog
       open={open}
-      onClose={onClose}
-      title={t('assets.deleteDialog.title') ?? 'Usuń aktywo'}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography>
-          {t('assets.deleteDialog.message') ?? 'Czy na pewno chcesz usunąć to aktywo?'}
-        </Typography>
-        {asset && (
-          <Typography variant="body2" color="textSecondary">
-            {asset.name}
-          </Typography>
-        )}
-        <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <Button onClick={onClose}>
-            {t('common.cancel') ?? 'Anuluj'}
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={onConfirm}
-          >
-            {t('common.delete') ?? 'Usuń'}
-          </Button>
-        </Stack>
-      </Box>
-    </StyledModal>
+      title={t('assets.deleteModal.title')}
+      message={message}
+      confirmColor="error"
+      onConfirm={onConfirm}
+      onCancel={onClose}
+    />
   )
 }
 

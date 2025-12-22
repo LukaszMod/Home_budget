@@ -47,6 +47,7 @@ interface CategoriesTableProps {
   onAddSubcategory: (parentId: number) => void
   onReorder: (items: { id: number; sort_order: number }[]) => void
   onToggleHidden: (id: number) => void
+  showActions?: boolean
 }
 
 interface SortableRowProps {
@@ -62,6 +63,7 @@ interface SortableRowProps {
   onAddSubcategory?: (id: number) => void
   onToggleHidden: (id: number) => void
   childrenRows?: React.ReactNode
+  showActions?: boolean
 }
 
 const SortableRow = ({
@@ -77,6 +79,7 @@ const SortableRow = ({
   onAddSubcategory,
   onToggleHidden,
   childrenRows,
+  showActions = true,
 }: SortableRowProps) => {
   const { t } = useTranslation()
   const {
@@ -152,39 +155,41 @@ const SortableRow = ({
             parentName || ''
           )}
         </TableCell>
-        <TableCell align="right">
-          <Stack direction="row" justifyContent="flex-end" spacing={0}>
-            {isMain && onAddSubcategory && (
+        {showActions && (
+          <TableCell align="right">
+            <Stack direction="row" justifyContent="flex-end" spacing={0}>
+              {isMain && onAddSubcategory && (
+                <IconButton
+                  size="small"
+                  onClick={() => onAddSubcategory(category.id)}
+                  title={t('categories.addSubcategory', 'Dodaj podkategorię')}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              )}
+              {!category.is_system && (
+                <IconButton
+                  size="small"
+                  onClick={() => onToggleHidden(category.id)}
+                  title={category.is_hidden ? t('categories.show', 'Pokaż') : t('categories.hide', 'Ukryj')}
+                >
+                  {category.is_hidden ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                </IconButton>
+              )}
+              <IconButton size="small" onClick={() => onEdit(category)} title={t('common.edit')}>
+                <EditIcon fontSize="small" />
+              </IconButton>
               <IconButton
                 size="small"
-                onClick={() => onAddSubcategory(category.id)}
-                title={t('categories.addSubcategory', 'Dodaj podkategorię')}
+                onClick={() => onDelete(category.id)}
+                disabled={!canDelete(category.id)}
+                title={t('common.delete')}
               >
-                <AddIcon fontSize="small" />
+                <DeleteIcon fontSize="small" />
               </IconButton>
-            )}
-            {!category.is_system && (
-              <IconButton
-                size="small"
-                onClick={() => onToggleHidden(category.id)}
-                title={category.is_hidden ? t('categories.show', 'Pokaż') : t('categories.hide', 'Ukryj')}
-              >
-                {category.is_hidden ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-              </IconButton>
-            )}
-            <IconButton size="small" onClick={() => onEdit(category)} title={t('common.edit')}>
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => onDelete(category.id)}
-              disabled={!canDelete(category.id)}
-              title={t('common.delete')}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Stack>
-        </TableCell>
+            </Stack>
+          </TableCell>
+        )}
       </TableRow>
       {expanded && childrenRows}
     </React.Fragment>
@@ -199,6 +204,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   onAddSubcategory,
   onReorder,
   onToggleHidden,
+  showActions = true,
 }) => {
   const { t } = useTranslation()
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({})
@@ -310,9 +316,11 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
               <TableCell width="20%">
                 <strong>{t('categories.table.mainCategory')}</strong>
               </TableCell>
-              <TableCell width="25%" align="right">
-                <strong>{t('common.actions', 'Akcje')}</strong>
-              </TableCell>
+              {showActions && (
+                <TableCell width="25%" align="right">
+                  <strong>{t('common.actions', 'Akcje')}</strong>
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -333,6 +341,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
                   canDelete={canDelete}
                   onAddSubcategory={onAddSubcategory}
                   onToggleHidden={onToggleHidden}
+                  showActions={showActions}
                   childrenRows={
                     children.length > 0 ? (
                       <SortableContext
@@ -349,6 +358,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
                             onDelete={onDelete}
                             canDelete={canDelete}
                             onToggleHidden={onToggleHidden}
+                            showActions={showActions}
                           />
                         ))}
                       </SortableContext>

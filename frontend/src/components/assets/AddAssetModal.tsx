@@ -234,7 +234,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
               helperText="Zostanie zaktualizowane przy dodawaniu transakcji"
             />
             <CalcTextField
-              label="Średnia cena zakupu (opcjonalnie)"
+              label={t('assets.table.avgPurchasePrice') ?? 'Średnia cena zakupu (opcjonalnie)'}
               value={averagePurchasePrice}
               onChange={(val) => setAveragePurchasePrice(String(val))}
               fullWidth

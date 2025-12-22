@@ -5,7 +5,8 @@ import {
   updateAsset, 
   deleteAsset, 
   toggleAssetActive,
-  correctAssetBalance
+  correctAssetBalance,
+  reorderAssets
 } from '../lib/api'
 
 export function useAssets() {
@@ -53,6 +54,13 @@ export function useAssets() {
     },
   })
 
+  const reorderMutation = useMutation({
+    mutationFn: reorderAssets,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] })
+    },
+  })
+
   return {
     assets,
     ...queryState,
@@ -61,10 +69,12 @@ export function useAssets() {
     deleteAsset: deleteMutation.mutate,
     toggleAssetActive: toggleActiveMutation.mutate,
     correctBalance: correctBalanceMutation.mutate,
+    reorderAssets: reorderMutation.mutate,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isTogglingActive: toggleActiveMutation.isPending,
     isCorrectingBalance: correctBalanceMutation.isPending,
+    isReordering: reorderMutation.isPending,
   }
 }

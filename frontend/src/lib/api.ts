@@ -41,6 +41,7 @@ export type Asset = {
   currency: string
   is_active: boolean
   created_date?: string | null
+  sort_order: number
 }
 
 export type CreateAssetPayload = {
@@ -89,6 +90,14 @@ export const correctAssetBalance = async (id: number, target_balance: number): P
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ target_balance }),
+  })
+}
+
+export const reorderAssets = async (items: { id: number; sort_order: number }[]): Promise<void> => {
+  await fetchJson(`${API}/assets/reorder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
   })
 }
 
@@ -273,6 +282,13 @@ export const updateOperation = async (id: number, payload: CreateOperationPayloa
 
 export const deleteOperation = async (id: number): Promise<void> => {
   await fetchJson(`${API}/operations/${id}`, { method: 'DELETE' })
+}
+
+export const classifyUncategorizedOperations = async (): Promise<{ classified_count: number; message: string }> => {
+  return fetchJson(`${API}/operations/classify-transfers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 // --- Split Operations

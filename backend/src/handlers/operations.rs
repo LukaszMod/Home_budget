@@ -30,7 +30,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
         let parent = sqlx::query_as::<_, Operation>(
             "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date, is_split)
              VALUES ($1, $2, $3, $4, $5::operation_type, $6::date, TRUE)
-             RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
+             RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id"
         ).bind(payload.category_id)
          .bind(&payload.description)
          .bind(payload.asset_id)
@@ -93,6 +93,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
             operation_date: parent.operation_date,
             parent_operation_id: parent.parent_operation_id,
             is_split: parent.is_split,
+            linked_operation_id: parent.linked_operation_id,
             hashtags,
         }));
     }
@@ -101,7 +102,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
     let op = sqlx::query_as::<_, Operation>(
         "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
          VALUES ($1, $2, $3, $4, $5::operation_type, $6::date)
-         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
+         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id"
     ).bind(payload.category_id)
      .bind(&payload.description)
      .bind(payload.asset_id)
@@ -133,6 +134,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
         operation_date: op.operation_date,
         parent_operation_id: op.parent_operation_id,
         is_split: op.is_split,
+        linked_operation_id: op.linked_operation_id,
         hashtags,
     }))
 }
@@ -153,6 +155,7 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
         operation_date: chrono::NaiveDate,
         parent_operation_id: Option<i32>,
         is_split: bool,
+        linked_operation_id: Option<i32>,
     }
     
     // Use JOIN to get asset, category and parent category names in one query
@@ -172,7 +175,8 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
             o.operation_type::text as operation_type,
             o.operation_date,
             o.parent_operation_id,
-            o.is_split
+            o.is_split,
+            o.linked_operation_id
          FROM operations o
          INNER JOIN assets a ON o.asset_id = a.id
          LEFT JOIN categories c ON o.category_id = c.id
@@ -205,6 +209,7 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
             operation_date: op.operation_date,
             parent_operation_id: op.parent_operation_id,
             is_split: op.is_split,
+            linked_operation_id: op.linked_operation_id,
             hashtags,
         }
     }).collect();
@@ -214,7 +219,7 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
 
 pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split
+        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id
          FROM operations WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     
@@ -231,6 +236,7 @@ pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -
         operation_date: op.operation_date,
         parent_operation_id: op.parent_operation_id,
         is_split: op.is_split,
+        linked_operation_id: op.linked_operation_id,
         hashtags,
     }))
 }
@@ -240,7 +246,7 @@ pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>
         "UPDATE operations
          SET category_id = $1, description = $2, asset_id = $3, amount = $4, operation_type = $5::operation_type, operation_date = $6::date
          WHERE id = $7
-         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
+         RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id"
     ).bind(payload.category_id)
      .bind(&payload.description)
      .bind(payload.asset_id)
@@ -276,6 +282,7 @@ pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>
         operation_date: op.operation_date,
         parent_operation_id: op.parent_operation_id,
         is_split: op.is_split,
+        linked_operation_id: op.linked_operation_id,
         hashtags,
     }))
 }
@@ -411,7 +418,7 @@ pub async fn split_operation(
     
     // Get parent operation
     let parent = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split
+        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id
          FROM operations WHERE id = $1"
     ).bind(id).fetch_optional(&state.pool).await.map_err(db_err)?;
     
@@ -451,7 +458,7 @@ pub async fn split_operation(
         let child = sqlx::query_as::<_, Operation>(
             "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date, parent_operation_id, is_split)
              VALUES ($1, $2, $3, $4, $5::operation_type, $6, $7, FALSE)
-             RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split"
+             RETURNING id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id"
         )
         .bind(item.category_id)
         .bind(&item.description)
@@ -487,6 +494,7 @@ pub async fn split_operation(
             operation_date: child.operation_date,
             parent_operation_id: child.parent_operation_id,
             is_split: child.is_split,
+            linked_operation_id: child.linked_operation_id,
             hashtags,
         });
     }
@@ -503,7 +511,7 @@ pub async fn unsplit_operation(
 ) -> Result<(), (axum::http::StatusCode, String)> {
     // Get parent operation
     let parent = sqlx::query_as::<_, Operation>(
-        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split
+        "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id
          FROM operations WHERE id = $1"
     ).bind(id).fetch_optional(&state.pool).await.map_err(db_err)?;
     
@@ -559,6 +567,7 @@ pub async fn get_operation_children(
         operation_date: chrono::NaiveDate,
         parent_operation_id: Option<i32>,
         is_split: bool,
+        linked_operation_id: Option<i32>,
     }
     
     let rows = sqlx::query_as::<_, OperationRow>(
@@ -575,7 +584,8 @@ pub async fn get_operation_children(
             o.operation_type::text as operation_type,
             o.operation_date,
             o.parent_operation_id,
-            o.is_split
+            o.is_split,
+            o.linked_operation_id
          FROM operations o
          INNER JOIN assets a ON o.asset_id = a.id
          LEFT JOIN categories c ON o.category_id = c.id
@@ -608,9 +618,23 @@ pub async fn get_operation_children(
             operation_date: op.operation_date,
             parent_operation_id: op.parent_operation_id,
             is_split: op.is_split,
+            linked_operation_id: op.linked_operation_id,
             hashtags,
         }
     }).collect();
     
     Ok(Json(result))
+}
+
+// Classify uncategorized operations as transfers
+pub async fn classify_uncategorized_operations(State(state): State<AppState>) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
+    let result = sqlx::query("SELECT * FROM classify_uncategorized_as_transfers()")
+        .fetch_all(&state.pool)
+        .await
+        .map_err(db_err)?;
+    
+    Ok(Json(serde_json::json!({
+        "classified_count": result.len(),
+        "message": format!("Successfully classified {} operations", result.len())
+    })))
 }

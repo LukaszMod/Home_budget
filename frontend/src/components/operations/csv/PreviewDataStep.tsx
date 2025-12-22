@@ -80,12 +80,12 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
         if (categoryName && !updatedRow['__category_id__']) {
           // Try exact match first
           let category = categories.find(
-            (c) => c.subcategory?.toLowerCase() === categoryName.toLowerCase()
+            (c) => c.name.toLowerCase() === categoryName.toLowerCase()
           )
           // Try partial match if exact match fails
           if (!category) {
             category = categories.find((c) =>
-              c.subcategory?.toLowerCase().includes(categoryName.toLowerCase())
+              c.name.toLowerCase().includes(categoryName.toLowerCase())
             )
           }
           if (category) {
@@ -103,7 +103,7 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
         } else if (columnMapping.amount !== undefined) {
           const amountHeader = headers[columnMapping.amount]
           const amount = parseFloat(String(row[amountHeader] || '0').replace(/,/g, '.').replace(/[^\d.-]/g, ''))
-          updatedRow['__operation_type__'] = amount >= 0 ? 'expense' : 'income'
+          updatedRow['__operation_type__'] = amount < 0 ? 'expense' : 'income'
         }
       }
 
@@ -155,7 +155,7 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
       const headers = Object.keys(row)
       const header = headers[columnMapping.amount]
       const amount = parseFloat(String(row[header] || '0').replace(/,/g, '.').replace(/[^\d.-]/g, ''))
-      return amount >= 0 ? 'expense' : 'income'
+      return amount < 0 ? 'expense' : 'income'
     }
 
     return 'expense'
@@ -167,16 +167,15 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
     if (row && row['__category_id__']) {
       return row['__category_id__'] as number
     }
-    // Search by subcategory name (CategoryAutocomplete uses subcategories)
-    const category = categories.find((c) => c.subcategory?.toLowerCase() === categoryName.toLowerCase())
+    // Search by name
+    const category = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())
     return category ? category.id : ''
   }
 
   const getCategoryNameFromId = (categoryId: number | ''): string => {
     if (!categoryId) return ''
     const category = categories.find((c) => c.id === categoryId)
-    // Return subcategory name if it exists, otherwise main category name
-    return category ? (category.subcategory || category.name) : ''
+    return category ? category.name : ''
   }
 
   return (

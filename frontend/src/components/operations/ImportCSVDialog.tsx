@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -12,10 +12,31 @@ import {
   Alert,
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import UploadCSVStep from './csv/UploadCSVStep.js'
 import MapColumnsStep from './csv/MapColumnsStep.js'
 import PreviewDataStep from './csv/PreviewDataStep.js'
 import type { CSVRow, ColumnMapping, ImportTemplate } from './csv/types.js'
+import { useNotifier } from '../common/Notifier.js'
+
+// Zod schema for single operation validation
+const operationSchema = z.object({
+  amount: z.number().positive('Kwota musi być większa od 0'),
+  operation_date: z.string().min(1, 'Data jest wymagana'),
+  asset_id: z.number().positive('Konto jest wymagane'),
+  description: z.string().optional(),
+  category_id: z.number().optional(),
+  operation_type: z.enum(['income', 'expense']),
+})
+
+// Schema for entire import form
+const importFormSchema = z.object({
+  operations: z.array(operationSchema),
+})
+
+type ImportFormData = z.infer<typeof importFormSchema>
 
 interface ImportCSVDialogProps {
   open: boolean
@@ -32,9 +53,10 @@ const ImportCSVDialog: React.FC<ImportCSVDialogProps> = ({
   onImport,
   accounts,
   categories,
-  userId = 1, // Default to user 1 if not specified
+  userId,
 }) => {
   const { t } = useTranslation()
+  const { notify } = useNotifier()
   const [activeStep, setActiveStep] = useState(0)
   const [csvData, setCsvData] = useState<CSVRow[]>([])
   const [headers, setHeaders] = useState<string[]>([])
@@ -43,7 +65,15 @@ const ImportCSVDialog: React.FC<ImportCSVDialogProps> = ({
   const [error, setError] = useState<string>('')
   const [isImporting, setIsImporting] = useState(false)
   const [isMappingValid, setIsMappingValid] = useState(false)
-  const [canImport, setCanImport] = useState(false)
+  
+  // React Hook Form setup
+  const { setValue, getValues } = useForm<ImportFormData>({
+    resolver: zodResolver(importFormSchema),
+    defaultValues: {
+      operations: [],
+    },
+    mode: 'onChange',
+  })
 
   const steps = [
     t('import.steps.upload', 'Wczytaj CSV'),
@@ -62,6 +92,8 @@ const ImportCSVDialog: React.FC<ImportCSVDialogProps> = ({
   const handleMappingComplete = (mapping: ColumnMapping) => {
     setEditedData(csvData)
     setColumnMapping(mapping)
+    // Update form values when mapping changes
+    updateFormOperations(csvData, mapping)
     setActiveStep(2)
   }
 
@@ -88,172 +120,176 @@ const ImportCSVDialog: React.FC<ImportCSVDialogProps> = ({
     }
   }
 
-  // Validate edited data for import
-  React.useEffect(() => {
-    if (activeStep !== 2 || editedData.length === 0) {
-      setCanImport(false)
-      return
+  // Function to convert CSV rows to operations and update form
+  const updateFormOperations = (data: CSVRow[], mapping: ColumnMapping) => {
+    const operations = data.map((row) => convertRowToOperation(row, mapping))
+    setValue('operations', operations)
+  }
+
+  // Update form when edited data changes
+  useEffect(() => {
+    if (activeStep === 2 && editedData.length > 0) {
+      updateFormOperations(editedData, columnMapping)
+    }
+  }, [editedData, columnMapping, activeStep])
+
+  // Function to convert a single CSV row to operation format
+  const convertRowToOperation = (row: CSVRow, mapping: ColumnMapping): any => {
+    const operation: any = {}
+
+    // Get header names from column indices
+    const amountHeader = mapping.amount !== undefined ? headers[mapping.amount] : undefined
+    const descriptionHeader = mapping.description !== undefined ? headers[mapping.description] : undefined
+    const dateHeader = mapping.date !== undefined ? headers[mapping.date] : undefined
+    const sourceAccountHeader = mapping.sourceAccount !== undefined ? headers[mapping.sourceAccount] : undefined
+    const categoryHeader = mapping.category !== undefined ? headers[mapping.category] : undefined
+    const operationTypeHeader = mapping.operationType !== undefined ? headers[mapping.operationType] : undefined
+
+    if (amountHeader) {
+      const amountStr = String(row[amountHeader] || '0')
+        .replace(/,/g, '.')
+        .replace(/[^\d.-]/g, '')
+      operation.amount = parseFloat(amountStr) || 0
     }
 
-    // Check if all rows have required fields
-    const allValid = editedData.every((row) => {
-      // Get header names from column indices
-      const amountHeader = columnMapping.amount !== undefined ? headers[columnMapping.amount] : undefined
-      const dateHeader = columnMapping.date !== undefined ? headers[columnMapping.date] : undefined
+    if (descriptionHeader) {
+      operation.description = String(row[descriptionHeader] || '')
+    }
 
-      // Check amount
-      const amountStr = amountHeader ? String(row[amountHeader] || '') : ''
-      const amount = parseFloat(amountStr.replace(',', '.'))
-      
-      // Check date
-      const dateStr = dateHeader ? String(row[dateHeader] || '') : ''
-      
-      // Check asset_id
-      const hasAssetId = row['__asset_id__'] !== undefined && row['__asset_id__'] !== null
+    if (dateHeader) {
+      operation.operation_date = parseDate(
+        String(row[dateHeader] || ''),
+        mapping.dateFormat || 'YYYY-MM-DD'
+      )
+    }
 
-      return amount > 0 && dateStr.trim() !== '' && hasAssetId
-    })
+    // Check for special __asset_id__ field first (set by dropdown edits)
+    if (row['__asset_id__']) {
+      operation.asset_id = row['__asset_id__']
+    } else if (sourceAccountHeader) {
+      const accountName = String(row[sourceAccountHeader] || '').trim()
+      if (accountName) {
+        // Try exact match first
+        let account = accounts.find(
+          (a) => a.name.toLowerCase() === accountName.toLowerCase()
+        )
+        
+        // If no exact match, try partial match
+        if (!account) {
+          account = accounts.find(
+            (a) => 
+              a.name.toLowerCase().includes(accountName.toLowerCase()) ||
+              accountName.toLowerCase().includes(a.name.toLowerCase())
+          )
+        }
+        
+        if (account) {
+          operation.asset_id = account.id
+        }
+      }
+    }
 
-    setCanImport(allValid)
-  }, [editedData, columnMapping, headers, activeStep])
+    // Check for special __category_id__ field first
+    if (row['__category_id__']) {
+      operation.category_id = row['__category_id__']
+    } else if (categoryHeader) {
+      const categoryName = String(row[categoryHeader] || '').trim()
+      if (categoryName) {
+        let category = categories.find(
+          (c) => c.name.toLowerCase() === categoryName.toLowerCase()
+        )
+        
+        if (!category) {
+          category = categories.find(
+            (c) => 
+              c.name.toLowerCase().includes(categoryName.toLowerCase()) ||
+              categoryName.toLowerCase().includes(c.name.toLowerCase())
+          )
+        }
+        
+        if (category) {
+          operation.category_id = category.id
+        }
+      }
+    }
+
+    // Determine operation type and normalize amount
+    // First, determine the type from various sources
+    let operationType: 'income' | 'expense' = 'expense'
+    
+    if (row['__operation_type__']) {
+      // Use manually edited type
+      const editedType = String(row['__operation_type__'])
+      operationType = editedType === 'income' ? 'income' : 'expense'
+    } else if (operationTypeHeader) {
+      // Use type from CSV column
+      const type = String(row[operationTypeHeader] || '').toLowerCase()
+      operationType = type.includes('income') || type.includes('przychód')
+        ? 'income'
+        : 'expense'
+    } else {
+      // Determine type from amount sign (negative = expense, positive = income)
+      operationType = operation.amount < 0 ? 'expense' : 'income'
+    }
+    
+    // Keep amount sign as-is (negative amounts are expenses, positive are income)
+    operation.operation_type = operationType
+
+    return operation
+  }
 
   const handleImport = async () => {
     try {
       setIsImporting(true)
       setError('')
 
-      // Convert CSV data to operations format
-      const operations = editedData.map((row) => {
-        const operation: any = {}
+      // Get operations from form
+      const formData = getValues()
+      const operations = formData.operations
 
-        // Get header names from column indices
-        const amountHeader = columnMapping.amount !== undefined ? headers[columnMapping.amount] : undefined
-        const descriptionHeader = columnMapping.description !== undefined ? headers[columnMapping.description] : undefined
-        const dateHeader = columnMapping.date !== undefined ? headers[columnMapping.date] : undefined
-        const sourceAccountHeader = columnMapping.sourceAccount !== undefined ? headers[columnMapping.sourceAccount] : undefined
-        const categoryHeader = columnMapping.category !== undefined ? headers[columnMapping.category] : undefined
-        const operationTypeHeader = columnMapping.operationType !== undefined ? headers[columnMapping.operationType] : undefined
+      // Validate each operation and collect errors
+      const validOperations: any[] = []
+      const errorRows: string[] = []
 
-        if (amountHeader) {
-          const amountStr = String(row[amountHeader] || '0')
-            .replace(/,/g, '.')
-            .replace(/[^\d.-]/g, '')
-          operation.amount = parseFloat(amountStr) || 0
-        }
-
-        if (descriptionHeader) {
-          operation.description = String(row[descriptionHeader] || '')
-        }
-
-        if (dateHeader) {
-          operation.operation_date = parseDate(
-            String(row[dateHeader] || ''),
-            columnMapping.dateFormat || 'YYYY-MM-DD'
-          )
-        }
-
-        // Check for special __asset_id__ field first (set by dropdown edits)
-        if (row['__asset_id__']) {
-          operation.asset_id = row['__asset_id__']
-        } else if (sourceAccountHeader) {
-          const accountName = String(row[sourceAccountHeader] || '').trim()
-          if (accountName) {
-            // Try exact match first
-            let account = accounts.find(
-              (a) => a.name.toLowerCase() === accountName.toLowerCase()
-            )
-            
-            // If no exact match, try partial match (account name contains CSV name or vice versa)
-            if (!account) {
-              account = accounts.find(
-                (a) => 
-                  a.name.toLowerCase().includes(accountName.toLowerCase()) ||
-                  accountName.toLowerCase().includes(a.name.toLowerCase())
-              )
-            }
-            
-            if (account) {
-              operation.asset_id = account.id
-            } else {
-              console.warn(`Account not found for name: "${accountName}". Available accounts:`, accounts.map(a => a.name))
-            }
-          }
-        }
-
-        // Check for special __category_id__ field first (set by autocomplete edits)
-        if (row['__category_id__']) {
-          operation.category_id = row['__category_id__']
-        } else if (categoryHeader) {
-          const categoryName = String(row[categoryHeader] || '').trim()
-          if (categoryName) {
-            // Try exact match first
-            let category = categories.find(
-              (c) => c.name.toLowerCase() === categoryName.toLowerCase()
-            )
-            
-            // If no exact match, try partial match
-            if (!category) {
-              category = categories.find(
-                (c) => 
-                  c.name.toLowerCase().includes(categoryName.toLowerCase()) ||
-                  categoryName.toLowerCase().includes(c.name.toLowerCase())
-              )
-            }
-            
-            if (category) {
-              operation.category_id = category.id
-            } else {
-              console.warn(`Category not found for name: "${categoryName}". Available categories:`, categories.map(c => c.name))
-            }
-          }
-        }
-
-        // Check for special __operation_type__ field first (set by dropdown edits)
-        if (row['__operation_type__']) {
-          operation.operation_type = row['__operation_type__']
-        } else if (operationTypeHeader) {
-          const type = String(row[operationTypeHeader] || '').toLowerCase()
-          operation.operation_type = type.includes('income') || type.includes('przychód')
-            ? 'income'
-            : 'expense'
-        } else {
-          // Default to expense if not specified
-          operation.operation_type = operation.amount >= 0 ? 'expense' : 'income'
-          operation.amount = Math.abs(operation.amount)
-        }
-
-        return operation
-      })
-
-      // Filter out invalid operations (must have amount, date, and account)
-      const validOperations = operations.filter((op) => {
-        const missingFields = []
-        if (!op.amount || op.amount <= 0) missingFields.push('amount')
-        if (!op.operation_date) missingFields.push('operation_date')
-        if (!op.asset_id) missingFields.push('asset_id (konto)')
+      operations.forEach((op, index) => {
+        const rowNumber = index + 1
+        const result = operationSchema.safeParse(op)
         
-        const isValid = missingFields.length === 0
-        if (!isValid) {
-          console.warn(`Skipping invalid operation (missing: ${missingFields.join(', ')}):`, op)
+        if (result.success) {
+          validOperations.push(op)
+        } else {
+          // Collect error messages for this row
+          const errors = result.error.issues.map((e: any) => e.message).join(', ')
+          errorRows.push(`Wiersz ${rowNumber}: ${errors}`)
         }
-        return isValid
       })
 
-      if (validOperations.length === 0) {
-        setError(t('import.errors.noValidOperations', 'Brak poprawnych operacji do zaimportowania. Upewnij się, że kolumny kwota, data i konto są poprawnie zmapowane.'))
+      // If there are validation errors, show them in Snackbar
+      if (errorRows.length > 0) {
+        const errorMessage = errorRows.length <= 3 
+          ? errorRows.join(' | ')
+          : `Błędy walidacji w ${errorRows.length} wierszach: ${errorRows.slice(0, 3).join(' | ')} ...`
+        
+        notify(errorMessage, 'error')
         setIsImporting(false)
         return
       }
 
-      if (validOperations.length < operations.length) {
-        const skipped = operations.length - validOperations.length
-        console.warn(`Pominięto ${skipped} niepełnych operacji`)
+      // If no valid operations, show error
+      if (validOperations.length === 0) {
+        notify(t('import.errors.noValidOperations', 'Brak poprawnych operacji do zaimportowania'), 'error')
+        setIsImporting(false)
+        return
       }
 
+      // Import valid operations
       await onImport(validOperations)
+      
+      // Show success message
+      notify(t('import.success', `Zaimportowano ${validOperations.length} operacji`), 'success')
       handleClose()
     } catch (err: any) {
-      setError(err.message || 'Import failed')
+      notify(err.message || 'Import failed', 'error')
     } finally {
       setIsImporting(false)
     }
@@ -362,7 +398,7 @@ const ImportCSVDialog: React.FC<ImportCSVDialogProps> = ({
             onSaveTemplate={handleSaveTemplate}
             onLoadTemplate={handleLoadTemplate}
             onValidationChange={setIsMappingValid}
-            userId={userId}
+            userId={userId || 0}
           />
         )}
 
@@ -398,7 +434,7 @@ const ImportCSVDialog: React.FC<ImportCSVDialogProps> = ({
           <Button
             onClick={handleImport}
             variant="contained"
-            disabled={isImporting || !canImport}
+            disabled={isImporting}
           >
             {isImporting
               ? t('import.importing', 'Importowanie...')

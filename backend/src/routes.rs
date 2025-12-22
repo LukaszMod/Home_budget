@@ -24,6 +24,7 @@ pub fn router() -> Router<AppState> {
         // Assets (new system)
         .route("/asset-types", get(asset_handlers::list_asset_types))
         .route("/assets", post(asset_handlers::create_asset).get(asset_handlers::list_assets))
+        .route("/assets/reorder", post(asset_handlers::reorder_assets))
         .route("/assets/:id", get(asset_handlers::get_asset).put(asset_handlers::update_asset).delete(asset_handlers::delete_asset))
         .route("/assets/:id/toggle-active", post(asset_handlers::toggle_asset_active))
         .route("/assets/:id/correct-balance", post(asset_handlers::correct_balance))
@@ -37,6 +38,7 @@ pub fn router() -> Router<AppState> {
         .route("/asset-valuations/:id", delete(asset_handlers::delete_asset_valuation))
         // Operations
         .route("/operations", post(create_operation).get(list_operations))
+        .route("/operations/classify-transfers", post(classify_uncategorized_operations))
         .route("/operations/transfer", post(transfer_operation))
         .route("/operations/:id/split", post(split_operation))
         .route("/operations/:id/unsplit", delete(unsplit_operation))

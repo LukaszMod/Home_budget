@@ -4,7 +4,7 @@ import { useCategories } from '../hooks/useCategories'
 import StyledModal from '../components/common/StyledModal'
 import CategoriesTable from '../components/categories/CategoriesTable'
 import StyledIncomeSwitch from '../components/common/ui/StyledIncomeSwitch'
-import { Typography, Paper, Stack, Button, Box, TextField } from '@mui/material'
+import { Typography, Paper, Stack, Button, Box, TextField, Tabs, Tab } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
 import { useNotifier } from '../components/common/Notifier'
@@ -25,6 +25,7 @@ const Categories: React.FC = () => {
   const [type, setType] = React.useState<'income' | 'expense'>('expense')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [categoryToDelete, setCategoryToDelete] = React.useState<number | null>(null)
+  const [activeTab, setActiveTab] = React.useState(0)
 
   React.useEffect(() => {
     if (!modalOpen) {
@@ -114,24 +115,34 @@ const Categories: React.FC = () => {
     await toggleHiddenMut.mutateAsync(id)
   }
 
+  // Filter categories based on active tab
+  const userCategories = categories.filter(c => !c.is_system)
+  const systemCategories = categories.filter(c => c.is_system)
+  const displayedCategories = activeTab === 0 ? userCategories : systemCategories
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
       <Paper sx={{ p: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h4">{t('categories.title')}</Typography>
           <Button startIcon={<AddIcon />} variant="contained" onClick={openNew}>{t('categories.addButton')}</Button>
         </Stack>
+        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+          <Tab label={t('categories.tabs.user')} />
+          <Tab label={t('categories.tabs.system')} />
+        </Tabs>
       </Paper>
 
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
         <CategoriesTable
-          categories={categories}
+          categories={displayedCategories}
           onEdit={openEdit}
           onDelete={handleDelete}
           canDelete={canDelete}
           onAddSubcategory={handleAddSubcategory}
           onReorder={handleReorder}
           onToggleHidden={handleToggleHidden}
+          showActions={activeTab === 0}
         />
       </Box>
 

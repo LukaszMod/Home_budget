@@ -23,7 +23,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import UploadIcon from '@mui/icons-material/Upload'
 import { useTranslation } from 'react-i18next'
 import { useNotifier } from '../components/common/Notifier'
-import { createOperation } from '../lib/api'
+import { createOperation, getUsers, classifyUncategorizedOperations } from '../lib/api'
 
 function computeStartDate(preset: string): Date | null {
   const now = new Date()
@@ -52,6 +52,19 @@ const Operations: React.FC = () => {
   const operations = operationsQuery.data ?? []
   const accounts = accountsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
+
+  // Get first available user ID
+  const [userId, setUserId] = React.useState<number | undefined>(undefined)
+  
+  React.useEffect(() => {
+    getUsers().then(users => {
+      if (users.length > 0) {
+        setUserId(users[0].id)
+      }
+    }).catch(err => {
+      console.error('Failed to get users:', err)
+    })
+  }, [])
 
   // Helper to parse BigDecimal string/number to number
   const parseAmount = (amount: number | string | undefined | null): number => {
@@ -95,6 +108,19 @@ const Operations: React.FC = () => {
           errorCount++
           console.error('Error importing operation:', error)
         }
+      }
+
+      // Classify uncategorized operations as transfers
+      try {
+        const result = await classifyUncategorizedOperations()
+        if (result.classified_count > 0) {
+          notifier.notify(
+            t('import.classified', `Automatically classified {{count}} operations as transfers`, { count: result.classified_count }),
+            'info'
+          )
+        }
+      } catch (error) {
+        console.error('Error classifying operations:', error)
       }
 
       notifier.notify(
@@ -477,6 +503,7 @@ const Operations: React.FC = () => {
         onImport={handleImport}
         accounts={accounts}
         categories={categories}
+        userId={userId}
       />
       <OperationDetailsDrawer
         open={!!selectedOperation}

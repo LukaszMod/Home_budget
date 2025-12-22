@@ -42,6 +42,11 @@ pub struct ReorderCategories {
 }
 
 #[derive(Deserialize)]
+pub struct ReorderAssets {
+    pub items: Vec<ReorderItem>,
+}
+
+#[derive(Deserialize)]
 pub struct ReorderItem {
     pub id: i32,
     pub sort_order: i32,
@@ -73,6 +78,7 @@ pub struct Asset {
     pub currency: String,
     pub is_active: bool,
     pub created_date: Option<NaiveDateTime>,
+    pub sort_order: i32,
 }
 
 #[derive(Deserialize)]
@@ -164,6 +170,7 @@ pub struct Operation {
     pub operation_date: NaiveDate,
     pub parent_operation_id: Option<i32>,
     pub is_split: bool,
+    pub linked_operation_id: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -178,6 +185,7 @@ pub struct OperationWithHashtags {
     pub operation_date: NaiveDate,
     pub parent_operation_id: Option<i32>,
     pub is_split: bool,
+    pub linked_operation_id: Option<i32>,
     pub hashtags: Vec<Hashtag>,
 }
 
@@ -197,6 +205,7 @@ pub struct OperationWithDetails {
     pub operation_date: NaiveDate,
     pub parent_operation_id: Option<i32>,
     pub is_split: bool,
+    pub linked_operation_id: Option<i32>,
     pub hashtags: Vec<Hashtag>,
 }
 
@@ -414,13 +423,13 @@ pub struct ImportTemplate {
 #[derive(Deserialize)]
 pub struct CreateImportTemplate {
     pub name: String,
-    pub template_data: serde_json::Value,
+    pub template_data: sqlx::types::JsonValue,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateImportTemplate {
     pub name: Option<String>,
-    pub template_data: Option<serde_json::Value>,
+    pub template_data: Option<sqlx::types::JsonValue>,
 }
 
 #[derive(Deserialize)]
