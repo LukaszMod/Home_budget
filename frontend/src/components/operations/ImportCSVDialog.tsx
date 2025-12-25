@@ -23,7 +23,7 @@ import { useNotifier } from '../common/Notifier.js'
 
 // Zod schema for single operation validation
 const operationSchema = z.object({
-  amount: z.number().positive('Kwota musi być większa od 0'),
+  amount: z.number().refine((val) => !isNaN(val), { message: 'Nieprawidłowa kwota' }),
   operation_date: z.string().min(1, 'Data jest wymagana'),
   asset_id: z.number().positive('Konto jest wymagane'),
   description: z.string().optional(),

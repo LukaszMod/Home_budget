@@ -12,7 +12,7 @@ pub async fn transfer_operation(
 
     // Verify source asset exists
     let from_asset = sqlx::query_as::<_, Asset>(
-        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+        "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order 
          FROM assets WHERE id = $1"
     )
     .bind(payload.from_asset_id)
@@ -105,7 +105,7 @@ pub async fn transfer_operation(
             if let Some(to_asset_id) = payload.to_asset_id {
                 // Adding to existing investment
                 let existing_asset = sqlx::query_as::<_, Asset>(
-                    "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date 
+                    "SELECT id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order 
                      FROM assets WHERE id = $1"
                 )
                 .bind(to_asset_id)
@@ -139,7 +139,7 @@ pub async fn transfer_operation(
                 // Create investment transaction
                 let inv_tx = sqlx::query_as::<_, InvestmentTransaction>(
                     "INSERT INTO investment_transactions (asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date)
-                     VALUES ($1, 'buy', $2, $3, $4, $5)
+                     VALUES ($1, 'buy', $2, $3, $4, $5::date)
                      RETURNING id, asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes, created_date"
                 )
                 .bind(to_asset_id)
@@ -184,7 +184,7 @@ pub async fn transfer_operation(
                 let new_asset = sqlx::query_as::<_, Asset>(
                     "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, currency)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                     RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+                     RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order"
                 )
                 .bind(from_asset.user_id)
                 .bind(new_asset_data.asset_type_id)
@@ -203,7 +203,7 @@ pub async fn transfer_operation(
                 // Create investment transaction
                 let inv_tx = sqlx::query_as::<_, InvestmentTransaction>(
                     "INSERT INTO investment_transactions (asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date)
-                     VALUES ($1, 'buy', $2, $3, $4, $5)
+                     VALUES ($1, 'buy', $2, $3, $4, $5::date)
                      RETURNING id, asset_id, transaction_type, quantity, price_per_unit, total_value, transaction_date, notes, created_date"
                 )
                 .bind(new_asset.id)
@@ -244,7 +244,7 @@ pub async fn transfer_operation(
             let new_asset = sqlx::query_as::<_, Asset>(
                 "INSERT INTO assets (user_id, asset_type_id, name, description, account_number, current_valuation, currency)
                  VALUES ($1, $2, $3, $4, $5, $6, $7)
-                 RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date"
+                 RETURNING id, user_id, asset_type_id, name, description, account_number, quantity, average_purchase_price, current_valuation, currency, is_active, created_date, sort_order"
             )
             .bind(from_asset.user_id)
             .bind(new_asset_data.asset_type_id)

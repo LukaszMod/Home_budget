@@ -9,10 +9,11 @@ import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
 import { useNotifier } from '../components/common/Notifier'
 import ConfirmDialog from '../components/common/ConfirmDialog'
+import NewEditCategory from '../components/categories/NewEditCategory'
 
 const Categories: React.FC = () => {
   const { t } = useTranslation()
-  const { categoriesQuery, operationsQuery, createMut, updateMut, deleteMut, reorderMut, toggleHiddenMut } = useCategories()
+  const { categoriesQuery, operationsQuery, deleteMut, reorderMut, toggleHiddenMut } = useCategories()
   const notifier = useNotifier()
 
   const categories = categoriesQuery.data ?? []
@@ -20,9 +21,6 @@ const Categories: React.FC = () => {
 
   const [modalOpen, setModalOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<APICategory | null>(null)
-  const [name, setName] = React.useState('')
-  const [parentId, setParentId] = React.useState<number | null>(null)
-  const [type, setType] = React.useState<'income' | 'expense'>('expense')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [categoryToDelete, setCategoryToDelete] = React.useState<number | null>(null)
   const [activeTab, setActiveTab] = React.useState(0)
@@ -77,33 +75,6 @@ const Categories: React.FC = () => {
     return !operations.some(op => op.category_id === id)
   }
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      return notifier.notify(
-        t('categories.validation.nameRequired') ?? 'Pole Nazwa jest wymagane',
-        'error'
-      )
-    }
-    const payload: CreateCategoryPayload = { name: name.trim(), parent_id: parentId ?? null, type }
-    try {
-      if (editing) {
-        await updateMut.mutateAsync({ id: editing.id, payload })
-        notifier.notify(
-          t('categories.messages.updated') ?? 'Kategoria zaktualizowana',
-          'success'
-        )
-      } else {
-        await createMut.mutateAsync(payload)
-        notifier.notify(
-          t('categories.messages.created') ?? 'Kategoria utworzona',
-          'success'
-        )
-      }
-      setModalOpen(false)
-    } catch (e: any) {
-      notifier.notify(String(e), 'error')
-    }
-  }
 
   const handleDelete = async (id: number) => {
     if (!canDelete(id)) return
@@ -121,6 +92,8 @@ const Categories: React.FC = () => {
   const displayedCategories = activeTab === 0 ? userCategories : systemCategories
 
   return (
+    <>
+    <NewEditCategory modalOpen={modalOpen} setModalOpen={setModalOpen} editing={editing} />
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
       <Paper sx={{ p: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -142,55 +115,27 @@ const Categories: React.FC = () => {
           onAddSubcategory={handleAddSubcategory}
           onReorder={handleReorder}
           onToggleHidden={handleToggleHidden}
-          showActions={activeTab === 0}
-        />
+          showActions={activeTab === 0} />
       </Box>
 
-      <StyledModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editing ? t('categories.dialog.edit') : t('categories.dialog.new')}
-        footer={(<><Button onClick={() => setModalOpen(false)}>{t('actions.cancel')}</Button><Button variant="contained" onClick={handleSave}>{t('actions.save')}</Button></>)}
-      >
-        <TextField 
-          fullWidth 
-          label={t('categories.fields.name')} 
-          value={name} 
-          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setName(e.target.value)} 
-          sx={{ mb: 2 }} 
-          required
-        />
-        <StyledIncomeSwitch value={type} onChange={setType} />
-        <TextField 
-          select 
-          SelectProps={{ native: true }} 
-          label={t('categories.fields.parent')} 
-          value={parentId ?? ''} 
-          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setParentId(e.target.value === '' ? null : Number(e.target.value))} 
-          sx={{ mt: 2 }}
-          InputLabelProps={{ shrink: true }}
-        >
-          <option value="">(Brak)</option>
-          {categories.filter(c => c.parent_id === null).map(c => (<option key={c.id} value={c.id} disabled={!!editing && editing.id === c.id}>{c.name}</option>))}
-        </TextField>
-      </StyledModal>
+
 
       <ConfirmDialog
         open={deleteConfirmOpen}
-        message={t('categories.confirmDelete') || 'Czy na pewno chcesz usunąć tę kategorię?'}
+        message={t('categories.confirmDelete')}
         onConfirm={async () => {
           if (categoryToDelete !== null) {
             await deleteMut.mutateAsync(categoryToDelete)
           }
           setDeleteConfirmOpen(false)
           setCategoryToDelete(null)
-        }}
+        } }
         onCancel={() => {
           setDeleteConfirmOpen(false)
           setCategoryToDelete(null)
-        }}
-      />
+        } } />
     </Box>
+    </>
   )
 }
 

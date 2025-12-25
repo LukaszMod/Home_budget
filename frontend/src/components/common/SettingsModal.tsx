@@ -14,30 +14,12 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import { useSettings } from '../../contexts/SettingsContext'
+import { LANGUAGES, DATE_FORMATS, CURRENCIES } from '../../models'
 
 interface SettingsModalProps {
   open: boolean
   onClose: () => void
 }
-
-const LANGUAGES = [
-  { code: 'pl', name: 'Polski' },
-  { code: 'en', name: 'English' }
-]
-
-const DATE_FORMATS = [
-  { value: 'DD.MM.YYYY', label: '31.12.2025' },
-  { value: 'YYYY-MM-DD', label: '2025-12-31' },
-  { value: 'MM/DD/YYYY', label: '12/31/2025' }
-]
-
-const CURRENCIES = [
-  { code: 'PLN', name: 'Polski Złoty (PLN)' },
-  { code: 'EUR', name: 'Euro (EUR)' },
-  { code: 'USD', name: 'US Dollar (USD)' },
-  { code: 'GBP', name: 'British Pound (GBP)' },
-  { code: 'CHF', name: 'Swiss Franc (CHF)' }
-]
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) => {
   const { t } = useTranslation()
@@ -45,15 +27,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('settings.title') ?? 'Ustawienia'}</DialogTitle>
+      <DialogTitle>{t('settings.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
           <FormControl fullWidth>
-            <InputLabel>{t('settings.language') ?? 'Język'}</InputLabel>
+            <InputLabel>{t('settings.language')}</InputLabel>
             <Select
               value={settings.language}
               onChange={(e) => updateSettings({ language: e.target.value })}
-              label={t('settings.language') ?? 'Język'}
+              label={t('settings.language')}
             >
               {LANGUAGES.map(lang => (
                 <MenuItem key={lang.code} value={lang.code}>
@@ -64,11 +46,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) => {
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel>{t('settings.dateFormat') ?? 'Format daty'}</InputLabel>
+            <InputLabel>{t('settings.dateFormat')}</InputLabel>
             <Select
               value={settings.dateFormat}
               onChange={(e) => updateSettings({ dateFormat: e.target.value })}
-              label={t('settings.dateFormat') ?? 'Format daty'}
+              label={t('settings.dateFormat')}
             >
               {DATE_FORMATS.map(format => (
                 <MenuItem key={format.value} value={format.value}>
