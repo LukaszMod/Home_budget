@@ -393,6 +393,10 @@ export const toggleCategoryHidden = async (id: number): Promise<Category> => {
   return fetchJson(`${API}/categories/${id}/toggle-hidden`, { method: 'POST' })
 }
 
+export const categoryInUse = async (): Promise<{id: number, is_used: boolean}[]> => {
+  return fetchJson(`${API}/categories/in-use`)
+}
+
 // --- Budgets
 export type Budget = {
   id: number

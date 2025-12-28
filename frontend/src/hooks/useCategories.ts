@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCategories, createCategory, updateCategory, deleteCategory, getOperations, reorderCategories, toggleCategoryHidden } from '../lib/api'
+import { getCategories, createCategory, updateCategory, deleteCategory, getOperations, reorderCategories, toggleCategoryHidden, categoryInUse } from '../lib/api'
 import type { Category as APICategory, CreateCategoryPayload, Operation as APIOperation } from '../lib/api'
 import { useNotifier } from '../components/common/Notifier'
+import { id } from 'zod/v4/locales'
 
 export const useCategories = () => {
   const qc = useQueryClient()
@@ -13,10 +14,16 @@ export const useCategories = () => {
     queryFn: getCategories,
   })
 
+  const categoryInUseQuery = useQuery<{ id: number; is_used: boolean }[], Error>({
+    queryKey: ['categories', 'in_use'],
+    queryFn: categoryInUse,
+  })
+  
   const operationsQuery = useQuery<APIOperation[], Error>({
     queryKey: ['operations'],
     queryFn: getOperations,
   })
+
 
   // Mutations
   const createMut = useMutation<APICategory, Error, CreateCategoryPayload>({
@@ -64,6 +71,7 @@ export const useCategories = () => {
 
   return {
     categoriesQuery,
+    categoryInUseQuery,
     operationsQuery,
     createMut,
     updateMut,

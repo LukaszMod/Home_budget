@@ -1,23 +1,21 @@
 import React from 'react'
-import type { Category as APICategory, CreateCategoryPayload } from '../lib/api'
+import type { Category as APICategory } from '../lib/api'
 import { useCategories } from '../hooks/useCategories'
-import StyledModal from '../components/common/StyledModal'
 import CategoriesTable from '../components/categories/CategoriesTable'
-import StyledIncomeSwitch from '../components/common/ui/StyledIncomeSwitch'
-import { Typography, Paper, Stack, Button, Box, TextField, Tabs, Tab } from '@mui/material'
+import { Typography, Paper, Stack, Button, Box, Tabs, Tab } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
 import { useNotifier } from '../components/common/Notifier'
 import ConfirmDialog from '../components/common/ConfirmDialog'
-import NewEditCategory from '../components/categories/NewEditCategory'
+import EditCategory from '../components/categories/EditCategory'
 
 const Categories: React.FC = () => {
   const { t } = useTranslation()
-  const { categoriesQuery, operationsQuery, deleteMut, reorderMut, toggleHiddenMut } = useCategories()
+  const { categoriesQuery, deleteMut, reorderMut, toggleHiddenMut, categoryInUseQuery } = useCategories()
   const notifier = useNotifier()
 
   const categories = categoriesQuery.data ?? []
-  const operations = operationsQuery.data ?? []
+  const categoryInUse = categoryInUseQuery.data ?? []
 
   const [modalOpen, setModalOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<APICategory | null>(null)
@@ -25,21 +23,9 @@ const Categories: React.FC = () => {
   const [categoryToDelete, setCategoryToDelete] = React.useState<number | null>(null)
   const [activeTab, setActiveTab] = React.useState(0)
 
-  React.useEffect(() => {
-    if (!modalOpen) {
-      setEditing(null)
-      setName('')
-      setParentId(null)
-      setType('expense')
-    }
-  }, [modalOpen])
-
   // descendant calculation was removed -- not needed anymore
 
   const openNew = () => {
-    setEditing(null)
-    setName('')
-    setParentId(null)
     setModalOpen(true)
   }
 
@@ -52,16 +38,11 @@ const Categories: React.FC = () => {
       return
     }
     setEditing(c)
-    setName(c.name)
-    setParentId(c.parent_id ?? null)
-    setType(c.type)
     setModalOpen(true)
   }
 
   const handleAddSubcategory = (parentId: number) => {
-    setEditing(null)
-    setName('')
-    setParentId(parentId)
+    setEditing({ id: 0, name: '', type: 'expense', parent_id: parentId } as APICategory)
     setModalOpen(true)
   }
 
@@ -72,7 +53,8 @@ const Categories: React.FC = () => {
   const canDelete = (id: number) => {
     const category = categories.find(c => c.id === id)
     if (category?.is_system) return false
-    return !operations.some(op => op.category_id === id)
+    console.log(id, !categoryInUse.find(op => op.id === id), !categories.some(c => c.parent_id === id))
+    return !categoryInUse.find(op => op.id === id) && !categories.some(c => c.parent_id === id)
   }
 
 
@@ -93,7 +75,7 @@ const Categories: React.FC = () => {
 
   return (
     <>
-    <NewEditCategory modalOpen={modalOpen} setModalOpen={setModalOpen} editing={editing} />
+    <EditCategory modalOpen={modalOpen} setModalOpen={setModalOpen} editing={editing} />
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
       <Paper sx={{ p: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>

@@ -43,6 +43,7 @@ sleep 2
 # Uruchom frontend
 echo -e "${BLUE}[Frontend]${NC} Uruchamianie aplikacji React..."
 cd frontend
+npm install
 npm run dev 2>&1 | sed "s/^/[Frontend] /" &
 FRONTEND_PID=$!
 cd ..

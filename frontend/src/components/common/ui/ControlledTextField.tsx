@@ -1,24 +1,20 @@
-import { TextField } from "@mui/material"
-import { Controller, useFormContext } from "react-hook-form"
+import { TextField, type TextFieldProps } from '@mui/material';
+import { Controller, useFormContext } from 'react-hook-form';
 
-
-type ControlledTextFieldProps = {
+type ControlledTextFieldProps = TextFieldProps & {
   fieldName: string;
   fieldLabel: string;
   validationRules?: object;
-  [key: string]: any;
 };
 
-
-const ControlledTextField: React.FC<ControlledTextFieldProps> = ({
+const ControlledTextField = ({
   fieldName,
-  formControl,
   fieldLabel,
   validationRules,
   ...rest
-}) => {
+}: ControlledTextFieldProps) => {
   const { control } = useFormContext();
-  
+
   return (
     <Controller
       name={fieldName}
@@ -27,6 +23,7 @@ const ControlledTextField: React.FC<ControlledTextFieldProps> = ({
       render={({ field, fieldState }) => (
         <TextField
           {...field}
+          required={validationRules?.hasOwnProperty('required')}
           label={fieldLabel}
           variant="outlined"
           margin="normal"
@@ -40,5 +37,4 @@ const ControlledTextField: React.FC<ControlledTextFieldProps> = ({
   );
 };
 
-
-export default ControlledTextField
+export default ControlledTextField;

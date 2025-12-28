@@ -142,7 +142,7 @@ const resources = {
         fields: {
           name: 'Name',
           type: 'Type',
-          parent: 'Parent (optional)'
+          parent: 'Parent'
         },
         messages: {
           created: 'Category created',
@@ -163,6 +163,7 @@ const resources = {
         deleteButton: 'Delete operation',
         confirmDelete: 'Delete selected operation(s)?',
         confirmSingle: 'Delete operation?',
+        noData: 'No operations to display',
         dialog: {
           edit: 'Edit operation',
           new: 'New operation'
@@ -584,7 +585,7 @@ const resources = {
         fields: {
           name: 'Nazwa',
           type: 'Typ',
-          parent: 'Rodzic (opcjonalnie)'
+          parent: 'Rodzic'
         },
         messages: {
           created: 'Kategoria utworzona',
@@ -605,6 +606,7 @@ const resources = {
         deleteButton: 'Usuń operację',
         confirmDelete: 'Usunąć zaznaczone operacje?',
         confirmSingle: 'Usuń operację?',
+        noData: 'Brak operacji do wyświetlenia',
         dialog: {
           edit: 'Edytuj operację',
           new: 'Nowa operacja'

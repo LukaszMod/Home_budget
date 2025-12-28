@@ -52,6 +52,12 @@ pub struct ReorderItem {
     pub sort_order: i32,
 }
 
+#[derive(Serialize, FromRow)]
+pub struct CategoryUsed {
+    pub id: i32,
+    pub is_used: bool,
+}
+
 // Asset Types
 #[derive(Serialize, FromRow)]
 pub struct AssetType {

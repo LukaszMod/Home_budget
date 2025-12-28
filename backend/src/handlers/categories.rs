@@ -79,15 +79,15 @@ pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (
 
 pub async fn create_category(State(state): State<AppState>, Json(payload): Json<CreateCategory>) -> Result<Json<Category>, (axum::http::StatusCode, String)> {
     // Calculate next sort order
-    let max_order: Option<i32> = sqlx::query_scalar(
-        "SELECT MAX(sort_order) FROM categories WHERE parent_id IS NOT DISTINCT FROM $1"
+    let max_order: i32 = sqlx::query_scalar::<_, i32>(
+         r#" SELECT COALESCE(MAX(sort_order), 0) FROM categories WHERE $1::int IS NULL OR parent_id = $1 "# 
     )
     .bind(payload.parent_id)
     .fetch_one(&state.pool)
     .await
-    .unwrap_or(None);
+    .map_err(db_err)?;
     
-    let next_order = max_order.unwrap_or(0) + 1;
+    let next_order = max_order + 1;
 
     let cat = sqlx::query_as::<_, Category>(
         "INSERT INTO categories (name, parent_id, type, sort_order, is_system) VALUES ($1, $2, $3::category_type, $4, FALSE)
@@ -109,6 +109,12 @@ pub async fn get_category(State(state): State<AppState>, Path(id): Path<i32>) ->
         "SELECT id, name, parent_id, type::text, sort_order, is_system, is_hidden FROM categories WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
+}
+pub async fn is_category_used(State(state): State<AppState>) -> Result<Json<Vec<CategoryUsed>>, (axum::http::StatusCode, String)> {
+    let rows = sqlx::query_as::<_,CategoryUsed>(
+        "SELECT category_id as id, COUNT(*) > 0 as is_used FROM operations GROUP BY category_id"
+    ).fetch_all(&state.pool).await.map_err(db_err)?;
+    Ok(Json(rows))
 }
 
 pub async fn update_category(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateCategory>) -> Result<Json<Category>, (axum::http::StatusCode, String)> {

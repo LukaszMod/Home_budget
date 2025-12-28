@@ -467,12 +467,12 @@ const Operations: React.FC = () => {
             variant="h6" 
             fontWeight="bold" 
             sx={{ 
-              color: (filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)) >= 0 
+              color: (filteredRows.reduce((sum, r) => sum + parseAmount(r.amount), 0)) >= 0 
                 ? 'success.main' 
                 : 'error.main' 
             }}
           >
-            {(filteredRows.filter(r => r.operation_type === 'income').reduce((sum, r) => sum + parseAmount(r.amount), 0) - filteredRows.filter(r => r.operation_type === 'expense').reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString(locale, { style: 'currency', currency: 'PLN' })}
+            {(filteredRows.reduce((sum, r) => sum + parseAmount(r.amount), 0)).toLocaleString(locale, { style: 'currency', currency: 'PLN' })}
           </Typography>
         </Box>
       </Paper>

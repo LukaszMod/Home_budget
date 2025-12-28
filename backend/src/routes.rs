@@ -18,6 +18,7 @@ pub fn router() -> Router<AppState> {
         .route("/categories/reorder", post(reorder_categories))
         .route("/categories/:id", get(get_category).put(update_category).delete(delete_category))
         .route("/categories/:id/toggle-hidden", post(toggle_category_hidden))
+        .route("/categories/in-use", get(is_category_used))
         // Accounts (backward compatibility - maps to liquid assets)
         .route("/accounts", get(list_accounts_compat))
         .route("/accounts/:id/toggle-closed", post(toggle_account_closed_compat))

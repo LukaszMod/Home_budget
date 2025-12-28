@@ -8,13 +8,7 @@ BEGIN
     -- Income adds to balance, expense subtracts from balance
     -- Skip operations that are children of split operations (parent_operation_id IS NOT NULL)
     SELECT COALESCE(
-        SUM(
-            CASE 
-                WHEN operation_type = 'income' THEN amount
-                WHEN operation_type = 'expense' THEN -amount
-                ELSE 0
-            END
-        ), 
+        SUM(amount), 
         0
     )
     INTO v_balance

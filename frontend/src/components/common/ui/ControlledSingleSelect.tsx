@@ -1,38 +1,51 @@
-import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import type { FC } from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  type SelectProps,
+} from '@mui/material';
+import { Controller, useFormContext } from 'react-hook-form';
 
-interface ControlledSingleSelectProps {
-    fieldName: string;
-    fieldLabel: string;
-    options: {id: number, value: number, label: string}[];
-}
+type ControlledSingleSelectProps = SelectProps & {
+  fieldName: string;
+  fieldLabel: string;
+  options: { id: number; value: number | string | undefined; label: string }[];
+  validationRules?: object;
+};
 
-const ControlledSingleSelect: FC<ControlledSingleSelectProps> = ({
-    fieldName,
-    fieldLabel: formLabel,
-    options,
-}) => {
-    const { control } = useFormContext();
+const ControlledSingleSelect = ({
+  fieldName,
+  fieldLabel,
+  options,
+  validationRules,
+  ...rest
+}: ControlledSingleSelectProps) => {
+  const { control } = useFormContext();
 
-    return (
-        <Controller
-            name={fieldName}
-            control={control}
-            render={({ field: ControllerRenderProps }) => (
-                <FormControl fullWidth required>
-                    <InputLabel>{formLabel}</InputLabel>
-                    <Select {...ControllerRenderProps} label={formLabel}>
-                        {options.map(({ id, value, label }) => (
-                            <MenuItem key={id} value={value}>
-                                {label}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            )}
-        />
-    );
-}
+  return (
+    <Controller
+      name={fieldName}
+      control={control}
+      rules={validationRules}
+      render={({ field, fieldState }) => (
+        <FormControl fullWidth error={!!fieldState.error}>
+          <InputLabel>{fieldLabel}</InputLabel>
+
+          <Select {...field} label={fieldLabel} {...rest}>
+            {options.map(({ id, value, label }) => (
+              <MenuItem key={id} value={value}>
+                {label}
+              </MenuItem>
+            ))}
+          </Select>
+
+          {fieldState.error && <FormHelperText>{fieldState.error.message}</FormHelperText>}
+        </FormControl>
+      )}
+    />
+  );
+};
 
 export default ControlledSingleSelect;
