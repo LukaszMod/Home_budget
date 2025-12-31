@@ -43,6 +43,8 @@ sleep 2
 # Uruchom frontend
 echo -e "${BLUE}[Frontend]${NC} Uruchamianie aplikacji React..."
 cd frontend
+export $(grep -v '^#' .env | xargs)
+PORT="${VITE_PORT:-5173}"
 npm install
 npm run dev 2>&1 | sed "s/^/[Frontend] /" &
 FRONTEND_PID=$!
@@ -55,7 +57,7 @@ echo -e "Frontend PID: ${FRONTEND_PID}"
 # Poczekaj na pełne uruchomienie frontendu i otwórz przeglądarkę
 sleep 3
 echo -e "${BLUE}Otwieranie przeglądarki...${NC}"
-xdg-open http://localhost:5173 2>/dev/null || true
+xdg-open "http://localhost:$PORT" 2>/dev/null || true
 
 echo -e "\nAby zatrzymać aplikację, naciśnij ${RED}Ctrl+C${NC}\n"
 
