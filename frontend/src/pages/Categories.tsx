@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Category as APICategory } from '../lib/api'
+import type { Category as APICategory, Category } from '../lib/api'
 import { useCategories } from '../hooks/useCategories'
 import CategoriesTable from '../components/categories/CategoriesTable'
 import { Typography, Paper, Stack, Button, Box, Tabs, Tab } from '@mui/material'
@@ -41,8 +41,8 @@ const Categories: React.FC = () => {
     setModalOpen(true)
   }
 
-  const handleAddSubcategory = (parentId: number) => {
-    setEditing({ id: 0, name: '', type: 'expense', parent_id: parentId } as APICategory)
+  const handleAddSubcategory = (parentCategory: Category) => {
+    setEditing({ id: -1, name: '', type: parentCategory.type, parent_id: parentCategory.id } as Category)
     setModalOpen(true)
   }
 

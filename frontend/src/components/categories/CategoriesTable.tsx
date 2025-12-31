@@ -60,7 +60,7 @@ interface SortableRowProps {
   onEdit: (c: Category) => void
   onDelete: (id: number) => void
   canDelete: (id: number) => boolean
-  onAddSubcategory?: (id: number) => void
+  onAddSubcategory?: (c: Category) => void
   onToggleHidden: (id: number) => void
   childrenRows?: React.ReactNode
   showActions?: boolean
@@ -161,7 +161,7 @@ const SortableRow = ({
               {isMain && onAddSubcategory && (
                 <IconButton
                   size="small"
-                  onClick={() => onAddSubcategory(category.id)}
+                  onClick={() => onAddSubcategory(category)}
                   title={t('categories.addSubcategory', 'Dodaj podkategorię')}
                 >
                   <AddIcon fontSize="small" />

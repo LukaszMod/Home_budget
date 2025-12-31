@@ -11,12 +11,14 @@ import ControlledSingleSelect from '../common/ui/ControlledSingleSelect';
 import ControlledTextField from '../common/ui/ControlledTextField';
 
 interface CategoryForm {
+  id: number;
   name: string;
   parentId: number | undefined;
   type: 'income' | 'expense';
 }
 
 const defaultCategoryForm: CategoryForm = {
+  id: -1,
   name: '',
   parentId: undefined,
   type: 'expense',
@@ -43,6 +45,7 @@ const EditCategory = ({ modalOpen, setModalOpen, editing }: EditCategoryProps) =
   React.useEffect(() => {
     if (editing) {
       reset({
+        id: editing.id,
         name: editing.name,
         parentId: editing.parent_id ?? undefined,
         type: editing.type,
@@ -65,7 +68,7 @@ const EditCategory = ({ modalOpen, setModalOpen, editing }: EditCategoryProps) =
       type: data.type,
     };
     try {
-      if (editing) {
+      if (editing && editing.id > 0) {
         await updateMut.mutateAsync({ id: editing.id, payload });
         notifier.notify(
           t('categories.messages.updated', { defaultValue: 'Category updated' }),
@@ -92,7 +95,7 @@ const EditCategory = ({ modalOpen, setModalOpen, editing }: EditCategoryProps) =
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={
-          editing
+          editing || editing?.id > 0
             ? t('categories.dialog.edit', { defaultValue: 'Edit Category' })
             : t('categories.dialog.new', { defaultValue: 'New Category' })
         }
@@ -117,7 +120,7 @@ const EditCategory = ({ modalOpen, setModalOpen, editing }: EditCategoryProps) =
           fieldName="parentId"
           fieldLabel={t('categories.fields.parent', { defaultValue: 'Parent' })}
           options={[ { id: -1, value: undefined, label: '\u00A0' }, ...categories
-            .filter((c) => c.parent_id !== null)
+            .filter((c) => c.parent_id === null && !c.is_hidden && !c.is_system)
             .map((c) => ({ id: c.id, value: c.id, label: c.name }))]}
         />
       </StyledModal>

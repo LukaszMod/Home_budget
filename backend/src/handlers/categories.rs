@@ -3,9 +3,9 @@ use crate::{AppState, models::*, utils::db_err};
 
 // Helper function to ensure debt categories exist
 pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (axum::http::StatusCode, String)> {
-    // Check if "Długi" category exists
+    // Check if "Depts" category exists
     let debt_category: Option<Category> = sqlx::query_as::<_, Category>(
-        "SELECT id, name, parent_id, type::text, sort_order, is_system, is_hidden FROM categories WHERE name = 'Długi' AND parent_id IS NULL"
+        "SELECT id, name, parent_id, type::text, sort_order, is_system, is_hidden FROM categories WHERE name = 'Depts' AND parent_id IS NULL"
     )
     .fetch_optional(pool)
     .await
@@ -14,7 +14,7 @@ pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (
     let debt_category_id = if let Some(cat) = debt_category {
         cat.id
     } else {
-        // Create "Długi" main category
+        // Create "Depts" main category
         let max_order: Option<i32> = sqlx::query_scalar(
             "SELECT MAX(sort_order) FROM categories WHERE parent_id IS NULL"
         )
@@ -26,7 +26,7 @@ pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (
 
         let new_cat = sqlx::query_as::<_, Category>(
             "INSERT INTO categories (name, parent_id, type, sort_order, is_system) 
-             VALUES ('Długi', NULL, 'expense'::category_type, $1, TRUE)
+             VALUES ('Depts', NULL, 'expense'::category_type, $1, TRUE)
              RETURNING id, name, parent_id, type::text, sort_order, is_system, is_hidden"
         )
         .bind(next_order)
@@ -37,9 +37,9 @@ pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (
         new_cat.id
     };
 
-    // Check if "Odsetki" subcategory exists
+    // Check if "Interest" subcategory exists
     let interest_category: Option<Category> = sqlx::query_as::<_, Category>(
-        "SELECT id, name, parent_id, type::text, sort_order, is_system, is_hidden FROM categories WHERE name = 'Odsetki' AND parent_id = $1"
+        "SELECT id, name, parent_id, type::text, sort_order, is_system, is_hidden FROM categories WHERE name = 'Interest' AND parent_id = $1"
     )
     .bind(debt_category_id)
     .fetch_optional(pool)
@@ -49,7 +49,7 @@ pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (
     let interest_category_id = if let Some(cat) = interest_category {
         cat.id
     } else {
-        // Create "Odsetki" subcategory
+        // Create "Interest" subcategory
         let max_order: Option<i32> = sqlx::query_scalar(
             "SELECT MAX(sort_order) FROM categories WHERE parent_id = $1"
         )
@@ -62,7 +62,7 @@ pub async fn ensure_debt_categories(pool: &sqlx::PgPool) -> Result<(i32, i32), (
 
         let new_cat = sqlx::query_as::<_, Category>(
             "INSERT INTO categories (name, parent_id, type, sort_order, is_system) 
-             VALUES ('Odsetki', $1, 'expense'::category_type, $2, TRUE)
+             VALUES ('Interest', $1, 'expense'::category_type, $2, TRUE)
              RETURNING id, name, parent_id, type::text, sort_order, is_system, is_hidden"
         )
         .bind(debt_category_id)
