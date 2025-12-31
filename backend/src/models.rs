@@ -244,7 +244,6 @@ pub struct SplitItem {
 #[derive(Serialize, FromRow)]
 pub struct Budget {
     pub id: i32,
-    pub asset_id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
@@ -252,7 +251,6 @@ pub struct Budget {
 
 #[derive(Deserialize)]
 pub struct CreateBudget {
-    pub asset_id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
@@ -262,7 +260,6 @@ pub struct CreateBudget {
 #[derive(Serialize)]
 pub struct BudgetWithCategory {
     pub id: i32,
-    pub asset_id: i32,
     pub category_id: i32,
     pub category_name: String,
     pub category_type: String,

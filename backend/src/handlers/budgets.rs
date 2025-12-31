@@ -4,34 +4,34 @@ use crate::{AppState, models::*, utils::db_err};
 
 pub async fn create_budget(State(state): State<AppState>, Json(payload): Json<CreateBudget>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "INSERT INTO budgets (asset_id, category_id, month, planned_amount)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, asset_id, category_id, month, planned_amount"
-    ).bind(payload.asset_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount)
+        "INSERT INTO budgets (category_id, month, planned_amount)
+         VALUES ($1, $2, $3)
+         RETURNING id, category_id, month, planned_amount"
+    ).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
 
 pub async fn list_budgets(State(state): State<AppState>) -> Result<Json<Vec<Budget>>, (axum::http::StatusCode, String)> {
     let rows = sqlx::query_as::<_, Budget>(
-        "SELECT id, asset_id, category_id, month, planned_amount FROM budgets ORDER BY month DESC, id"
+        "SELECT id, category_id, month, planned_amount FROM budgets ORDER BY month DESC, id"
     ).fetch_all(&state.pool).await.map_err(db_err)?;
     Ok(Json(rows))
 }
 
 pub async fn get_budget(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "SELECT id, asset_id, category_id, month, planned_amount FROM budgets WHERE id = $1"
+        "SELECT id, category_id, month, planned_amount FROM budgets WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
 
 pub async fn update_budget(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateBudget>) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
     let row = sqlx::query_as::<_, Budget>(
-        "UPDATE budgets SET asset_id = $1, category_id = $2, month = $3, planned_amount = $4
-         WHERE id = $5
-         RETURNING id, asset_id, category_id, month, planned_amount"
-    ).bind(payload.asset_id).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount).bind(id)
+        "UPDATE budgets SET category_id = $1, month = $2, planned_amount = $3
+         WHERE id = $4
+         RETURNING id, category_id, month, planned_amount"
+    ).bind(payload.category_id).bind(payload.month).bind(payload.planned_amount).bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
     Ok(Json(row))
 }
@@ -54,7 +54,6 @@ pub async fn get_budget_data_for_month(
     #[derive(sqlx::FromRow)]
     struct BudgetRow {
         id: i32,
-        asset_id: i32,
         category_id: i32,
         category_name: String,
         category_type: String,
@@ -66,7 +65,6 @@ pub async fn get_budget_data_for_month(
     let budget_rows = sqlx::query_as::<_, BudgetRow>(
         "SELECT 
             b.id, 
-            b.asset_id, 
             b.category_id, 
             c.name as category_name,
             c.type::text as category_type,
@@ -86,7 +84,6 @@ pub async fn get_budget_data_for_month(
     let budgets: Vec<BudgetWithCategory> = budget_rows.into_iter().map(|row| {
         BudgetWithCategory {
             id: row.id,
-            asset_id: row.asset_id,
             category_id: row.category_id,
             category_name: row.category_name,
             category_type: row.category_type,

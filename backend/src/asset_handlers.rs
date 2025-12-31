@@ -66,7 +66,7 @@ pub async fn create_asset(State(state): State<AppState>, Json(payload): Json<Cre
                 let operation_type = if initial_balance > 0.0 { "income" } else { "expense" };
                 sqlx::query(
                     "INSERT INTO operations (asset_id, amount, operation_type, operation_date, description)
-                     VALUES ($1, $2, $3::operation_type, CURRENT_DATE, 'Korekta salda')"
+                     VALUES ($1, $2, $3::operation_type, CURRENT_DATE, 'Correction')"
                 )
                 .bind(asset.id)
                 .bind(initial_balance)
