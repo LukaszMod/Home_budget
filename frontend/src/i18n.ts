@@ -30,7 +30,9 @@ const resources = {
         confirmDelete: 'Confirm delete?',
         loading: 'Loading...',
         actions: 'Actions',
-        close: 'Close'
+        close: 'Close',
+        all: 'All',
+        selected: 'Selected'
       },
       settings: {
         title: 'Settings',
@@ -201,11 +203,6 @@ const resources = {
           income: 'Income',
           expense: 'Expense'
         },
-        filters: {
-          all: 'All',
-          none: 'None',
-          selected: 'selected'
-        },
         splitOperation: 'Split Operation',
         originalOperation: 'Original operation',
         totalAmount: 'Total amount',
@@ -221,6 +218,7 @@ const resources = {
         splitItems: 'Split items',
         splitCategory: 'Split',
         transfer: 'Transfer',
+        import: 'Import operations',
         summary: {
           totalIncome: 'Total Income',
           totalExpense: 'Total Expense',
@@ -473,7 +471,9 @@ const resources = {
         confirmDelete: 'Potwierdź usunięcie?',
         loading: 'Ładowanie...',
         actions: 'Akcje',
-        close: 'Zamknij'
+        close: 'Zamknij',
+        all: 'Wszystkie',
+        selected: 'Wybrane'
       },
       settings: {
         title: 'Ustawienia',
@@ -647,11 +647,6 @@ const resources = {
           income: 'Przychód',
           expense: 'Wydatek'
         },
-        filters: {
-          all: 'Wszystkie',
-          none: 'Brak',
-          selected: 'wybrane'
-        },
         splitOperation: 'Podziel operację',
         originalOperation: 'Oryginalna operacja',
         totalAmount: 'Kwota całkowita',
@@ -667,6 +662,7 @@ const resources = {
         splitItems: 'Pozycje podziału',
         splitCategory: 'Dzielona',
         transfer: 'Przelew',
+        import: 'Import operacji',
         summary: {
           totalIncome: 'Przychody',
           totalExpense: 'Wydatki',
@@ -678,7 +674,8 @@ const resources = {
           fillRequired: 'Uzupełnij wymagane pola'
         },
         plannedWarning: 'Operacja zaplanowana - przeznaczona na przyszłą datę'
-      },      import: {
+      },
+      import: {
         title: 'Import operacji z CSV',
         steps: {
           upload: 'Wczytaj CSV',

@@ -84,18 +84,30 @@ const Budget: React.FC = () => {
   }, [mainCategories, categories])
 
   const rows = useMemo(() => {
-    const result: BudgetRow[] = []
-    mainCategories.forEach((mainCat: Category) => {
+    let result: BudgetRow[] = []
+    mainCategories.sort((a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 1)).forEach((mainCat: Category) => {
       const subCategories = categories.filter((cat: Category) => cat.parent_id === mainCat.id)
       if (subCategories.length === 0) return
       
-      let mainCatPlan = 0, mainCatSpending = 0
-      subCategories.forEach((subCat: Category) => {
+      let mainCatPlan = 0;
+      let mainCatSpending = 0;
+      const subCategoriesResult: BudgetRow[] = [];
+      subCategories.sort((a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 1)).forEach((subCat: Category) => {
         const budget = budgets.find((b: BudgetWithCategory) => b.category_id === subCat.id)
         const plan = parseAmount(budget?.planned_amount)
         const spending = categorySpending[subCat.id] ?? 0
         mainCatPlan += plan
         mainCatSpending += spending
+        subCategoriesResult.push({
+          id: `sub-${subCat.id}`,
+          category_id: subCat.id,
+          category_name: subCat.name,
+          plan,
+          spending,
+          remaining: plan - spending,
+          isParent: false,
+          parentId: `parent-${mainCat.id}`
+        })
       })
       
       result.push({
@@ -107,22 +119,8 @@ const Budget: React.FC = () => {
         isParent: true,
         parentId: undefined
       })
+      result = [...result, ...(subCategoriesResult ?? [])];
       
-      subCategories.sort((a: Category, b: Category) => a.id - b.id).forEach((subCat: Category) => {
-        const budget = budgets.find((b: BudgetWithCategory) => b.category_id === subCat.id)
-        const plan = parseAmount(budget?.planned_amount)
-        const spending = categorySpending[subCat.id] ?? 0
-        result.push({
-          id: `sub-${subCat.id}`,
-          category_id: subCat.id,
-          category_name: subCat.name,
-          plan,
-          spending,
-          remaining: plan - spending,
-          isParent: false,
-          parentId: `parent-${mainCat.id}`
-        })
-      })
     })
     return result
   }, [categories, budgets, categorySpending, mainCategories])

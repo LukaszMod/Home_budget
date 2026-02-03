@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, FormProvider } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createOperation,
@@ -45,6 +45,7 @@ import CalcTextField from '../common/ui/CalcTextField'
 import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
 import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
 import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions'
+import ControlledSingleSelect from '../common/ui/ControlledSingleSelect'
 
 interface AddOperationModalProps {
   open: boolean
@@ -65,14 +66,14 @@ interface FormData {
   isSplit: boolean
 }
 
-const AddOperationModal: React.FC<AddOperationModalProps> = ({
+const AddOperationModal = ({
   open,
   onClose,
   accounts,
   categories,
   editing,
   onSwitchToTransfer,
-}) => {
+}: AddOperationModalProps) => {
   const qc = useQueryClient()
   const notifier = useNotifier()
   const { t } = useTranslation()
@@ -85,7 +86,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     console.log('AddOperationModal - hashtags from hook:', hashtags)
   }, [hashtags])
 
-  const { control, handleSubmit, reset, watch, setValue } = useForm<FormData>({
+  const methods = useForm<FormData>({
     defaultValues: {
       operationDate: new Date().toISOString().split('T')[0],
       amount: '',
@@ -96,6 +97,7 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
       isSplit: false,
     },
   })
+  const { control, handleSubmit, reset, watch, setValue } = methods
 
   // State for split items
   const [splitItems, setSplitItems] = React.useState<SplitItem[]>([
@@ -334,12 +336,12 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
           onClose()
         } else {
           reset({
-            operationDate: new Date().toISOString().split('T')[0],
+            //operationDate: new Date().toISOString().split('T')[0],
             amount: '',
             description: '',
-            accountId: '',
-            categoryId: '',
-            operationType: '',
+            //accountId: '',
+            //categoryId: '',
+            //operationType: '',
             isSplit: false,
           })
           setSplitItems([{ category_id: 0, amount: 0, description: '' }])
@@ -354,13 +356,9 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
     <StyledModal
       open={open}
       onClose={onClose}
-      title={
-        editing
-          ? t('operations.edit') ?? 'Edytuj operację'
-          : t('operations.add') ?? 'Dodaj operację'
-      }
+      title={editing ? t('operations.edit'): t('operations.add')}
     >
-      <form onSubmit={handleSubmit((data) => handleSave(data, false))}>
+      <FormProvider {...methods} >
         <Grid container spacing={2}>
           {/* Switch to Transfer */}
           {onSwitchToTransfer && !editing && (
@@ -424,7 +422,12 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
                   </DatePickerProvider>
                 )}
               />
-
+              <ControlledSingleSelect
+                fieldName="accountId"
+                fieldLabel={t('operations.fields.account')} 
+                options={accounts.filter(a => !a.is_closed).map(a => ({ id: a.id, value: a.id, label: a.name }))}
+                validationRules = {{ required: true }}
+              />
               <Controller
                 name="accountId"
                 control={control}
@@ -515,15 +518,8 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
                   )}
                 />
 
-              <Controller
-                name="operationType"
-                control={control}
-                render={({ field }) => (
-                  <StyledIncomeSwitch
-                    value={field.value as 'income' | 'expense' | ''}
-                    onChange={field.onChange}
-                  />
-                )}
+              <StyledIncomeSwitch
+                    name='operationType'
               />
             </Stack>
           </Grid>
@@ -664,8 +660,9 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
           {/* Buttons Section */}
           <Grid item xs={12}>
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Button type="submit" variant="contained">
-                {t('common.save') ?? 'Zapisz'}
+              <Button variant="contained"
+                onClick={handleSubmit((data) => handleSave(data, true))}>
+                {t('common.save')}
               </Button>
               {editing && isSplit && (
                 <Button
@@ -685,12 +682,12 @@ const AddOperationModal: React.FC<AddOperationModalProps> = ({
                 </Button>
               )}
               <Button onClick={onClose}>
-                {t('common.cancel') ?? 'Anuluj'}
+                {t('common.cancel')}
               </Button>
             </Stack>
           </Grid>
         </Grid>
-      </form>
+      </FormProvider>
 
       <ConfirmDialog
         open={unsplitConfirmOpen}

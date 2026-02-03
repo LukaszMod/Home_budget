@@ -6,13 +6,13 @@ import {
   FormHelperText,
   type SelectProps,
 } from '@mui/material';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, type RegisterOptions } from 'react-hook-form';
 
 type ControlledSingleSelectProps = SelectProps & {
   fieldName: string;
   fieldLabel: string;
   options: { id: number; value: number | string | undefined; label: string }[];
-  validationRules?: object;
+  validationRules?: RegisterOptions;
 };
 
 const ControlledSingleSelect = ({
@@ -31,7 +31,7 @@ const ControlledSingleSelect = ({
       rules={validationRules}
       render={({ field, fieldState }) => (
         <FormControl fullWidth error={!!fieldState.error}>
-          <InputLabel>{fieldLabel}</InputLabel>
+          <InputLabel>{fieldLabel}{ validationRules?.required && ' *'}</InputLabel>
 
           <Select {...field} label={fieldLabel} {...rest}>
             {options.map(({ id, value, label }) => (
