@@ -1,27 +1,37 @@
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { Box, Paper, Typography, Divider } from '@mui/material'
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Box, Paper, Typography, Divider } from '@mui/material';
+import { useFormContext } from 'react-hook-form';
+import type { FullBudget } from './hooks/useBudget';
 
-interface BudgetStatsType {
-  plannedIncome: number
-  plannedExpense: number
-  realIncome: number
-  realExpense: number
-  plannedCashFlow: number
-  realCashFlow: number
-}
-
-interface BudgetStatisticsBarProps {
-  stats: BudgetStatsType
-}
-
-const BudgetStatisticsBar: React.FC<BudgetStatisticsBarProps> = ({ stats }) => {
-  const { t } = useTranslation()
+const BudgetStatisticsBar = () => {
+  const { t } = useTranslation();
+  const { getValues } = useFormContext<FullBudget>();
+  const budgets = getValues('budgets');
 
   // Helper to format numeric values
   const formatAmount = (amount: number): string => {
-    return isNaN(amount) ? '0.00' : amount.toFixed(2)
-  }
+    return isNaN(amount) || typeof amount !== 'number' ? '0.00' : amount.toFixed(2);
+  };
+
+  const plannedIncome = budgets.reduce((total, budget) => {
+    return total + (budget.type === 'income' ? budget.planned : 0);
+  }, 0);
+
+  const plannedExpense = budgets.reduce((total, budget) => {
+    return total + (budget.type === 'expense' ? budget.planned : 0);
+  }, 0);
+
+  const realIncome = budgets.reduce((total, budget) => {
+    return total + (budget.type === 'income' ? budget.spending : 0);
+  }, 0);
+
+  const realExpense = budgets.reduce((total, budget) => {
+    return total + (budget.type === 'expense' ? budget.spending : 0);
+  }, 0);
+
+  const plannedCashFlow = plannedIncome - plannedExpense;
+  const realCashFlow = realIncome - realExpense;
 
   const StatItem: React.FC<{ label: string; value: number }> = ({ label, value }) => (
     <Box sx={{ py: 1.5 }}>
@@ -32,20 +42,20 @@ const BudgetStatisticsBar: React.FC<BudgetStatisticsBarProps> = ({ stats }) => {
         {formatAmount(value)}
       </Typography>
     </Box>
-  )
+  );
 
   return (
-    <Paper sx={{ p: 2, minWidth: 280, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
+    <Box sx={{ p: 2, minWidth: 280, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
         {t('budget.statistics.title')}
       </Typography>
-      
+
       <Box>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>
           {t('budget.statistics.income')}
         </Typography>
-        <StatItem label={t('budget.statistics.plannedIncome')} value={stats.plannedIncome} />
-        <StatItem label={t('budget.statistics.realIncome')} value={stats.realIncome} />
+        <StatItem label={t('budget.statistics.plannedIncome')} value={plannedIncome} />
+        <StatItem label={t('budget.statistics.realIncome')} value={realIncome} />
       </Box>
 
       <Divider sx={{ my: 2 }} />
@@ -54,8 +64,8 @@ const BudgetStatisticsBar: React.FC<BudgetStatisticsBarProps> = ({ stats }) => {
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>
           {t('budget.statistics.expenses')}
         </Typography>
-        <StatItem label={t('budget.statistics.plannedExpense')} value={stats.plannedExpense} />
-        <StatItem label={t('budget.statistics.realExpense')} value={stats.realExpense} />
+        <StatItem label={t('budget.statistics.plannedExpense')} value={plannedExpense} />
+        <StatItem label={t('budget.statistics.realExpense')} value={realExpense} />
       </Box>
 
       <Divider sx={{ my: 2 }} />
@@ -64,11 +74,11 @@ const BudgetStatisticsBar: React.FC<BudgetStatisticsBarProps> = ({ stats }) => {
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>
           {t('budget.statistics.cashFlow')}
         </Typography>
-        <StatItem label={t('budget.statistics.plannedCashFlow')} value={stats.plannedCashFlow} />
-        <StatItem label={t('budget.statistics.realCashFlow')} value={stats.realCashFlow} />
+        <StatItem label={t('budget.statistics.plannedCashFlow')} value={plannedCashFlow} />
+        <StatItem label={t('budget.statistics.realCashFlow')} value={realCashFlow} />
       </Box>
-    </Paper>
-  )
-}
+    </Box>
+  );
+};
 
-export default BudgetStatisticsBar
+export default BudgetStatisticsBar;

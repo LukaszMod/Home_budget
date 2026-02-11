@@ -1,141 +1,151 @@
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { Box, IconButton, useTheme } from '@mui/material'
-import CalcTextField from '../common/ui/CalcTextField'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-
-export interface BudgetRow {
-  id: string
-  category_id?: number
-  category_name: string
-  plan: number
-  spending: number
-  remaining: number
-  isParent?: boolean
-  parentId?: string
-}
+import React from 'react';
+import { Box, IconButton, useTheme } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { useFormContext } from 'react-hook-form';
+import type { Category } from '../../lib/api';
+import type { FullBudget } from './hooks/useBudget';
+import BudgetDescriptionModal from './BudgetDescriptionModal';
+import EditIcon from '@mui/icons-material/Edit';
+import ControlledCalcTextField from '../common/ui/ConrolledCalcTextField';
 
 interface BudgetTableProps {
-  rows: BudgetRow[]
-  expanded: Set<string>
-  onToggleExpanded: (parentId: string) => void
-  editedRows: Map<string, Partial<BudgetRow>>
-  onEditPlan: (rowId: string, newValue: number) => void
+  categories: Category[];
 }
 
-const BudgetTable: React.FC<BudgetTableProps> = ({
-  rows,
-  expanded,
-  onToggleExpanded,
-  editedRows,
-  onEditPlan,
-}) => {
-  const { t } = useTranslation()
-  const theme = useTheme()
+const BudgetTable = ({ categories }: BudgetTableProps) => {
+  const { watch } = useFormContext<FullBudget>();
 
-  // Helper to format numeric values
-  const formatAmount = (amount: number): string => {
-    return isNaN(amount) ? '0.00' : amount.toFixed(2)
-  }
+  const [descModal, setDescModal] = React.useState<{ open: boolean; idx: number | null }>({
+    open: false,
+    idx: null,
+  });
 
-  const headerBgColor = theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]
-  const borderColor = theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[300]
-  const parentRowBg = theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]
-  const editedRowBg = theme.palette.mode === 'dark' ? theme.palette.warning.dark : '#fffde7'
+  const budgets = watch('budgets');
+
+  const mainCategories = React.useMemo(
+  () =>
+    categories
+      .filter((c) => c.parent_id === null && !c.is_hidden && !c.is_system)
+      .sort((a, b) => a.sort_order - b.sort_order),
+  [categories]
+);
+
+
+  const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
+  const toggle = (id: number) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  React.useEffect(() => {
+    setExpanded(Object.fromEntries(mainCategories.map((c) => [c.id, true])));
+  }, [mainCategories]);
 
   return (
-    <Box sx={{ overflowX: 'auto', overflowY: 'auto', height: 'calc(100vh - 300px)' }}>
+    <Box sx={{ overflow: 'auto', height: 'calc(100vh - 220px)' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ backgroundColor: headerBgColor, fontWeight: 'bold' }}>
-            <th style={{ padding: '12px', textAlign: 'left', borderBottom: `2px solid ${borderColor}` }}>
-              {t('budget.fields.category')}
+          <tr>
+            <th style={{ padding: 12, borderBottom: `2px solid` }}>Kategoria</th>
+            <th style={{ padding: 12, borderBottom: `2px solid` }}>Opis</th>
+            <th style={{ padding: 12, borderBottom: `2px solid`, width: 120 }}>
+              Plan
             </th>
-            <th style={{ padding: '12px', textAlign: 'center', borderBottom: `2px solid ${borderColor}`, width: '120px' }}>
-              {t('budget.fields.plan')}
+            <th style={{ padding: 12, borderBottom: `2px solid`, width: 120 }}>
+              Wydano
             </th>
-            <th style={{ padding: '12px', textAlign: 'center', borderBottom: `2px solid ${borderColor}`, width: '120px' }}>
-              {t('budget.fields.spending')}
-            </th>
-            <th style={{ padding: '12px', textAlign: 'center', borderBottom: `2px solid ${borderColor}`, width: '120px' }}>
-              {t('budget.fields.remaining')}
+            <th style={{ padding: 12, borderBottom: `2px solid`, width: 120 }}>
+              Pozostało
             </th>
           </tr>
         </thead>
-        <tbody>
-          {rows.map((row) => {
-            if (!row.isParent && row.parentId && !expanded.has(row.parentId)) {
-              return null
-            }
 
-            const isEdited = editedRows.has(row.id)
-            const displayRow = isEdited ? { ...row, ...editedRows.get(row.id) } : row
-            const isExpanded = row.isParent && expanded.has(row.id)
+        <tbody>
+          {mainCategories.map((parent) => {
+            const subCategories = categories.filter((f) => f.parent_id === parent.id).sort((a, b) => a.sort_order - b.sort_order);
+            const subBudgets = budgets.filter((b) => b.parent_id === parent.id);
+
+            const planSum = subBudgets.reduce((acc, s) => acc + Number(s.planned), 0);
+            const spendingSum = subBudgets.reduce((acc, s) => acc + Number(s.spending), 0);
 
             return (
-              <tr
-                key={row.id}
-                style={{
-                  backgroundColor: row.isParent ? parentRowBg : isEdited ? editedRowBg : 'transparent',
-                  borderBottom: `1px solid ${borderColor}`,
-                }}
-              >
-                <td
-                  style={{
-                    padding: '12px',
-                    paddingLeft: `${row.isParent ? 12 : 48}px`,
-                    fontWeight: row.isParent ? 'bold' : 'normal',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  {row.isParent && (
-                    <IconButton
-                      size="small"
-                      onClick={() => onToggleExpanded(row.id)}
-                      sx={{ padding: '4px' }}
-                    >
-                      {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              <React.Fragment key={parent.id}>
+                <tr style={{  borderBottom: `1px solid` }}>
+                  <td
+                    style={{
+                      padding: 12,
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <IconButton size="small" onClick={() => toggle(parent.id)}>
+                      {expanded[parent.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                     </IconButton>
-                  )}
-                  {row.category_name}
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  {row.isParent ? (
-                    <Box sx={{ fontWeight: 'bold' }}>{formatAmount(displayRow.plan)}</Box>
-                  ) : (
-                    <CalcTextField
-                      size="small"
-                      value={displayRow.plan}
-                      onChange={(val) => onEditPlan(row.id, val)}
-                      sx={{
-                        width: '100px',
-                        '& .MuiOutlinedInput-root': {
-                          fontSize: '14px',
-                          padding: '4px',
-                        },
-                        '& input': {
-                          textAlign: 'center'
-                        }
-                      }}
-                    />
-                  )}
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center', fontWeight: row.isParent ? 'bold' : 'normal' }}>
-                  {formatAmount(displayRow.spending)}
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center', fontWeight: row.isParent ? 'bold' : 'normal' }}>
-                  {formatAmount(displayRow.remaining)}
-                </td>
-              </tr>
-            )
+                    {parent.name}
+                  </td>
+
+                  <td></td>
+
+                  <td style={{ padding: 12, textAlign: 'center', fontWeight: 'bold' }}>
+                    {planSum.toFixed(2)}
+                  </td>
+
+                  <td style={{ padding: 12, textAlign: 'center' }}>{spendingSum.toFixed(2)}</td>
+
+                  <td style={{ padding: 12, textAlign: 'center' }}>
+                    {(planSum - spendingSum).toFixed(2)}
+                  </td>
+                </tr>
+
+                {/* SUB-KATEGORIE */}
+                {expanded[parent.id] &&
+                  subCategories.map((category) => {
+                    const idx = budgets.findIndex((f) => f.category_id === category.id);
+                    const budget = budgets[idx];
+
+                    return (
+                      <tr key={category.id} style={{ borderBottom: `1px solid` }}>
+                        <td style={{ padding: 12 }}>{category.name}</td>
+
+                        {/* DESCRIPTION */}
+                        <td style={{ padding: 12 }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setDescModal({ open: true, idx })}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                          <span style={{ marginLeft: 8 }}>{budget.description}</span>
+                        </td>
+
+                        {/* PLANNED */}
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          <ControlledCalcTextField
+                            fieldName={`budgets.${idx}.planned`}
+                            sx={{ width: 100 }}
+                          />
+                        </td>
+
+                        {/* SPENDING */}
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          {budget.spending.toFixed(2)}
+                        </td>
+
+                        {/* REMAINING */}
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          {(budget.planned - budget.spending).toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </React.Fragment>
+            );
           })}
         </tbody>
       </table>
+      <BudgetDescriptionModal descModal={descModal} setDescModal={setDescModal} />
     </Box>
-  )
-}
+  );
+};
 
-export default BudgetTable
+export default BudgetTable;

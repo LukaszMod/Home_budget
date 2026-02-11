@@ -9,7 +9,6 @@ use tower_http::trace::TraceLayer;
 mod models;
 mod handlers;
 mod routes;
-mod asset_handlers;
 mod utils;
 
 #[derive(Clone)]

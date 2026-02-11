@@ -241,12 +241,13 @@ pub struct SplitItem {
     pub description: Option<String>,
 }
 
-#[derive(Serialize, FromRow)]
+#[derive(Serialize, FromRow, Deserialize)]
 pub struct Budget {
     pub id: i32,
     pub category_id: i32,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
+    pub description: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -254,6 +255,7 @@ pub struct CreateBudget {
     pub category_id: i32,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
+    pub description: Option<String>,
 }
 
 // Budget with JOINed category data for frontend
@@ -266,6 +268,7 @@ pub struct BudgetWithCategory {
     pub parent_id: Option<i32>,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
+    pub description: Option<String>,
 }
 
 // Complete budget data response with spending

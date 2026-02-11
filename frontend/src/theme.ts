@@ -1,5 +1,5 @@
-import { createTheme } from '@mui/material'
-import type { ThemeOptions } from '@mui/material'
+import { createTheme } from '@mui/material';
+import type { ThemeOptions } from '@mui/material';
 
 const commonTypography = {
   h4: {
@@ -16,19 +16,86 @@ const commonTypography = {
     fontSize: '1.25rem',
     fontWeight: 500,
   },
-}
+};
+
+const commonComponents: ThemeOptions['components'] = {
+  MuiButton: {
+    styleOverrides: {
+      root: {
+        textTransform: 'none',
+        borderRadius: 8,
+      },
+    },
+  },
+
+  MuiCard: {
+    styleOverrides: {
+      root: {
+        borderRadius: 12,
+      },
+    },
+  },
+
+  MuiPaper: {
+    styleOverrides: {
+      root: {
+        borderRadius: 8,
+      },
+    },
+  },
+
+  MuiDialog: {
+    styleOverrides: {
+      paper: {
+        borderRadius: 12,
+      },
+    },
+  },
+
+  MuiDialogTitle: {
+    styleOverrides: {
+      root: ({ theme }) => ({
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        fontWeight: 600,
+        fontSize: '1.25rem',
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }),
+    },
+  },
+
+  MuiDialogContent: {
+    styleOverrides: {
+      root: {
+        padding: '16px',
+      },
+    },
+  },
+
+  MuiDialogActions: {
+    styleOverrides: {
+      root: ({ theme }) => ({
+        padding: '12px 16px',
+        borderTop: `1px solid ${theme.palette.divider}`,
+      }),
+    },
+  },
+};
 
 const lightThemeOptions: ThemeOptions = {
   palette: {
     mode: 'light',
     primary: {
-      main: '#2e7d32', // Zielony
+      main: '#2e7d32',
       light: '#60ad5e',
       dark: '#005005',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#66bb6a', // Jasnozielony
+      main: '#66bb6a',
       light: '#98ee99',
       dark: '#338a3e',
       contrastText: '#000000',
@@ -48,44 +115,25 @@ const lightThemeOptions: ThemeOptions = {
       paper: '#ffffff',
     },
   },
+
   typography: commonTypography,
+
   components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 8,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-        },
-      },
-    },
+    ...commonComponents,
   },
-}
+};
 
 const darkThemeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
-      main: '#4caf50', // Zielony - jaśniejszy dla lepszej widoczności
+      main: '#4caf50',
       light: '#80e27e',
       dark: '#087f23',
       contrastText: '#000000',
     },
     secondary: {
-      main: '#66bb6a', // Jasnozielony - lepiej widoczny
+      main: '#66bb6a',
       light: '#98ee99',
       dark: '#338a3e',
       contrastText: '#000000',
@@ -105,8 +153,12 @@ const darkThemeOptions: ThemeOptions = {
       paper: '#1e1e1e',
     },
   },
+
   typography: commonTypography,
+
   components: {
+    ...commonComponents,
+
     MuiButton: {
       styleOverrides: {
         root: {
@@ -121,6 +173,7 @@ const darkThemeOptions: ThemeOptions = {
         },
       },
     },
+
     MuiTab: {
       styleOverrides: {
         root: {
@@ -130,22 +183,23 @@ const darkThemeOptions: ThemeOptions = {
         },
       },
     },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          backgroundColor: '#2a2a2a',
-        },
-      },
-    },
+
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
           backgroundImage: 'none',
         },
       },
     },
+
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#2a2a2a',
+        },
+      },
+    },
+
     MuiTableCell: {
       styleOverrides: {
         root: {
@@ -153,6 +207,7 @@ const darkThemeOptions: ThemeOptions = {
         },
       },
     },
+
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -168,6 +223,7 @@ const darkThemeOptions: ThemeOptions = {
         },
       },
     },
+
     MuiAutocomplete: {
       styleOverrides: {
         paper: {
@@ -184,7 +240,7 @@ const darkThemeOptions: ThemeOptions = {
       },
     },
   },
-}
+};
 
 export const getTheme = (mode: 'light' | 'dark') =>
-  createTheme(mode === 'light' ? lightThemeOptions : darkThemeOptions)
+  createTheme(mode === 'light' ? lightThemeOptions : darkThemeOptions);

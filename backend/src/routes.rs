@@ -1,5 +1,4 @@
 use crate::handlers::*;
-use crate::asset_handlers;
 
 use axum::{
     routing::{get, post, delete},
@@ -23,20 +22,20 @@ pub fn router() -> Router<AppState> {
         .route("/accounts", get(list_accounts_compat))
         .route("/accounts/:id/toggle-closed", post(toggle_account_closed_compat))
         // Assets (new system)
-        .route("/asset-types", get(asset_handlers::list_asset_types))
-        .route("/assets", post(asset_handlers::create_asset).get(asset_handlers::list_assets))
-        .route("/assets/reorder", post(asset_handlers::reorder_assets))
-        .route("/assets/:id", get(asset_handlers::get_asset).put(asset_handlers::update_asset).delete(asset_handlers::delete_asset))
-        .route("/assets/:id/toggle-active", post(asset_handlers::toggle_asset_active))
-        .route("/assets/:id/correct-balance", post(asset_handlers::correct_balance))
+        .route("/asset-types", get(list_asset_types))
+        .route("/assets", post(create_asset).get(list_assets))
+        .route("/assets/reorder", post(reorder_assets))
+        .route("/assets/:id", get(get_asset).put(update_asset).delete(delete_asset))
+        .route("/assets/:id/toggle-active", post(toggle_asset_active))
+        .route("/assets/:id/correct-balance", post(correct_balance))
         // Investment Transactions
-        .route("/investment-transactions", post(asset_handlers::create_investment_transaction))
-        .route("/assets/:id/investment-transactions", get(asset_handlers::list_investment_transactions))
-        .route("/investment-transactions/:id", delete(asset_handlers::delete_investment_transaction))
+        .route("/investment-transactions", post(create_investment_transaction))
+        .route("/assets/:id/investment-transactions", get(list_investment_transactions))
+        .route("/investment-transactions/:id", delete(delete_investment_transaction))
         // Asset Valuations
-        .route("/asset-valuations", post(asset_handlers::create_asset_valuation))
-        .route("/assets/:id/valuations", get(asset_handlers::list_asset_valuations))
-        .route("/asset-valuations/:id", delete(asset_handlers::delete_asset_valuation))
+        .route("/asset-valuations", post(create_asset_valuation))
+        .route("/assets/:id/valuations", get(list_asset_valuations))
+        .route("/asset-valuations/:id", delete(delete_asset_valuation))
         // Operations
         .route("/operations", post(create_operation).get(list_operations))
         .route("/operations/classify-transfers", post(classify_uncategorized_operations))
@@ -48,7 +47,8 @@ pub fn router() -> Router<AppState> {
         // Budgets
         .route("/budgets", post(create_budget).get(list_budgets))
         .route("/budgets/data/:month", get(get_budget_data_for_month))
-        .route("/budgets/:id", get(get_budget).put(update_budget).delete(delete_budget))
+        .route("/budgets/:id", get(get_budget).delete(delete_budget))
+        .route("/budgets/update", post(update_budgets))
         // Goals
         .route("/goals", post(create_goal).get(list_goals))
         .route("/goals/:id", get(get_goal).put(update_goal).delete(delete_goal))
