@@ -266,13 +266,13 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
     // Additional custom validation (e.g., balance, equations)
     const amountNum = parseFloat(formData.amount)
     const balance = getAssetBalance(Number(formData.fromAssetId))
-    if (amountNum > balance) {
-      notifier.notify(
-        t('transfer.error.insufficientFunds', 'Niewystarczające środki'),
-        'error'
-      )
-      return
-    }
+    // if (amountNum > balance) { // pozwól na kwotę ujemną na koncie 
+    //   notifier.notify(
+    //     t('transfer.error.insufficientFunds', 'Niewystarczające środki'),
+    //     'error'
+    //   )
+    //   return
+    // }
     // ...existing type-specific validation logic can be added here if needed...
     // Build transferData as before
     const transferData: TransferData = {

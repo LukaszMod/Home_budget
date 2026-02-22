@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react'
-import { useForm, Controller, FormProvider } from 'react-hook-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import React, { useMemo } from 'react';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createOperation,
   updateOperation,
@@ -12,16 +12,16 @@ import {
   type Account,
   type Category,
   type SplitItem,
-} from '../../lib/api'
-import { useNotifier } from '../common/Notifier'
-import StyledModal from '../common/StyledModal'
-import { useHashtags } from '../../hooks/useHashtags'
-import ConfirmDialog from '../common/ConfirmDialog'
-import { 
-  Button, 
-  Grid, 
-  Stack, 
-  Box, 
+} from '../../lib/api';
+import { useNotifier } from '../common/Notifier';
+import StyledModal from '../common/StyledModal';
+import { useHashtags } from '../../hooks/useHashtags';
+import ConfirmDialog from '../common/ConfirmDialog';
+import {
+  Button,
+  Grid,
+  Stack,
+  Box,
   Typography,
   FormControl,
   InputLabel,
@@ -34,36 +34,36 @@ import {
   CircularProgress,
   Autocomplete,
   Divider,
-  TextField
-} from '@mui/material'
-import { useTranslation } from 'react-i18next'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePickerProvider, useDateFormat } from '../common/DatePickerProvider'
-import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material'
-import dayjs from 'dayjs'
-import CalcTextField from '../common/ui/CalcTextField'
-import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch'
-import CategoryAutocomplete from '../common/ui/CategoryAutocomplete'
-import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions'
-import ControlledSingleSelect from '../common/ui/ControlledSingleSelect'
+  TextField,
+} from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { DatePickerProvider, useDateFormat } from '../common/DatePickerProvider';
+import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import dayjs from 'dayjs';
+import CalcTextField from '../common/ui/CalcTextField';
+import StyledIncomeSwitch from '../common/ui/StyledIncomeSwitch';
+import CategoryAutocomplete from '../common/ui/CategoryAutocomplete';
+import TextFieldWithHashtagSuggestions from './TextFieldWithHashtagSuggestions';
+import ControlledSingleSelect from '../common/ui/ControlledSingleSelect';
 
 interface AddOperationModalProps {
-  open: boolean
-  onClose: () => void
-  accounts: Account[]
-  categories: Category[]
-  onSwitchToTransfer?: () => void
-  editing?: APIOperation | null
+  open: boolean;
+  onClose: () => void;
+  accounts: Account[];
+  categories: Category[];
+  onSwitchToTransfer?: () => void;
+  editing?: APIOperation | null;
 }
 
 interface FormData {
-  operationDate: string
-  amount: string
-  description: string
-  accountId: number | ''
-  categoryId: number | ''
-  operationType: OperationType | ''
-  isSplit: boolean
+  operationDate: string;
+  amount: string;
+  description: string;
+  accountId: number | '';
+  categoryId: number | '';
+  operationType: OperationType | '';
+  isSplit: boolean;
 }
 
 const AddOperationModal = ({
@@ -74,17 +74,17 @@ const AddOperationModal = ({
   editing,
   onSwitchToTransfer,
 }: AddOperationModalProps) => {
-  const qc = useQueryClient()
-  const notifier = useNotifier()
-  const { t } = useTranslation()
-  const { hashtags } = useHashtags()
-  const dateFormat = useDateFormat()
-  const [unsplitConfirmOpen, setUnsplitConfirmOpen] = React.useState(false)
+  const qc = useQueryClient();
+  const notifier = useNotifier();
+  const { t } = useTranslation();
+  const { hashtags } = useHashtags();
+  const dateFormat = useDateFormat();
+  const [unsplitConfirmOpen, setUnsplitConfirmOpen] = React.useState(false);
 
   // Debug log
   React.useEffect(() => {
-    console.log('AddOperationModal - hashtags from hook:', hashtags)
-  }, [hashtags])
+    console.log('AddOperationModal - hashtags from hook:', hashtags);
+  }, [hashtags]);
 
   const methods = useForm<FormData>({
     defaultValues: {
@@ -96,98 +96,105 @@ const AddOperationModal = ({
       operationType: '',
       isSplit: false,
     },
-  })
-  const { control, handleSubmit, reset, watch, setValue } = methods
+  });
+  const { control, handleSubmit, reset, watch, setValue } = methods;
 
   // State for split items
   const [splitItems, setSplitItems] = React.useState<SplitItem[]>([
-    { category_id: 0, amount: 0, description: '' }
-  ])
-  const [loadingChildren, setLoadingChildren] = React.useState(false)
+    { category_id: 0, amount: 0, description: '' },
+  ]);
+  const [loadingChildren, setLoadingChildren] = React.useState(false);
 
-  const isSplit = watch('isSplit')
-  const totalAmount = watch('amount')
+  const isSplit = watch('isSplit');
+  const totalAmount = watch('amount');
 
-  const watchedDate = watch('operationDate')
+  const watchedDate = watch('operationDate');
   const isPlanned = React.useMemo(() => {
-    if (!watchedDate) return false
-    const selectedDate = new Date(watchedDate)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    selectedDate.setHours(0, 0, 0, 0)
-    return selectedDate > today
-  }, [watchedDate])
+    if (!watchedDate) return false;
+    const selectedDate = new Date(watchedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    return selectedDate > today;
+  }, [watchedDate]);
 
   const createMut = useMutation<APIOperation, Error, CreateOperationPayload>({
     mutationFn: (p) => createOperation(p),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['operations'] })
-      qc.invalidateQueries({ queryKey: ['hashtags'] })
+      qc.invalidateQueries({ queryKey: ['operations'] });
+      qc.invalidateQueries({ queryKey: ['hashtags'] });
     },
-  })
+  });
 
-  const updateMut = useMutation<APIOperation, Error, { id: number; payload: CreateOperationPayload }>({
+  const updateMut = useMutation<
+    APIOperation,
+    Error,
+    { id: number; payload: CreateOperationPayload }
+  >({
     mutationFn: ({ id, payload }) => updateOperation(id, payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['operations'] })
-      qc.invalidateQueries({ queryKey: ['hashtags'] })
+      qc.invalidateQueries({ queryKey: ['operations'] });
+      qc.invalidateQueries({ queryKey: ['hashtags'] });
     },
-  })
+  });
 
   const unsplitMut = useMutation<void, Error, number>({
     mutationFn: (id) => unsplitOperation(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['operations'] })
-      notifier.notify('Operation unsplit', 'success')
+      qc.invalidateQueries({ queryKey: ['operations'] });
+      notifier.notify('Operation unsplit', 'success');
     },
-  })
+  });
 
   // Obserwuj zmianę categoryId aby automatycznie ustawić typ
-  const watchedCategoryId = watch('categoryId')
+  const watchedCategoryId = watch('categoryId');
 
   // Kategorie główne (parent_id === null)
   const mainCategories = useMemo(
-    () => categories.filter(c => c.parent_id === null),
+    () => categories.filter((c) => c.parent_id === null),
     [categories]
-  )
+  );
 
   // Mapa: parent_id -> [subkategorie]
   const subcategoriesByParent = useMemo(() => {
-    const map = new Map<number, Category[]>()
-    mainCategories.forEach(main => {
-      map.set(main.id, categories.filter(c => c.parent_id === main.id))
-    })
-    return map
-  }, [mainCategories, categories])
+    const map = new Map<number, Category[]>();
+    mainCategories.forEach((main) => {
+      map.set(
+        main.id,
+        categories.filter((c) => c.parent_id === main.id)
+      );
+    });
+    return map;
+  }, [mainCategories, categories]);
 
   // Subkategorie z grupy (format: { id, name, group: mainCat.name })
   const subcategoriesForAutocomplete = useMemo(() => {
-    const result: Array<Category & { group: string }> = []
+    const result: Array<Category & { group: string }> = [];
     mainCategories.forEach((mainCat) => {
-      const subs = subcategoriesByParent.get(mainCat.id) || []
+      const subs = subcategoriesByParent.get(mainCat.id) || [];
       subs.forEach((sub: Category) => {
-        result.push({ ...sub, group: mainCat.name })
-      })
-    })
-    return result
-  }, [mainCategories, subcategoriesByParent])
+        result.push({ ...sub, group: mainCat.name });
+      });
+    });
+    return result;
+  }, [mainCategories, subcategoriesByParent]);
 
   // Auto-ustaw typ na podstawie wybranej subkategorii
   React.useEffect(() => {
     if (watchedCategoryId) {
-      const selectedCategory = categories.find(c => c.id === watchedCategoryId)
+      const selectedCategory = categories.find((c) => c.id === watchedCategoryId);
       if (selectedCategory && selectedCategory.type) {
-        setValue('operationType', selectedCategory.type as OperationType)
+        setValue('operationType', selectedCategory.type as OperationType);
       }
     }
-  }, [watchedCategoryId, categories, setValue])
+  }, [watchedCategoryId, categories, setValue]);
 
   React.useEffect(() => {
     if (!open) {
-      reset()
-      setSplitItems([{ category_id: 0, amount: 0, description: '' }])
+      reset();
+      setSplitItems([{ category_id: 0, amount: 0, description: '' }]);
     }
-  }, [open, reset])
+  }, [open, reset]);
 
   React.useEffect(() => {
     if (editing) {
@@ -199,61 +206,63 @@ const AddOperationModal = ({
         categoryId: editing.category_id ?? '',
         operationType: editing.operation_type ?? '',
         isSplit: editing.is_split || false,
-      })
+      });
 
       // Load children if this is a split operation
       if (editing.is_split) {
-        setLoadingChildren(true)
+        setLoadingChildren(true);
         getOperationChildren(editing.id)
           .then((children) => {
-            const items: SplitItem[] = children.map(child => ({
+            const items: SplitItem[] = children.map((child) => ({
               category_id: child.category_id || 0,
               amount: Number(child.amount) || 0,
               description: child.description || '',
-            }))
-            setSplitItems(items.length > 0 ? items : [{ category_id: 0, amount: 0, description: '' }])
+            }));
+            setSplitItems(
+              items.length > 0 ? items : [{ category_id: 0, amount: 0, description: '' }]
+            );
           })
           .catch((err) => {
-            console.error('Failed to load children:', err)
-            notifier.notify('Failed to load split items', 'error')
+            console.error('Failed to load children:', err);
+            notifier.notify('Failed to load split items', 'error');
           })
           .finally(() => {
-            setLoadingChildren(false)
-          })
+            setLoadingChildren(false);
+          });
       } else {
-        setSplitItems([{ category_id: 0, amount: 0, description: '' }])
+        setSplitItems([{ category_id: 0, amount: 0, description: '' }]);
       }
     }
-  }, [editing, reset, notifier])
+  }, [editing, reset, notifier]);
 
   // Calculate split totals
   const allocatedAmount = React.useMemo(() => {
-    return splitItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-  }, [splitItems])
+    return splitItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  }, [splitItems]);
 
   const remainingAmount = React.useMemo(() => {
-    const total = Number(totalAmount) || 0
-    return total - allocatedAmount
-  }, [totalAmount, allocatedAmount])
+    const total = Number(totalAmount) || 0;
+    return total - allocatedAmount;
+  }, [totalAmount, allocatedAmount]);
 
   // Add split item
   const handleAddSplitItem = () => {
-    setSplitItems([...splitItems, { category_id: 0, amount: 0, description: '' }])
-  }
+    setSplitItems([...splitItems, { category_id: 0, amount: 0, description: '' }]);
+  };
 
   // Remove split item
   const handleRemoveSplitItem = (index: number) => {
     if (splitItems.length > 1) {
-      setSplitItems(splitItems.filter((_, i) => i !== index))
+      setSplitItems(splitItems.filter((_, i) => i !== index));
     }
-  }
+  };
 
   // Update split item
   const handleUpdateSplitItem = (index: number, field: keyof SplitItem, value: any) => {
-    const updated = [...splitItems]
-    updated[index] = { ...updated[index], [field]: value }
-    setSplitItems(updated)
-  }
+    const updated = [...splitItems];
+    updated[index] = { ...updated[index], [field]: value };
+    setSplitItems(updated);
+  };
 
   const handleSave = async (data: FormData, keepOpen = false) => {
     // Walidacja
@@ -261,104 +270,97 @@ const AddOperationModal = ({
       return notifier.notify(
         t('operations.messages.fillRequired') ?? 'Uzupełnij wymagane pola',
         'error'
-      )
+      );
     }
 
     // Walidacja split
     if (data.isSplit) {
       // Sprawdź czy wszystkie pola są wypełnione
-      const hasEmptyFields = splitItems.some(item => 
-        !item.category_id || !item.amount || item.amount <= 0
-      )
+      const hasEmptyFields = splitItems.some(
+        (item) => !item.category_id || !item.amount || item.amount <= 0
+      );
       if (hasEmptyFields) {
         return notifier.notify(
           t('operations.fillAllFields') ?? 'Wypełnij wszystkie wymagane pola',
           'error'
-        )
+        );
       }
 
       // Sprawdź czy suma się zgadza
-      const tolerance = 0.01
+      const tolerance = 0.01;
       if (Math.abs(remainingAmount) > tolerance) {
         return notifier.notify(
           t('operations.sumMustMatch') ?? 'Suma pozycji musi się zgadzać z kwotą całkowitą',
           'error'
-        )
+        );
       }
 
       // Minimum 2 pozycje
       if (splitItems.length < 2) {
-        return notifier.notify(
-          'Podział wymaga minimum 2 pozycji',
-          'error'
-        )
+        return notifier.notify('Podział wymaga minimum 2 pozycji', 'error');
       }
     }
 
     const payload: CreateOperationPayload = {
       asset_id: Number(data.accountId),
-      amount: Number(data.amount),
+      amount: data.operationType === 'expense' ? -Math.abs(Number(data.amount)) : Math.abs(Number(data.amount)),
       description: data.description || null,
       category_id: data.categoryId === '' ? null : Number(data.categoryId),
       operation_type: (data.operationType as OperationType) || 'expense',
       operation_date: data.operationDate || new Date().toISOString().split('T')[0],
-      split_items: data.isSplit ? splitItems.map(item => ({
-        category_id: Number(item.category_id),
-        amount: Number(item.amount),
-        description: item.description || null
-      })) : undefined,
-    }
+      split_items: data.isSplit
+        ? splitItems.map((item) => ({
+            category_id: Number(item.category_id),
+            amount: Number(item.amount),
+            description: item.description || null,
+          }))
+        : undefined,
+    };
 
     try {
       if (editing) {
         // Editing existing operation
         if (editing.is_split && !data.isSplit) {
           // Was split, now regular - unsplit first
-          await unsplitMut.mutateAsync(editing.id)
+          await unsplitMut.mutateAsync(editing.id);
         }
-        
+
         // Then update the operation
-        await updateMut.mutateAsync({ id: editing.id, payload })
-        
-        notifier.notify(
-          t('operations.messages.updated') ?? 'Operacja zaktualizowana',
-          'success'
-        )
-        onClose()
+        await updateMut.mutateAsync({ id: editing.id, payload });
+
+        notifier.notify(t('operations.messages.updated') ?? 'Operacja zaktualizowana', 'success');
+        onClose();
       } else {
         // Creating new operation
-        await createMut.mutateAsync(payload)
-        notifier.notify(
-          t('operations.messages.saved') ?? 'Operacja zapisana',
-          'success'
-        )
+        await createMut.mutateAsync(payload);
+        notifier.notify(t('operations.messages.saved') ?? 'Operacja zapisana', 'success');
         if (!keepOpen) {
-          onClose()
+          onClose();
         } else {
           reset({
-            //operationDate: new Date().toISOString().split('T')[0],
+            operationDate: data.operationDate,
             amount: '',
             description: '',
-            //accountId: '',
-            //categoryId: '',
-            //operationType: '',
+            accountId: data.accountId,
+            categoryId: data.categoryId,
+            operationType: data.operationType,
             isSplit: false,
-          })
-          setSplitItems([{ category_id: 0, amount: 0, description: '' }])
+          });
+          setSplitItems([{ category_id: 0, amount: 0, description: '' }]);
         }
       }
     } catch (e: any) {
-      notifier.notify(String(e), 'error')
+      notifier.notify(String(e), 'error');
     }
-  }
+  };
 
   return (
     <StyledModal
       open={open}
       onClose={onClose}
-      title={editing ? t('operations.edit'): t('operations.add')}
+      title={editing ? t('operations.edit') : t('operations.add')}
     >
-      <FormProvider {...methods} >
+      <FormProvider {...methods}>
         <Grid container spacing={2}>
           {/* Switch to Transfer */}
           {onSwitchToTransfer && !editing && (
@@ -370,8 +372,8 @@ const AddOperationModal = ({
                       checked={false}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          onClose()
-                          onSwitchToTransfer()
+                          onClose();
+                          onSwitchToTransfer();
                         }
                       }}
                     />
@@ -382,20 +384,22 @@ const AddOperationModal = ({
               </Box>
             </Grid>
           )}
-          
+
           {/* Left Column: Main Form */}
-          <Grid item xs={12} md={(isSplit || (editing && editing.is_split)) ? 6 : 12}>
+          <Grid item xs={12} md={isSplit || (editing && editing.is_split) ? 6 : 12}>
             <Stack spacing={2}>
               {isPlanned && (
-                <Box sx={{ 
-                  p: 2, 
-                  bgcolor: '#fff3cd', 
-                  border: '1px solid #ffc107', 
-                  borderRadius: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
-                }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: '#fff3cd',
+                    border: '1px solid #ffc107',
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
                   <Typography variant="body2" sx={{ color: '#856404', fontWeight: 500 }}>
                     ⏰ {t('operations.plannedWarning') ?? 'Operacja zaplanowana na przyszłą datę'}
                   </Typography>
@@ -415,8 +419,8 @@ const AddOperationModal = ({
                       slotProps={{
                         textField: {
                           fullWidth: true,
-                          required: true
-                        }
+                          required: true,
+                        },
                       }}
                     />
                   </DatePickerProvider>
@@ -424,30 +428,11 @@ const AddOperationModal = ({
               />
               <ControlledSingleSelect
                 fieldName="accountId"
-                fieldLabel={t('operations.fields.account')} 
-                options={accounts.filter(a => !a.is_closed).map(a => ({ id: a.id, value: a.id, label: a.name }))}
-                validationRules = {{ required: true }}
-              />
-              <Controller
-                name="accountId"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth required>
-                    <InputLabel>
-                      {t('operations.fields.account') ?? 'Konto'}
-                    </InputLabel>
-                    <Select
-                      {...field}
-                      label={t('operations.fields.account') ?? 'Konto'}
-                    >
-                      {accounts.filter(a => !a.is_closed).map((a) => (
-                        <MenuItem key={a.id} value={a.id}>
-                          {a.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
+                fieldLabel={t('operations.fields.account')}
+                options={accounts
+                  .filter((a) => !a.is_closed)
+                  .map((a) => ({ id: a.id, value: a.id, label: a.name }))}
+                validationRules={{ required: true }}
               />
 
               <Controller
@@ -472,7 +457,7 @@ const AddOperationModal = ({
                   <TextFieldWithHashtagSuggestions
                     value={field.value || ''}
                     onChange={(newValue) => field.onChange(newValue)}
-                    allHashtags={hashtags.map(h => h.name)}
+                    allHashtags={hashtags.map((h) => h.name)}
                     label={t('operations.fields.description') ?? 'Opis'}
                     placeholder={t('operations.fields.description') ?? 'Opis'}
                     fullWidth
@@ -505,37 +490,35 @@ const AddOperationModal = ({
                       <Switch
                         checked={field.value}
                         onChange={(e) => {
-                            field.onChange(e.target.checked)
-                            if (e.target.checked) {
-                              // Clear category when enabling split
-                              setValue('categoryId', '')
-                            }
-                          }}
-                        />
-                      }
-                      label={t('operations.enableSplit') ?? 'Podziel operację'}
-                    />
-                  )}
-                />
-
-              <StyledIncomeSwitch
-                    name='operationType'
+                          field.onChange(e.target.checked);
+                          if (e.target.checked) {
+                            // Clear category when enabling split
+                            setValue('categoryId', '');
+                          }
+                        }}
+                      />
+                    }
+                    label={t('operations.enableSplit') ?? 'Podziel operację'}
+                  />
+                )}
               />
+
+              <StyledIncomeSwitch name="operationType" />
             </Stack>
           </Grid>
 
           {/* Right Column: Split Items (only when enabled) */}
           {(isSplit || (editing && editing.is_split)) && (
             <Grid item xs={12} md={6}>
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 2, 
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50'),
                   border: (theme) => `1px solid ${theme.palette.divider}`,
                   height: '100%',
                   maxHeight: '600px',
-                  overflow: 'auto'
+                  overflow: 'auto',
                 }}
               >
                 <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
@@ -545,10 +528,10 @@ const AddOperationModal = ({
 
                 <Stack spacing={2}>
                   {splitItems.map((item, index) => (
-                    <Paper 
-                      key={index} 
-                      sx={{ 
-                        p: 2, 
+                    <Paper
+                      key={index}
+                      sx={{
+                        p: 2,
                         bgcolor: (theme) => theme.palette.background.paper,
                         border: (theme) => `1px solid ${theme.palette.divider}`,
                       }}
@@ -563,9 +546,16 @@ const AddOperationModal = ({
                             options={subcategoriesForAutocomplete}
                             groupBy={(option) => option.group}
                             getOptionLabel={(option) => option.name}
-                            value={subcategoriesForAutocomplete.find(c => c.id === item.category_id) || null}
+                            value={
+                              subcategoriesForAutocomplete.find((c) => c.id === item.category_id) ||
+                              null
+                            }
                             onChange={(_, newValue) => {
-                              handleUpdateSplitItem(index, 'category_id', newValue ? newValue.id : 0)
+                              handleUpdateSplitItem(
+                                index,
+                                'category_id',
+                                newValue ? newValue.id : 0
+                              );
                             }}
                             isOptionEqualToValue={(option, value) => option.id === value.id}
                             renderInput={(params) => (
@@ -590,7 +580,9 @@ const AddOperationModal = ({
 
                         <CalcTextField
                           value={String(item.amount || '')}
-                          onChange={(val) => handleUpdateSplitItem(index, 'amount', Number(val) || 0)}
+                          onChange={(val) =>
+                            handleUpdateSplitItem(index, 'amount', Number(val) || 0)
+                          }
                           label={t('operations.fields.amount') ?? 'Kwota'}
                           size="small"
                           fullWidth
@@ -599,7 +591,9 @@ const AddOperationModal = ({
 
                         <TextField
                           value={item.description || ''}
-                          onChange={(e) => handleUpdateSplitItem(index, 'description', e.target.value)}
+                          onChange={(e) =>
+                            handleUpdateSplitItem(index, 'description', e.target.value)
+                          }
                           label={t('operations.fields.description') ?? 'Opis'}
                           size="small"
                           fullWidth
@@ -640,11 +634,14 @@ const AddOperationModal = ({
                       </Typography>
                     </Stack>
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography variant="body2" color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}>
+                      <Typography
+                        variant="body2"
+                        color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}
+                      >
                         {t('operations.remaining') ?? 'Pozostało'}:
                       </Typography>
-                      <Typography 
-                        variant="body2" 
+                      <Typography
+                        variant="body2"
                         fontWeight={600}
                         color={Math.abs(remainingAmount) > 0.01 ? 'error' : 'success'}
                       >
@@ -660,8 +657,7 @@ const AddOperationModal = ({
           {/* Buttons Section */}
           <Grid item xs={12}>
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Button variant="contained"
-                onClick={handleSubmit((data) => handleSave(data, true))}>
+              <Button variant="contained" onClick={handleSubmit((data) => handleSave(data, true))}>
                 {t('common.save')}
               </Button>
               {editing && isSplit && (
@@ -674,16 +670,11 @@ const AddOperationModal = ({
                 </Button>
               )}
               {!editing && (
-                <Button
-                  variant="outlined"
-                  onClick={handleSubmit((data) => handleSave(data, true))}
-                >
+                <Button variant="outlined" onClick={handleSubmit((data) => handleSave(data, true))}>
                   {t('operations.addAnother') ?? 'Dodaj kolejną'}
                 </Button>
               )}
-              <Button onClick={onClose}>
-                {t('common.cancel')}
-              </Button>
+              <Button onClick={onClose}>{t('common.cancel')}</Button>
             </Stack>
           </Grid>
         </Grid>
@@ -691,24 +682,27 @@ const AddOperationModal = ({
 
       <ConfirmDialog
         open={unsplitConfirmOpen}
-        message={t('operations.confirmUnsplit') ?? 'Czy na pewno chcesz cofnąć podział? Dzieci zostaną usunięte.'}
+        message={
+          t('operations.confirmUnsplit') ??
+          'Czy na pewno chcesz cofnąć podział? Dzieci zostaną usunięte.'
+        }
         confirmText={t('operations.unsplit') ?? 'Cofnij podział'}
         confirmColor="warning"
         onConfirm={async () => {
           if (editing) {
             try {
-              await unsplitMut.mutateAsync(editing.id)
-              onClose()
+              await unsplitMut.mutateAsync(editing.id);
+              onClose();
             } catch (e: any) {
-              notifier.notify(String(e), 'error')
+              notifier.notify(String(e), 'error');
             }
           }
-          setUnsplitConfirmOpen(false)
+          setUnsplitConfirmOpen(false);
         }}
         onCancel={() => setUnsplitConfirmOpen(false)}
       />
     </StyledModal>
-  )
-}
+  );
+};
 
-export default AddOperationModal
+export default AddOperationModal;

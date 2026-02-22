@@ -1,31 +1,45 @@
-use axum::{extract::{State, Path}, Json};
 use crate::{AppState, models::*, utils::db_err};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use std::collections::HashMap;
 
-pub async fn create_operation(State(state): State<AppState>, Json(payload): Json<CreateOperation>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
-    use std::str::FromStr;
+pub async fn create_operation(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateOperation>,
+) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     use bigdecimal::BigDecimal;
-    
+    use std::str::FromStr;
+
     // Check if this is a split operation
     if let Some(split_items) = &payload.split_items {
         // Validate minimum 2 items
         if split_items.len() < 2 {
-            return Err((axum::http::StatusCode::BAD_REQUEST, "Split requires at least 2 items".to_string()));
+            return Err((
+                axum::http::StatusCode::BAD_REQUEST,
+                "Split requires at least 2 items".to_string(),
+            ));
         }
-        
+
         // Validate sum
         let sum: BigDecimal = split_items.iter().map(|item| &item.amount).sum();
         let tolerance = BigDecimal::from_str("0.01").unwrap();
         let diff = (&payload.amount - &sum).abs();
-        
+
         if diff > tolerance {
-            return Err((axum::http::StatusCode::BAD_REQUEST, 
-                format!("Sum of items ({}) does not match total amount ({})", sum, payload.amount)));
+            return Err((
+                axum::http::StatusCode::BAD_REQUEST,
+                format!(
+                    "Sum of items ({}) does not match total amount ({})",
+                    sum, payload.amount
+                ),
+            ));
         }
-        
+
         // Begin transaction
         let mut tx = state.pool.begin().await.map_err(db_err)?;
-        
+
         // Create parent operation with is_split=true
         let parent = sqlx::query_as::<_, Operation>(
             "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date, is_split)
@@ -38,7 +52,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
          .bind(&payload.operation_type)
          .bind(&payload.operation_date)
          .fetch_one(&mut *tx).await.map_err(db_err)?;
-        
+
         // Create child operations
         for item in split_items {
             sqlx::query(
@@ -55,7 +69,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
             .execute(&mut *tx)
             .await
             .map_err(db_err)?;
-            
+
             // Extract and link hashtags from child description
             if let Some(desc) = &item.description {
                 let extracted_hashtags = extract_hashtags(desc);
@@ -66,22 +80,24 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
                 }
             }
         }
-        
+
         // Commit transaction BEFORE linking hashtags
         tx.commit().await.map_err(db_err)?;
-        
+
         // Extract and link hashtags from parent description (after commit)
         let hashtags = if let Some(desc) = &payload.description {
             let extracted_hashtags = extract_hashtags(desc);
             if !extracted_hashtags.is_empty() {
-                link_operation_hashtags(&state.pool, parent.id, &extracted_hashtags).await.map_err(|e| db_err(e))?
+                link_operation_hashtags(&state.pool, parent.id, &extracted_hashtags)
+                    .await
+                    .map_err(|e| db_err(e))?
             } else {
                 Vec::new()
             }
         } else {
             Vec::new()
         };
-        
+
         return Ok(Json(OperationWithHashtags {
             id: parent.id,
             creation_date: parent.creation_date,
@@ -97,7 +113,7 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
             hashtags,
         }));
     }
-    
+
     // Regular operation (not split)
     let op = sqlx::query_as::<_, Operation>(
         "INSERT INTO operations (category_id, description, asset_id, amount, operation_type, operation_date)
@@ -110,19 +126,21 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
      .bind(&payload.operation_type)
      .bind(&payload.operation_date)
      .fetch_one(&state.pool).await.map_err(db_err)?;
-    
+
     // Extract and link hashtags from description
     let hashtags = if let Some(desc) = &payload.description {
         let extracted_hashtags = extract_hashtags(desc);
         if !extracted_hashtags.is_empty() {
-            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags).await.map_err(|e| db_err(e))?
+            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags)
+                .await
+                .map_err(|e| db_err(e))?
         } else {
             Vec::new()
         }
     } else {
         Vec::new()
     };
-    
+
     Ok(Json(OperationWithHashtags {
         id: op.id,
         creation_date: op.creation_date,
@@ -139,7 +157,9 @@ pub async fn create_operation(State(state): State<AppState>, Json(payload): Json
     }))
 }
 
-pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<OperationWithDetails>>, (axum::http::StatusCode, String)> {
+pub async fn list_operations(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<OperationWithDetails>>, (axum::http::StatusCode, String)> {
     #[derive(sqlx::FromRow)]
     struct OperationRow {
         id: i32,
@@ -157,7 +177,7 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
         is_split: bool,
         linked_operation_id: Option<i32>,
     }
-    
+
     // Use JOIN to get asset, category and parent category names in one query
     // Filter: show only parent operations (is_split=true) OR operations without parent (parent_operation_id IS NULL)
     // This excludes child operations from the list
@@ -182,49 +202,62 @@ pub async fn list_operations(State(state): State<AppState>) -> Result<Json<Vec<O
          LEFT JOIN categories c ON o.category_id = c.id
          LEFT JOIN categories pc ON c.parent_id = pc.id
          WHERE o.parent_operation_id IS NULL
-         ORDER BY o.operation_date DESC, o.id"
-    ).fetch_all(&state.pool).await.map_err(db_err)?;
-    
+         ORDER BY o.operation_date DESC, o.id DESC",
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(db_err)?;
+
     if rows.is_empty() {
         return Ok(Json(Vec::new()));
     }
-    
+
     // Batch fetch all hashtags for all operations
     let operation_ids: Vec<i32> = rows.iter().map(|op| op.id).collect();
-    let all_hashtags = get_operations_hashtags_batch(&state.pool, &operation_ids).await.map_err(|e| db_err(e))?;
-    
-    let result: Vec<OperationWithDetails> = rows.into_iter().map(|op| {
-        let hashtags = all_hashtags.get(&op.id).cloned().unwrap_or_default();
-        OperationWithDetails {
-            id: op.id,
-            creation_date: op.creation_date,
-            category_id: op.category_id,
-            category_name: op.category_name,
-            parent_category_name: op.parent_category_name,
-            description: op.description,
-            asset_id: op.asset_id,
-            asset_name: op.asset_name,
-            amount: op.amount,
-            operation_type: op.operation_type.unwrap_or_else(|| "unknown".to_string()),
-            operation_date: op.operation_date,
-            parent_operation_id: op.parent_operation_id,
-            is_split: op.is_split,
-            linked_operation_id: op.linked_operation_id,
-            hashtags,
-        }
-    }).collect();
-    
+    let all_hashtags = get_operations_hashtags_batch(&state.pool, &operation_ids)
+        .await
+        .map_err(|e| db_err(e))?;
+
+    let result: Vec<OperationWithDetails> = rows
+        .into_iter()
+        .map(|op| {
+            let hashtags = all_hashtags.get(&op.id).cloned().unwrap_or_default();
+            OperationWithDetails {
+                id: op.id,
+                creation_date: op.creation_date,
+                category_id: op.category_id,
+                category_name: op.category_name,
+                parent_category_name: op.parent_category_name,
+                description: op.description,
+                asset_id: op.asset_id,
+                asset_name: op.asset_name,
+                amount: op.amount,
+                operation_type: op.operation_type.unwrap_or_else(|| "unknown".to_string()),
+                operation_date: op.operation_date,
+                parent_operation_id: op.parent_operation_id,
+                is_split: op.is_split,
+                linked_operation_id: op.linked_operation_id,
+                hashtags,
+            }
+        })
+        .collect();
+
     Ok(Json(result))
 }
 
-pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
+pub async fn get_operation(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
         "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id
          FROM operations WHERE id = $1"
     ).bind(id).fetch_one(&state.pool).await.map_err(db_err)?;
-    
-    let hashtags = get_operation_hashtags(&state.pool, op.id).await.map_err(|_| db_err("Failed to fetch hashtags"))?;
-    
+
+    let hashtags = get_operation_hashtags(&state.pool, op.id)
+        .await
+        .map_err(|_| db_err("Failed to fetch hashtags"))?;
+
     Ok(Json(OperationWithHashtags {
         id: op.id,
         creation_date: op.creation_date,
@@ -241,7 +274,11 @@ pub async fn get_operation(State(state): State<AppState>, Path(id): Path<i32>) -
     }))
 }
 
-pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>, Json(payload): Json<CreateOperation>) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
+pub async fn update_operation(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Json(payload): Json<CreateOperation>,
+) -> Result<Json<OperationWithHashtags>, (axum::http::StatusCode, String)> {
     let op = sqlx::query_as::<_, Operation>(
         "UPDATE operations
          SET category_id = $1, description = $2, asset_id = $3, amount = $4, operation_type = $5::operation_type, operation_date = $6::date
@@ -255,22 +292,28 @@ pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>
      .bind(&payload.operation_date)
      .bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
-    
+
     // Delete old hashtag associations
-    sqlx::query("DELETE FROM operation_hashtags WHERE operation_id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
-    
+    sqlx::query("DELETE FROM operation_hashtags WHERE operation_id = $1")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .map_err(db_err)?;
+
     // Extract and link hashtags from description
     let hashtags = if let Some(desc) = &payload.description {
         let extracted_hashtags = extract_hashtags(desc);
         if !extracted_hashtags.is_empty() {
-            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags).await.map_err(|e| db_err(e))?
+            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags)
+                .await
+                .map_err(|e| db_err(e))?
         } else {
             Vec::new()
         }
     } else {
         Vec::new()
     };
-    
+
     Ok(Json(OperationWithHashtags {
         id: op.id,
         creation_date: op.creation_date,
@@ -287,8 +330,15 @@ pub async fn update_operation(State(state): State<AppState>, Path(id): Path<i32>
     }))
 }
 
-pub async fn delete_operation(State(state): State<AppState>, Path(id): Path<i32>) -> Result<(), (axum::http::StatusCode, String)> {
-    sqlx::query("DELETE FROM operations WHERE id = $1").bind(id).execute(&state.pool).await.map_err(db_err)?;
+pub async fn delete_operation(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<(), (axum::http::StatusCode, String)> {
+    sqlx::query("DELETE FROM operations WHERE id = $1")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .map_err(db_err)?;
     Ok(())
 }
 
@@ -296,32 +346,36 @@ pub async fn delete_operation(State(state): State<AppState>, Path(id): Path<i32>
 pub fn extract_hashtags(text: &str) -> Vec<String> {
     let mut hashtags: Vec<String> = Vec::new();
     let words: Vec<&str> = text.split_whitespace().collect();
-    
+
     for word in words {
         if word.starts_with('#') {
-            let hashtag = word.trim_start_matches('#')
+            let hashtag = word
+                .trim_start_matches('#')
                 .chars()
                 .filter(|c| c.is_alphanumeric() || *c == '_')
                 .collect::<String>()
                 .to_lowercase();
-            
+
             if !hashtag.is_empty() && !hashtags.contains(&hashtag) {
                 hashtags.push(hashtag);
             }
         }
     }
-    
+
     hashtags
 }
 
 // Helper function to fetch hashtags for an operation
-async fn get_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32) -> Result<Vec<Hashtag>, String> {
+async fn get_operation_hashtags(
+    pool: &sqlx::PgPool,
+    operation_id: i32,
+) -> Result<Vec<Hashtag>, String> {
     let hashtags = sqlx::query_as::<_, Hashtag>(
         "SELECT h.id, h.name, h.created_date
          FROM hashtags h
          INNER JOIN operation_hashtags oh ON h.id = oh.hashtag_id
          WHERE oh.operation_id = $1
-         ORDER BY h.name"
+         ORDER BY h.name",
     )
     .bind(operation_id)
     .fetch_all(pool)
@@ -331,7 +385,10 @@ async fn get_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32) -> Resul
 }
 
 // Helper function to fetch hashtags for multiple operations in one query (batch)
-async fn get_operations_hashtags_batch(pool: &sqlx::PgPool, operation_ids: &[i32]) -> Result<HashMap<i32, Vec<Hashtag>>, String> {
+async fn get_operations_hashtags_batch(
+    pool: &sqlx::PgPool,
+    operation_ids: &[i32],
+) -> Result<HashMap<i32, Vec<Hashtag>>, String> {
     let rows = sqlx::query!(
         "SELECT oh.operation_id, h.id, h.name, h.created_date
          FROM hashtags h
@@ -343,7 +400,7 @@ async fn get_operations_hashtags_batch(pool: &sqlx::PgPool, operation_ids: &[i32
     .fetch_all(pool)
     .await
     .map_err(|e| e.to_string())?;
-    
+
     let mut map: HashMap<i32, Vec<Hashtag>> = HashMap::new();
     for row in rows {
         let hashtag = Hashtag {
@@ -352,37 +409,43 @@ async fn get_operations_hashtags_batch(pool: &sqlx::PgPool, operation_ids: &[i32
             created_date: row.created_date,
             usage_count: 0, // Not relevant for operation hashtags
         };
-        map.entry(row.operation_id).or_insert_with(Vec::new).push(hashtag);
+        map.entry(row.operation_id)
+            .or_insert_with(Vec::new)
+            .push(hashtag);
     }
-    
+
     Ok(map)
 }
 
 // Helper function to link hashtags to operation (batch insert)
-async fn link_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32, hashtag_names: &[String]) -> Result<Vec<Hashtag>, String> {
+async fn link_operation_hashtags(
+    pool: &sqlx::PgPool,
+    operation_id: i32,
+    hashtag_names: &[String],
+) -> Result<Vec<Hashtag>, String> {
     if hashtag_names.is_empty() {
         return Ok(Vec::new());
     }
-    
+
     // Batch insert/get hashtags using UNNEST
     let hashtag_ids: Vec<i32> = sqlx::query_scalar(
         "INSERT INTO hashtags (name)
          SELECT * FROM UNNEST($1::text[])
          ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-         RETURNING id"
+         RETURNING id",
     )
     .bind(hashtag_names)
     .fetch_all(pool)
     .await
     .map_err(|e| e.to_string())?;
-    
+
     // Batch insert operation_hashtags relationships
     if !hashtag_ids.is_empty() {
         let operation_ids = vec![operation_id; hashtag_ids.len()];
         sqlx::query(
             "INSERT INTO operation_hashtags (operation_id, hashtag_id)
              SELECT * FROM UNNEST($1::int[], $2::int[])
-             ON CONFLICT DO NOTHING"
+             ON CONFLICT DO NOTHING",
         )
         .bind(&operation_ids)
         .bind(&hashtag_ids)
@@ -390,16 +453,16 @@ async fn link_operation_hashtags(pool: &sqlx::PgPool, operation_id: i32, hashtag
         .await
         .map_err(|e| e.to_string())?;
     }
-    
+
     // Fetch all linked hashtags in one query
     let hashtags = sqlx::query_as::<_, Hashtag>(
-        "SELECT id, name, created_date FROM hashtags WHERE id = ANY($1) ORDER BY name"
+        "SELECT id, name, created_date FROM hashtags WHERE id = ANY($1) ORDER BY name",
     )
     .bind(&hashtag_ids)
     .fetch_all(pool)
     .await
     .map_err(|e| e.to_string())?;
-    
+
     Ok(hashtags)
 }
 
@@ -410,48 +473,64 @@ pub async fn split_operation(
     Json(payload): Json<SplitOperationRequest>,
 ) -> Result<Json<Vec<OperationWithHashtags>>, (axum::http::StatusCode, String)> {
     use std::str::FromStr;
-    
+
     // Validate: minimum 2 items
     if payload.items.len() < 2 {
-        return Err((axum::http::StatusCode::BAD_REQUEST, "Split requires at least 2 items".to_string()));
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            "Split requires at least 2 items".to_string(),
+        ));
     }
-    
+
     // Get parent operation
     let parent = sqlx::query_as::<_, Operation>(
         "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id
          FROM operations WHERE id = $1"
     ).bind(id).fetch_optional(&state.pool).await.map_err(db_err)?;
-    
+
     let parent = match parent {
         Some(p) => p,
-        None => return Err((axum::http::StatusCode::NOT_FOUND, "Operation not found".to_string())),
+        None => {
+            return Err((
+                axum::http::StatusCode::NOT_FOUND,
+                "Operation not found".to_string(),
+            ));
+        }
     };
-    
+
     // Validate: not already split
     if parent.is_split {
-        return Err((axum::http::StatusCode::BAD_REQUEST, "Operation is already split".to_string()));
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            "Operation is already split".to_string(),
+        ));
     }
-    
+
     // Validate: sum of items equals parent amount
     let sum: bigdecimal::BigDecimal = payload.items.iter().map(|item| &item.amount).sum();
     let tolerance = bigdecimal::BigDecimal::from_str("0.01").unwrap();
     let diff = (&parent.amount - &sum).abs();
-    
+
     if diff > tolerance {
-        return Err((axum::http::StatusCode::BAD_REQUEST, 
-            format!("Sum of items ({}) does not match parent amount ({})", sum, parent.amount)));
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            format!(
+                "Sum of items ({}) does not match parent amount ({})",
+                sum, parent.amount
+            ),
+        ));
     }
-    
+
     // Begin transaction
     let mut tx = state.pool.begin().await.map_err(db_err)?;
-    
+
     // Mark parent as split
     sqlx::query("UPDATE operations SET is_split = TRUE WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(db_err)?;
-    
+
     // Create child operations
     let mut children = Vec::new();
     for item in &payload.items {
@@ -470,19 +549,21 @@ pub async fn split_operation(
         .fetch_one(&mut *tx)
         .await
         .map_err(db_err)?;
-        
+
         // Extract and link hashtags from description if present
         let hashtags = if let Some(desc) = &item.description {
             let extracted_hashtags = extract_hashtags(desc);
             if !extracted_hashtags.is_empty() {
-                link_operation_hashtags(&state.pool, child.id, &extracted_hashtags).await.map_err(|e| db_err(e))?
+                link_operation_hashtags(&state.pool, child.id, &extracted_hashtags)
+                    .await
+                    .map_err(|e| db_err(e))?
             } else {
                 Vec::new()
             }
         } else {
             Vec::new()
         };
-        
+
         children.push(OperationWithHashtags {
             id: child.id,
             creation_date: child.creation_date,
@@ -498,9 +579,9 @@ pub async fn split_operation(
             hashtags,
         });
     }
-    
+
     tx.commit().await.map_err(db_err)?;
-    
+
     Ok(Json(children))
 }
 
@@ -514,36 +595,44 @@ pub async fn unsplit_operation(
         "SELECT id, creation_date, category_id, description, asset_id, amount, operation_type::text, operation_date, parent_operation_id, is_split, linked_operation_id
          FROM operations WHERE id = $1"
     ).bind(id).fetch_optional(&state.pool).await.map_err(db_err)?;
-    
+
     let parent = match parent {
         Some(p) => p,
-        None => return Err((axum::http::StatusCode::NOT_FOUND, "Operation not found".to_string())),
+        None => {
+            return Err((
+                axum::http::StatusCode::NOT_FOUND,
+                "Operation not found".to_string(),
+            ));
+        }
     };
-    
+
     // Validate: operation is split
     if !parent.is_split {
-        return Err((axum::http::StatusCode::BAD_REQUEST, "Operation is not split".to_string()));
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            "Operation is not split".to_string(),
+        ));
     }
-    
+
     // Begin transaction
     let mut tx = state.pool.begin().await.map_err(db_err)?;
-    
+
     // Delete children (CASCADE will handle operation_hashtags)
     sqlx::query("DELETE FROM operations WHERE parent_operation_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(db_err)?;
-    
+
     // Restore parent
     sqlx::query("UPDATE operations SET is_split = FALSE WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(db_err)?;
-    
+
     tx.commit().await.map_err(db_err)?;
-    
+
     Ok(())
 }
 
@@ -569,7 +658,7 @@ pub async fn get_operation_children(
         is_split: bool,
         linked_operation_id: Option<i32>,
     }
-    
+
     let rows = sqlx::query_as::<_, OperationRow>(
         "SELECT 
             o.id, 
@@ -591,48 +680,59 @@ pub async fn get_operation_children(
          LEFT JOIN categories c ON o.category_id = c.id
          LEFT JOIN categories pc ON c.parent_id = pc.id
          WHERE o.parent_operation_id = $1
-         ORDER BY o.id"
-    ).bind(id).fetch_all(&state.pool).await.map_err(db_err)?;
-    
+         ORDER BY o.id",
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(db_err)?;
+
     if rows.is_empty() {
         return Ok(Json(Vec::new()));
     }
-    
+
     // Batch fetch hashtags
     let operation_ids: Vec<i32> = rows.iter().map(|op| op.id).collect();
-    let all_hashtags = get_operations_hashtags_batch(&state.pool, &operation_ids).await.map_err(|e| db_err(e))?;
-    
-    let result: Vec<OperationWithDetails> = rows.into_iter().map(|op| {
-        let hashtags = all_hashtags.get(&op.id).cloned().unwrap_or_default();
-        OperationWithDetails {
-            id: op.id,
-            creation_date: op.creation_date,
-            category_id: op.category_id,
-            category_name: op.category_name,
-            parent_category_name: op.parent_category_name,
-            description: op.description,
-            asset_id: op.asset_id,
-            asset_name: op.asset_name,
-            amount: op.amount,
-            operation_type: op.operation_type.unwrap_or_else(|| "unknown".to_string()),
-            operation_date: op.operation_date,
-            parent_operation_id: op.parent_operation_id,
-            is_split: op.is_split,
-            linked_operation_id: op.linked_operation_id,
-            hashtags,
-        }
-    }).collect();
-    
+    let all_hashtags = get_operations_hashtags_batch(&state.pool, &operation_ids)
+        .await
+        .map_err(|e| db_err(e))?;
+
+    let result: Vec<OperationWithDetails> = rows
+        .into_iter()
+        .map(|op| {
+            let hashtags = all_hashtags.get(&op.id).cloned().unwrap_or_default();
+            OperationWithDetails {
+                id: op.id,
+                creation_date: op.creation_date,
+                category_id: op.category_id,
+                category_name: op.category_name,
+                parent_category_name: op.parent_category_name,
+                description: op.description,
+                asset_id: op.asset_id,
+                asset_name: op.asset_name,
+                amount: op.amount,
+                operation_type: op.operation_type.unwrap_or_else(|| "unknown".to_string()),
+                operation_date: op.operation_date,
+                parent_operation_id: op.parent_operation_id,
+                is_split: op.is_split,
+                linked_operation_id: op.linked_operation_id,
+                hashtags,
+            }
+        })
+        .collect();
+
     Ok(Json(result))
 }
 
 // Classify uncategorized operations as transfers
-pub async fn classify_uncategorized_operations(State(state): State<AppState>) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
+pub async fn classify_uncategorized_operations(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
     let result = sqlx::query("SELECT * FROM classify_uncategorized_as_transfers()")
         .fetch_all(&state.pool)
         .await
         .map_err(db_err)?;
-    
+
     Ok(Json(serde_json::json!({
         "classified_count": result.len(),
         "message": format!("Successfully classified {} operations", result.len())
