@@ -1,0 +1,174 @@
+{
+  "permissions": {
+    "allowlist": [
+      {
+        "tool": "Bash",
+        "command": "npm run dev",
+        "description": "Run frontend dev server"
+      },
+      {
+        "tool": "Bash",
+        "command": "npm run build",
+        "description": "Build frontend"
+      },
+      {
+        "tool": "Bash",
+        "command": "npm install",
+        "description": "Install npm dependencies"
+      },
+      {
+        "tool": "Bash",
+        "command": "npm test",
+        "description": "Run frontend tests"
+      },
+      {
+        "tool": "Bash",
+        "command": "tsc --noEmit",
+        "description": "Type check TypeScript"
+      },
+      {
+        "tool": "Bash",
+        "command": "cargo run",
+        "description": "Run Rust backend"
+      },
+      {
+        "tool": "Bash",
+        "command": "cargo build",
+        "description": "Build Rust backend"
+      },
+      {
+        "tool": "Bash",
+        "command": "cargo test",
+        "description": "Run backend tests"
+      },
+      {
+        "tool": "Bash",
+        "command": "cargo fmt",
+        "description": "Format Rust code"
+      },
+      {
+        "tool": "Bash",
+        "command": "cargo clippy",
+        "description": "Run Rust linter"
+      },
+      {
+        "tool": "Bash",
+        "command": "git status",
+        "description": "Check git status"
+      },
+      {
+        "tool": "Bash",
+        "command": "git log",
+        "description": "View git log"
+      },
+      {
+        "tool": "Bash",
+        "command": "git diff",
+        "description": "View git diff"
+      },
+      {
+        "tool": "Bash",
+        "command": "git add",
+        "description": "Stage changes"
+      },
+      {
+        "tool": "Bash",
+        "command": "git commit",
+        "description": "Commit changes"
+      },
+      {
+        "tool": "Bash",
+        "command": "git branch",
+        "description": "Manage branches"
+      },
+      {
+        "tool": "Bash",
+        "command": "git checkout",
+        "description": "Checkout branch"
+      },
+      {
+        "tool": "Bash",
+        "command": "git stash",
+        "description": "Stash changes"
+      },
+      {
+        "tool": "Bash",
+        "command": "find",
+        "description": "Find files"
+      },
+      {
+        "tool": "Bash",
+        "command": "grep -r",
+        "description": "Search code"
+      },
+      {
+        "tool": "Bash",
+        "command": "ls",
+        "description": "List files"
+      },
+      {
+        "tool": "Bash",
+        "command": "pwd",
+        "description": "Print working directory"
+      }
+    ]
+  },
+  "hooks": {
+    "beforeEdit": [
+      {
+        "trigger": "*.tsx",
+        "condition": "file size > 500 lines",
+        "action": "warn",
+        "message": "Large component detected. Consider splitting into smaller components."
+      }
+    ],
+    "afterCommit": [
+      {
+        "trigger": "any",
+        "condition": "success",
+        "action": "notify",
+        "message": "Commit successful - branch updated"
+      }
+    ]
+  },
+  "codeQuality": {
+    "typescript": {
+      "strictMode": true,
+      "checkUnusedLocals": true,
+      "checkUnusedParameters": true,
+      "failOnWarnings": false
+    },
+    "rust": {
+      "clippy": true,
+      "fmt": true,
+      "failOnWarnings": false
+    }
+  },
+  "performance": {
+    "tokenOptimization": true,
+    "preferShortResponses": true,
+    "useGitForContext": true,
+    "maxResponseLength": 100
+  },
+  "preferences": {
+    "model": {
+      "development": "haiku",
+      "analysis": "sonnet",
+      "complex": "opus"
+    },
+    "responseStyle": "terse",
+    "includeFilePaths": true,
+    "includeLineNumbers": true,
+    "documentationStyle": "minimal"
+  },
+  "ide": {
+    "showDiagnostics": true,
+    "autoFormatOnSave": false,
+    "enableTypeChecking": true,
+    "enableLinting": true
+  },
+  "testing": {
+    "runTestsBeforeCommit": true,
+    "typeCheckBeforeCommit": true
+  }
+}
