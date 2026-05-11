@@ -303,7 +303,10 @@ const AddOperationModal = ({
 
     const payload: CreateOperationPayload = {
       asset_id: Number(data.accountId),
-      amount: data.operationType === 'expense' ? -Math.abs(Number(data.amount)) : Math.abs(Number(data.amount)),
+      amount:
+        data.operationType === 'expense'
+          ? -Math.abs(Number(data.amount))
+          : Math.abs(Number(data.amount)),
       description: data.description || null,
       category_id: data.categoryId === '' ? null : Number(data.categoryId),
       operation_type: (data.operationType as OperationType) || 'expense',
@@ -657,7 +660,7 @@ const AddOperationModal = ({
           {/* Buttons Section */}
           <Grid item xs={12}>
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Button variant="contained" onClick={handleSubmit((data) => handleSave(data, true))}>
+              <Button variant="contained" onClick={handleSubmit((data) => handleSave(data, false))}>
                 {t('common.save')}
               </Button>
               {editing && isSplit && (

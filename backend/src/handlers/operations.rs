@@ -293,6 +293,20 @@ pub async fn update_operation(
      .bind(id)
      .fetch_one(&state.pool).await.map_err(db_err)?;
 
+    // Update children operation dates if this is a split operation
+    if op.is_split {
+        sqlx::query(
+            "UPDATE operations
+             SET operation_date = $1::date
+             WHERE parent_operation_id = $2",
+        )
+        .bind(&payload.operation_date)
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .map_err(db_err)?;
+    }
+
     // Delete old hashtag associations
     sqlx::query("DELETE FROM operation_hashtags WHERE operation_id = $1")
         .bind(id)
