@@ -84,16 +84,12 @@ pub async fn create_operation(
         // Commit transaction BEFORE linking hashtags
         tx.commit().await.map_err(db_err)?;
 
-        // Extract and link hashtags from parent description (after commit)
+        // Extract hashtags from parent description (trigger will handle creation/usage_count)
         let hashtags = if let Some(desc) = &payload.description {
             let extracted_hashtags = extract_hashtags(desc);
-            if !extracted_hashtags.is_empty() {
-                link_operation_hashtags(&state.pool, parent.id, &extracted_hashtags)
-                    .await
-                    .map_err(|e| db_err(e))?
-            } else {
-                Vec::new()
-            }
+            get_hashtags_by_names(&state.pool, &extracted_hashtags)
+                .await
+                .map_err(|e| db_err(e))?
         } else {
             Vec::new()
         };
@@ -127,16 +123,12 @@ pub async fn create_operation(
      .bind(&payload.operation_date)
      .fetch_one(&state.pool).await.map_err(db_err)?;
 
-    // Extract and link hashtags from description
+    // Extract hashtags from description (trigger will handle creation/usage_count)
     let hashtags = if let Some(desc) = &payload.description {
         let extracted_hashtags = extract_hashtags(desc);
-        if !extracted_hashtags.is_empty() {
-            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags)
-                .await
-                .map_err(|e| db_err(e))?
-        } else {
-            Vec::new()
-        }
+        get_hashtags_by_names(&state.pool, &extracted_hashtags)
+            .await
+            .map_err(|e| db_err(e))?
     } else {
         Vec::new()
     };
@@ -307,23 +299,12 @@ pub async fn update_operation(
         .map_err(db_err)?;
     }
 
-    // Delete old hashtag associations
-    sqlx::query("DELETE FROM operation_hashtags WHERE operation_id = $1")
-        .bind(id)
-        .execute(&state.pool)
-        .await
-        .map_err(db_err)?;
-
-    // Extract and link hashtags from description
+    // Extract hashtags from description (trigger will handle creation/usage_count)
     let hashtags = if let Some(desc) = &payload.description {
         let extracted_hashtags = extract_hashtags(desc);
-        if !extracted_hashtags.is_empty() {
-            link_operation_hashtags(&state.pool, op.id, &extracted_hashtags)
-                .await
-                .map_err(|e| db_err(e))?
-        } else {
-            Vec::new()
-        }
+        get_hashtags_by_names(&state.pool, &extracted_hashtags)
+            .await
+            .map_err(|e| db_err(e))?
     } else {
         Vec::new()
     };
@@ -379,36 +360,57 @@ pub fn extract_hashtags(text: &str) -> Vec<String> {
     hashtags
 }
 
+// Helper function to fetch hashtags by their names
+async fn get_hashtags_by_names(
+    pool: &sqlx::PgPool,
+    hashtag_names: &[String],
+) -> Result<Vec<Hashtag>, String> {
+    if hashtag_names.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let hashtags = sqlx::query_as::<_, Hashtag>(
+        "SELECT id, name, created_date, usage_count FROM hashtags WHERE name = ANY($1) ORDER BY name",
+    )
+    .bind(hashtag_names)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(hashtags)
+}
+
 // Helper function to fetch hashtags for an operation
 async fn get_operation_hashtags(
     pool: &sqlx::PgPool,
     operation_id: i32,
 ) -> Result<Vec<Hashtag>, String> {
-    let hashtags = sqlx::query_as::<_, Hashtag>(
-        "SELECT h.id, h.name, h.created_date
-         FROM hashtags h
-         INNER JOIN operation_hashtags oh ON h.id = oh.hashtag_id
-         WHERE oh.operation_id = $1
-         ORDER BY h.name",
+    let op = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT description FROM operations WHERE id = $1"
     )
     .bind(operation_id)
-    .fetch_all(pool)
+    .fetch_optional(pool)
     .await
     .map_err(|e| e.to_string())?;
-    Ok(hashtags)
+
+    match op {
+        Some(Some(description)) => {
+            let hashtag_names = extract_hashtags(&description);
+            get_hashtags_by_names(pool, &hashtag_names).await
+        }
+        _ => Ok(Vec::new()),
+    }
 }
 
 // Helper function to fetch hashtags for multiple operations in one query (batch)
 async fn get_operations_hashtags_batch(
     pool: &sqlx::PgPool,
     operation_ids: &[i32],
-) -> Result<HashMap<i32, Vec<Hashtag>>, String> {
+) -> Result<std::collections::HashMap<i32, Vec<Hashtag>>, String> {
+    use std::collections::HashMap;
+
     let rows = sqlx::query!(
-        "SELECT oh.operation_id, h.id, h.name, h.created_date
-         FROM hashtags h
-         INNER JOIN operation_hashtags oh ON h.id = oh.hashtag_id
-         WHERE oh.operation_id = ANY($1)
-         ORDER BY oh.operation_id, h.name",
+        "SELECT id, description FROM operations WHERE id = ANY($1)",
         operation_ids
     )
     .fetch_all(pool)
@@ -416,68 +418,41 @@ async fn get_operations_hashtags_batch(
     .map_err(|e| e.to_string())?;
 
     let mut map: HashMap<i32, Vec<Hashtag>> = HashMap::new();
-    for row in rows {
-        let hashtag = Hashtag {
-            id: row.id,
-            name: row.name,
-            created_date: row.created_date,
-            usage_count: 0, // Not relevant for operation hashtags
-        };
-        map.entry(row.operation_id)
-            .or_insert_with(Vec::new)
-            .push(hashtag);
+    let mut all_hashtag_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    // Collect all unique hashtag names from all operations
+    for row in &rows {
+        if let Some(desc) = &row.description {
+            for hashtag in extract_hashtags(desc) {
+                all_hashtag_names.insert(hashtag);
+            }
+        }
+    }
+
+    // Fetch all hashtags in one query
+    if !all_hashtag_names.is_empty() {
+        let hashtag_list: Vec<String> = all_hashtag_names.into_iter().collect();
+        let hashtags = get_hashtags_by_names(pool, &hashtag_list).await?;
+
+        // Build a map of hashtag name -> Hashtag for quick lookup
+        let hashtag_map: std::collections::HashMap<String, Hashtag> = hashtags
+            .into_iter()
+            .map(|h| (h.name.clone(), h))
+            .collect();
+
+        // For each operation, extract its hashtags from the map
+        for row in rows {
+            if let Some(desc) = row.description {
+                let op_hashtags: Vec<Hashtag> = extract_hashtags(&desc)
+                    .into_iter()
+                    .filter_map(|name| hashtag_map.get(&name).cloned())
+                    .collect();
+                map.insert(row.id, op_hashtags);
+            }
+        }
     }
 
     Ok(map)
-}
-
-// Helper function to link hashtags to operation (batch insert)
-async fn link_operation_hashtags(
-    pool: &sqlx::PgPool,
-    operation_id: i32,
-    hashtag_names: &[String],
-) -> Result<Vec<Hashtag>, String> {
-    if hashtag_names.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    // Batch insert/get hashtags using UNNEST
-    let hashtag_ids: Vec<i32> = sqlx::query_scalar(
-        "INSERT INTO hashtags (name)
-         SELECT * FROM UNNEST($1::text[])
-         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-         RETURNING id",
-    )
-    .bind(hashtag_names)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| e.to_string())?;
-
-    // Batch insert operation_hashtags relationships
-    if !hashtag_ids.is_empty() {
-        let operation_ids = vec![operation_id; hashtag_ids.len()];
-        sqlx::query(
-            "INSERT INTO operation_hashtags (operation_id, hashtag_id)
-             SELECT * FROM UNNEST($1::int[], $2::int[])
-             ON CONFLICT DO NOTHING",
-        )
-        .bind(&operation_ids)
-        .bind(&hashtag_ids)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
-    }
-
-    // Fetch all linked hashtags in one query
-    let hashtags = sqlx::query_as::<_, Hashtag>(
-        "SELECT id, name, created_date FROM hashtags WHERE id = ANY($1) ORDER BY name",
-    )
-    .bind(&hashtag_ids)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| e.to_string())?;
-
-    Ok(hashtags)
 }
 
 // Split operations - create child operations from parent
@@ -564,16 +539,12 @@ pub async fn split_operation(
         .await
         .map_err(db_err)?;
 
-        // Extract and link hashtags from description if present
+        // Extract hashtags from description (trigger will handle creation/usage_count)
         let hashtags = if let Some(desc) = &item.description {
             let extracted_hashtags = extract_hashtags(desc);
-            if !extracted_hashtags.is_empty() {
-                link_operation_hashtags(&state.pool, child.id, &extracted_hashtags)
-                    .await
-                    .map_err(|e| db_err(e))?
-            } else {
-                Vec::new()
-            }
+            get_hashtags_by_names(&state.pool, &extracted_hashtags)
+                .await
+                .map_err(|e| db_err(e))?
         } else {
             Vec::new()
         };
@@ -630,13 +601,6 @@ pub async fn unsplit_operation(
 
     // Begin transaction
     let mut tx = state.pool.begin().await.map_err(db_err)?;
-
-    // Delete children (CASCADE will handle operation_hashtags)
-    sqlx::query("DELETE FROM operations WHERE parent_operation_id = $1")
-        .bind(id)
-        .execute(&mut *tx)
-        .await
-        .map_err(db_err)?;
 
     // Restore parent
     sqlx::query("UPDATE operations SET is_split = FALSE WHERE id = $1")
