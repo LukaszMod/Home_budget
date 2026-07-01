@@ -1,5 +1,5 @@
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
 
 const resources = {
   en: {
@@ -32,14 +32,14 @@ const resources = {
         actions: 'Actions',
         close: 'Close',
         all: 'All',
-        selected: 'Selected'
+        selected: 'Selected',
       },
       settings: {
         title: 'Settings',
         language: 'Language',
         dateFormat: 'Date Format',
         currency: 'Default Currency',
-        hint: 'Settings are saved in your browser'
+        hint: 'Settings are saved in your browser',
       },
       Budget: 'Budget',
       Assets: 'Assets',
@@ -47,11 +47,11 @@ const resources = {
         title: 'Users',
         add: 'Add user',
         validation: {
-          fillRequired: 'Fill in all required fields'
+          fillRequired: 'Fill in all required fields',
         },
         messages: {
-          created: 'User created'
-        }
+          created: 'User created',
+        },
       },
       assets: {
         title: 'Assets',
@@ -62,7 +62,7 @@ const resources = {
           property: 'Real Estate',
           vehicle: 'Vehicles',
           valuable: 'Valuables',
-          liability: 'Liabilities'
+          liability: 'Liabilities',
         },
         table: {
           type: 'Type',
@@ -76,11 +76,11 @@ const resources = {
           currency: 'Currency',
           status: 'Status',
           actions: 'Actions',
-          noAssets: 'No assets'
+          noAssets: 'No assets',
         },
         status: {
           active: 'Active',
-          inactive: 'Inactive'
+          inactive: 'Inactive',
         },
         actions: {
           addAsset: 'Add Asset',
@@ -89,7 +89,7 @@ const resources = {
           activate: 'Activate',
           deactivate: 'Deactivate',
           edit: 'Edit',
-          delete: 'Delete'
+          delete: 'Delete',
         },
         summary: {
           title: 'Summary',
@@ -100,29 +100,29 @@ const resources = {
             lastQuarter: 'Last Quarter',
             thisYear: 'This Year',
             lastYear: 'Last Year',
-            all: 'All Time'
+            all: 'All Time',
           },
           selectedAssets: 'Selected Assets',
           startValue: 'Start Value',
           difference: 'Difference',
           currentValue: 'Current Value',
-          clearSelection: 'Clear Selection'
+          clearSelection: 'Clear Selection',
         },
         deleteModal: {
           title: 'Delete Asset',
           confirmMessage: 'Are you sure you want to delete asset',
-          warning: 'This operation is irreversible and will delete all related transactions.'
+          warning: 'This operation is irreversible and will delete all related transactions.',
         },
         errors: {
-          loadingError: 'Error loading assets'
+          loadingError: 'Error loading assets',
         },
         validation: {
-          fillRequired: 'Fill in required fields: Type, Name, User'
-        }
+          fillRequired: 'Fill in required fields: Type, Name, User',
+        },
       },
       actions: {
         cancel: 'Cancel',
-        save: 'Save'
+        save: 'Save',
       },
       categories: {
         title: 'Categories',
@@ -130,32 +130,32 @@ const resources = {
         confirmDelete: 'Delete category?',
         tabs: {
           user: 'User Categories',
-          system: 'System Categories'
+          system: 'System Categories',
         },
         table: {
           name: 'Name',
           type: 'Type',
-          mainCategory: 'Main category'
+          mainCategory: 'Main category',
         },
         dialog: {
           edit: 'Edit category',
-          new: 'New category'
+          new: 'New category',
         },
         fields: {
           name: 'Name',
           type: 'Type',
-          parent: 'Parent'
+          parent: 'Parent',
         },
         messages: {
           created: 'Category created',
           updated: 'Category updated',
           deleted: 'Category deleted',
           cannotDelete: 'Cannot delete category, there are operations assigned',
-          cannotEditSystem: 'Cannot edit system categories'
+          cannotEditSystem: 'Cannot edit system categories',
         },
         validation: {
-          nameRequired: 'Name field is required'
-        }
+          nameRequired: 'Name field is required',
+        },
       },
       operations: {
         title: 'Operations',
@@ -168,11 +168,11 @@ const resources = {
         noData: 'No operations to display',
         dialog: {
           edit: 'Edit operation',
-          new: 'New operation'
+          new: 'New operation',
         },
         addAnother: 'Add another',
         actions: {
-          addAnother: 'Add another'
+          addAnother: 'Add another',
         },
         fields: {
           date: 'Date',
@@ -183,7 +183,7 @@ const resources = {
           user: 'User',
           type: 'Type',
           type_income: 'Income',
-          type_expense: 'Expense'
+          type_expense: 'Expense',
         },
         dateFilter: {
           label: 'Time range',
@@ -197,11 +197,11 @@ const resources = {
           planned: 'Planned operations',
           custom: 'Custom range',
           from: 'From',
-          to: 'To'
+          to: 'To',
         },
         type: {
           income: 'Income',
-          expense: 'Expense'
+          expense: 'Expense',
         },
         splitOperation: 'Split Operation',
         originalOperation: 'Original operation',
@@ -218,27 +218,30 @@ const resources = {
         splitItems: 'Split items',
         splitCategory: 'Split',
         transfer: 'Transfer',
+        switchToOperation: 'Switch to Operation',
+        switchToTransfer: 'Switch to Transfer',
         import: 'Import operations',
         summary: {
           totalIncome: 'Total Income',
           totalExpense: 'Total Expense',
-          net: 'Net Balance'
+          net: 'Net Balance',
         },
         messages: {
           saved: 'Operation saved',
           deleted: 'Operation(s) deleted',
-          fillRequired: 'Please fill required fields'
+          fillRequired: 'Please fill required fields',
         },
-        plannedWarning: 'Planned operation - scheduled for a future date'
+        plannedWarning: 'Planned operation - scheduled for a future date',
       },
       import: {
         title: 'Import Operations from CSV',
         steps: {
           upload: 'Upload CSV',
           mapColumns: 'Map Columns',
-          preview: 'Preview & Edit'
+          preview: 'Preview & Edit',
         },
-        uploadDescription: 'Select a CSV file with operation data. The file should contain headers in the first row.',
+        uploadDescription:
+          'Select a CSV file with operation data. The file should contain headers in the first row.',
         columnMapping: 'Column Mapping',
         selectFile: 'Select CSV File',
         dragDrop: 'or drag and drop file here',
@@ -248,7 +251,8 @@ const resources = {
         csvTip3: 'Encoding: UTF-8 (recommended) or Windows-1250',
         csvTip4: 'Numbers: both dot (100.50) and comma (100,50) accepted',
         encodingWarning: 'Problems with Polish characters?',
-        encodingTip: 'If you see strange characters (e.g. £ instead of Ł), convert file to UTF-8. In Excel: File → Save As → CSV UTF-8 (comma delimited).',
+        encodingTip:
+          'If you see strange characters (e.g. £ instead of Ł), convert file to UTF-8. In Excel: File → Save As → CSV UTF-8 (comma delimited).',
         mapDescription: 'Match CSV columns to application fields',
         saveTemplate: 'Save Template',
         savedTemplates: 'Saved templates:',
@@ -267,15 +271,16 @@ const resources = {
           operationType: 'Type',
           sourceAccount: 'Account',
           category: 'Category',
-          dateFormat: 'Date Format'
+          dateFormat: 'Date Format',
         },
         errors: {
           invalidFile: 'Invalid file format. Select a CSV file.',
           emptyFile: 'CSV file is empty',
           noData: 'No data to import',
           readError: 'Error reading file: ',
-          noValidOperations: 'No valid operations to import. Make sure amount, date and account columns are correctly mapped.'
-        }
+          noValidOperations:
+            'No valid operations to import. Make sure amount, date and account columns are correctly mapped.',
+        },
       },
       Operations: 'Operations',
       Categories: 'Categories',
@@ -294,7 +299,7 @@ const resources = {
           plan: 'Budget plan',
           user: 'User',
           spending: 'Spending',
-          remaining: 'Remaining'
+          remaining: 'Remaining',
         },
         statistics: {
           title: 'Statistics',
@@ -306,14 +311,14 @@ const resources = {
           realCashFlow: 'Real Cash Flow',
           income: 'Income',
           expenses: 'Expenses',
-          cashFlow: 'Cash Flow'
+          cashFlow: 'Cash Flow',
         },
         messages: {
           created: 'Budget created',
           updated: 'Budget updated',
           deleted: 'Budget(s) deleted',
-          fillRequired: 'Please fill required fields'
-        }
+          fillRequired: 'Please fill required fields',
+        },
       },
       Goals: 'Goals',
       goals: {
@@ -335,19 +340,20 @@ const resources = {
         noGoals: 'No savings goals yet',
         requiredFields: 'Fill in all required fields',
         validation: {
-          fillRequired: 'Fill in all required fields'
+          fillRequired: 'Fill in all required fields',
         },
         messages: {
           created: 'Goal created',
-          updated: 'Goal updated'
-        }
+          updated: 'Goal updated',
+        },
       },
       Hashtags: 'Hashtags',
       hashtags: {
         title: 'Hashtags',
         addButton: 'Add hashtag',
         addPlaceholder: 'Enter hashtag name (letters, numbers, underscore only)',
-        invalidFormat: 'Hashtag can only contain letters, numbers and underscores, max 50 characters',
+        invalidFormat:
+          'Hashtag can only contain letters, numbers and underscores, max 50 characters',
         deleteTitle: 'Delete Hashtag',
         deleteConfirm: 'Delete this hashtag?',
         deleteConfirmMessage: 'Can only delete if not used in operations',
@@ -358,11 +364,11 @@ const resources = {
         table: {
           name: 'Hashtag',
           created: 'Created',
-          actions: 'Actions'
+          actions: 'Actions',
         },
         empty: 'No hashtags yet. Create your first one!',
         emptyState: 'No hashtags yet. Create one to organize your operations!',
-        suggestionHint: 'Tip: Use #hashtags in operation descriptions for quick tagging'
+        suggestionHint: 'Tip: Use #hashtags in operation descriptions for quick tagging',
       },
       RecurringOperations: 'Recurring Operations',
       recurringOperations: {
@@ -381,7 +387,7 @@ const resources = {
           startDate: 'Start Date',
           endDate: 'End Date',
           status: 'Status',
-          actions: 'Actions'
+          actions: 'Actions',
         },
         fields: {
           account: 'Account',
@@ -392,7 +398,7 @@ const resources = {
           frequency: 'Frequency',
           startDate: 'Start Date',
           endDate: 'End Date (optional)',
-          active: 'Active'
+          active: 'Active',
         },
         frequency: {
           daily: 'Daily',
@@ -400,15 +406,15 @@ const resources = {
           biweekly: 'Bi-weekly',
           monthly: 'Monthly',
           quarterly: 'Quarterly',
-          yearly: 'Yearly'
+          yearly: 'Yearly',
         },
         empty: 'No recurring operations yet',
         messages: {
           created: 'Recurring operation created',
           updated: 'Recurring operation updated',
           deleted: 'Recurring operation deleted',
-          fillRequired: 'Please fill in all required fields'
-        }
+          fillRequired: 'Please fill in all required fields',
+        },
       },
       Statistics: 'Statistics',
       statistics: {
@@ -439,9 +445,9 @@ const resources = {
         editFilters: 'Edit Filters',
         comparison: 'Compare',
         hashtags: 'Hashtags',
-        noHashtags: 'No hashtags available'
-      }
-    }
+        noHashtags: 'No hashtags available',
+      },
+    },
   },
   pl: {
     translation: {
@@ -473,14 +479,14 @@ const resources = {
         actions: 'Akcje',
         close: 'Zamknij',
         all: 'Wszystkie',
-        selected: 'Wybrane'
+        selected: 'Wybrane',
       },
       settings: {
         title: 'Ustawienia',
         language: 'Język',
         dateFormat: 'Format daty',
         currency: 'Waluta domyślna',
-        hint: 'Ustawienia są zapisywane w przeglądarce'
+        hint: 'Ustawienia są zapisywane w przeglądarce',
       },
       Budget: 'Budżet',
       Assets: 'Majątek',
@@ -488,11 +494,11 @@ const resources = {
         title: 'Użytkownicy',
         add: 'Dodaj użytkownika',
         validation: {
-          fillRequired: 'Wypełnij wszystkie pola'
+          fillRequired: 'Wypełnij wszystkie pola',
         },
         messages: {
-          created: 'Użytkownik utworzony'
-        }
+          created: 'Użytkownik utworzony',
+        },
       },
       assets: {
         title: 'Majątek',
@@ -503,7 +509,7 @@ const resources = {
           property: 'Nieruchomości',
           vehicle: 'Pojazdy',
           valuable: 'Wartościowe',
-          liability: 'Zobowiązania'
+          liability: 'Zobowiązania',
         },
         table: {
           type: 'Typ',
@@ -517,11 +523,11 @@ const resources = {
           currency: 'Waluta',
           status: 'Status',
           actions: 'Akcje',
-          noAssets: 'Brak aktywów'
+          noAssets: 'Brak aktywów',
         },
         status: {
           active: 'Aktywne',
-          inactive: 'Nieaktywne'
+          inactive: 'Nieaktywne',
         },
         actions: {
           addAsset: 'Dodaj aktywo',
@@ -530,7 +536,7 @@ const resources = {
           activate: 'Aktywuj',
           deactivate: 'Dezaktywuj',
           edit: 'Edytuj',
-          delete: 'Usuń'
+          delete: 'Usuń',
         },
         summary: {
           title: 'Podsumowanie',
@@ -541,29 +547,29 @@ const resources = {
             lastQuarter: 'Ostatni kwartał',
             thisYear: 'Bieżący rok',
             lastYear: 'Ostatni rok',
-            all: 'Cały czas'
+            all: 'Cały czas',
           },
           selectedAssets: 'Zaznaczone aktywa',
           startValue: 'Wartość początkowa',
           difference: 'Różnica',
           currentValue: 'Obecna wartość',
-          clearSelection: 'Wyczyść zaznaczenie'
+          clearSelection: 'Wyczyść zaznaczenie',
         },
         deleteModal: {
           title: 'Usuń aktywo',
           confirmMessage: 'Czy na pewno chcesz usunąć aktywo',
-          warning: 'Ta operacja jest nieodwracalna i usunie wszystkie powiązane transakcje.'
+          warning: 'Ta operacja jest nieodwracalna i usunie wszystkie powiązane transakcje.',
         },
         errors: {
-          loadingError: 'Błąd ładowania aktywów'
+          loadingError: 'Błąd ładowania aktywów',
         },
         validation: {
-          fillRequired: 'Wypełnij wymagane pola: Typ, Nazwa, Użytkownik'
-        }
+          fillRequired: 'Wypełnij wymagane pola: Typ, Nazwa, Użytkownik',
+        },
       },
       actions: {
         cancel: 'Anuluj',
-        save: 'Zapisz'
+        save: 'Zapisz',
       },
       categories: {
         title: 'Kategorie',
@@ -571,32 +577,32 @@ const resources = {
         confirmDelete: 'Usuń kategorię?',
         tabs: {
           user: 'Kategorie użytkownika',
-          system: 'Kategorie systemowe'
+          system: 'Kategorie systemowe',
         },
         table: {
           name: 'Nazwa',
           type: 'Typ',
-          mainCategory: 'Główna kategoria'
+          mainCategory: 'Główna kategoria',
         },
         dialog: {
           edit: 'Edytuj kategorię',
-          new: 'Nowa kategoria'
+          new: 'Nowa kategoria',
         },
         fields: {
           name: 'Nazwa',
           type: 'Typ',
-          parent: 'Rodzic'
+          parent: 'Rodzic',
         },
         messages: {
           created: 'Kategoria utworzona',
           updated: 'Kategoria zaktualizowana',
           deleted: 'Kategoria usunięta',
           cannotDelete: 'Nie można usunąć kategorii, są do niej przypisane operacje',
-          cannotEditSystem: 'Nie można edytować kategorii systemowych'
+          cannotEditSystem: 'Nie można edytować kategorii systemowych',
         },
         validation: {
-          nameRequired: 'Pole Nazwa jest wymagane'
-        }
+          nameRequired: 'Pole Nazwa jest wymagane',
+        },
       },
       operations: {
         title: 'Operacje',
@@ -609,11 +615,11 @@ const resources = {
         noData: 'Brak operacji do wyświetlenia',
         dialog: {
           edit: 'Edytuj operację',
-          new: 'Nowa operacja'
+          new: 'Nowa operacja',
         },
         addAnother: 'Dodaj kolejną',
         actions: {
-          addAnother: 'Dodaj kolejną'
+          addAnother: 'Dodaj kolejną',
         },
         fields: {
           date: 'Data',
@@ -627,7 +633,7 @@ const resources = {
           type_income: 'Przychód',
           type_expense: 'Wydatek',
           hashtags: 'Hashtagi',
-          hashtagsPlaceholder: 'Filtruj po hashtagach'
+          hashtagsPlaceholder: 'Filtruj po hashtagach',
         },
         dateFilter: {
           label: 'Zakres czasu',
@@ -641,11 +647,11 @@ const resources = {
           planned: 'Operacje zaplanowane',
           custom: 'Zakres niestandardowy',
           from: 'Od',
-          to: 'Do'
+          to: 'Do',
         },
         type: {
           income: 'Przychód',
-          expense: 'Wydatek'
+          expense: 'Wydatek',
         },
         splitOperation: 'Podziel operację',
         originalOperation: 'Oryginalna operacja',
@@ -662,27 +668,30 @@ const resources = {
         splitItems: 'Pozycje podziału',
         splitCategory: 'Dzielona',
         transfer: 'Przelew',
+        switchToOperation: 'Przełącz na operację',
+        switchToTransfer: 'Przełącz na przelew',
         import: 'Import operacji',
         summary: {
           totalIncome: 'Przychody',
           totalExpense: 'Wydatki',
-          net: 'Saldo'
+          net: 'Saldo',
         },
         messages: {
           saved: 'Operacja zapisana',
           deleted: 'Operacja/operacje usunięte',
-          fillRequired: 'Uzupełnij wymagane pola'
+          fillRequired: 'Uzupełnij wymagane pola',
         },
-        plannedWarning: 'Operacja zaplanowana - przeznaczona na przyszłą datę'
+        plannedWarning: 'Operacja zaplanowana - przeznaczona na przyszłą datę',
       },
       import: {
         title: 'Import operacji z CSV',
         steps: {
           upload: 'Wczytaj CSV',
           mapColumns: 'Mapuj kolumny',
-          preview: 'Podgląd i edycja'
+          preview: 'Podgląd i edycja',
         },
-        uploadDescription: 'Wybierz plik CSV z danymi operacji. Plik powinien zawierać nagłówki w pierwszym wierszu.',
+        uploadDescription:
+          'Wybierz plik CSV z danymi operacji. Plik powinien zawierać nagłówki w pierwszym wierszu.',
         columnMapping: 'Mapowanie kolumn',
         selectFile: 'Wybierz plik CSV',
         dragDrop: 'lub przeciągnij i upuść plik tutaj',
@@ -692,7 +701,8 @@ const resources = {
         csvTip3: 'Kodowanie: UTF-8 (polecane) lub Windows-1250',
         csvTip4: 'Liczby: akceptowane zarówno z kropką (100.50) jak i przecinkiem (100,50)',
         encodingWarning: 'Problem z polskimi znakami?',
-        encodingTip: 'Jeśli widzisz dziwne znaki (np. £ zamiast Ł), przekonwertuj plik do UTF-8. W Excel: Plik → Zapisz jako → CSV UTF-8 (rozdzielany przecinkami).',
+        encodingTip:
+          'Jeśli widzisz dziwne znaki (np. £ zamiast Ł), przekonwertuj plik do UTF-8. W Excel: Plik → Zapisz jako → CSV UTF-8 (rozdzielany przecinkami).',
         mapDescription: 'Dopasuj kolumny z CSV do pól w aplikacji',
         saveTemplate: 'Zapisz szablon',
         savedTemplates: 'Zapisane szablony:',
@@ -711,16 +721,18 @@ const resources = {
           operationType: 'Typ',
           sourceAccount: 'Konto',
           category: 'Kategoria',
-          dateFormat: 'Format daty'
+          dateFormat: 'Format daty',
         },
         errors: {
           invalidFile: 'Nieprawidłowy format pliku. Wybierz plik CSV.',
           emptyFile: 'Plik CSV jest pusty',
           noData: 'Brak danych do zaimportowania',
           readError: 'Błąd podczas odczytu pliku: ',
-          noValidOperations: 'Brak poprawnych operacji do zaimportowania. Upewnij się, że kolumny kwota, data i konto są poprawnie zmapowane.'
-        }
-      },      Operations: 'Operacje',
+          noValidOperations:
+            'Brak poprawnych operacji do zaimportowania. Upewnij się, że kolumny kwota, data i konto są poprawnie zmapowane.',
+        },
+      },
+      Operations: 'Operacje',
       Categories: 'Kategorie',
       'Home Budget': 'Domowy budżet',
       budget: {
@@ -737,7 +749,7 @@ const resources = {
           plan: 'Plan budżetu',
           user: 'Użytkownik',
           spending: 'Wydatki',
-          remaining: 'Pozostało'
+          remaining: 'Pozostało',
         },
         statistics: {
           title: 'Statystyki',
@@ -749,14 +761,14 @@ const resources = {
           realCashFlow: 'Rzeczywisty Cash Flow',
           income: 'Przychody',
           expenses: 'Wydatki',
-          cashFlow: 'Cash Flow'
+          cashFlow: 'Cash Flow',
         },
         messages: {
           created: 'Budżet utworzony',
           updated: 'Budżet zaktualizowany',
           deleted: 'Budżet/budżety usunięte',
-          fillRequired: 'Uzupełnij wymagane pola'
-        }
+          fillRequired: 'Uzupełnij wymagane pola',
+        },
       },
       Goals: 'Cele',
       goals: {
@@ -778,12 +790,12 @@ const resources = {
         noGoals: 'Brak celów oszczędzania',
         requiredFields: 'Uzupełnij wszystkie pola',
         validation: {
-          fillRequired: 'Uzupełnij wszystkie pola'
+          fillRequired: 'Uzupełnij wszystkie pola',
         },
         messages: {
           created: 'Cel utworzony',
-          updated: 'Cel zaktualizowany'
-        }
+          updated: 'Cel zaktualizowany',
+        },
       },
       Hashtags: 'Hashtagi',
       hashtags: {
@@ -801,11 +813,11 @@ const resources = {
         table: {
           name: 'Hashtag',
           created: 'Utworzony',
-          actions: 'Akcje'
+          actions: 'Akcje',
         },
         empty: 'Brak hashtagów. Stwórz jeden aby organizować operacje!',
         emptyState: 'Brak hashtagów. Stwórz jeden aby organizować operacje!',
-        suggestionHint: 'Wskazówka: Używaj #hashtagów w opisach operacji do szybkiej kategoryzacji'
+        suggestionHint: 'Wskazówka: Używaj #hashtagów w opisach operacji do szybkiej kategoryzacji',
       },
       RecurringOperations: 'Operacje cykliczne',
       recurringOperations: {
@@ -824,7 +836,7 @@ const resources = {
           startDate: 'Data rozpoczęcia',
           endDate: 'Data zakończenia',
           status: 'Status',
-          actions: 'Akcje'
+          actions: 'Akcje',
         },
         fields: {
           account: 'Konto',
@@ -835,7 +847,7 @@ const resources = {
           frequency: 'Częstotliwość',
           startDate: 'Data rozpoczęcia',
           endDate: 'Data zakończenia (opcjonalna)',
-          active: 'Aktywna'
+          active: 'Aktywna',
         },
         frequency: {
           daily: 'Codziennie',
@@ -843,15 +855,15 @@ const resources = {
           biweekly: 'Co dwa tygodnie',
           monthly: 'Co miesiąc',
           quarterly: 'Co kwartał',
-          yearly: 'Rocznie'
+          yearly: 'Rocznie',
         },
         empty: 'Brak operacji cyklicznych',
         messages: {
           created: 'Operacja cykliczna utworzona',
           updated: 'Operacja cykliczna zaktualizowana',
           deleted: 'Operacja cykliczna usunięta',
-          fillRequired: 'Uzupełnij wszystkie wymagane pola'
-        }
+          fillRequired: 'Uzupełnij wszystkie wymagane pola',
+        },
       },
       Statistics: 'Statystyki',
       statistics: {
@@ -882,18 +894,17 @@ const resources = {
         editFilters: 'Edytuj filtry',
         comparison: 'Porównaj',
         hashtags: 'Hashtagi',
-        noHashtags: 'Brak dostępnych hashtagów'
-      }
-    }
-  }
-}
+        noHashtags: 'Brak dostępnych hashtagów',
+      },
+    },
+  },
+};
 
 i18n.use(initReactI18next).init({
   resources,
   lng: 'pl',
   fallbackLng: 'en',
-  interpolation: { escapeValue: false }
-})
+  interpolation: { escapeValue: false },
+});
 
-export default i18n
-
+export default i18n;
