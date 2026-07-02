@@ -44,6 +44,31 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
   const [initialized, setInitialized] = useState(false)
   const [originalData, setOriginalData] = useState<CSVRow[]>([])
 
+  const normalizeAccountValue = (value?: string | null) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '')
+
+  const findMatchingAccount = (inputValue: string) => {
+    const normalizedInput = normalizeAccountValue(inputValue)
+    if (!normalizedInput) return undefined
+
+    return accounts.find((account) => {
+      const candidates = [account.name, account.account_number, account.accountNumber]
+        .filter((value): value is string => Boolean(value))
+
+      return candidates.some((candidate) => {
+        const normalizedCandidate = normalizeAccountValue(candidate)
+        return (
+          normalizedCandidate === normalizedInput ||
+          normalizedCandidate.includes(normalizedInput) ||
+          normalizedInput.includes(normalizedCandidate)
+        )
+      })
+    })
+  }
+
   // Initialize __asset_id__ and __category_id__ for all rows based on column mapping
   useEffect(() => {
     if (initialized || data.length === 0) return
@@ -55,20 +80,12 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
       // Initialize asset_id from sourceAccount column
       if (columnMapping.sourceAccount !== undefined) {
         const accountHeader = headers[columnMapping.sourceAccount]
-        const accountName = String(row[accountHeader] || '').trim()
-        if (accountName && !updatedRow['__asset_id__']) {
-          // Try exact match first
-          let account = accounts.find(
-            (a) => a.name.toLowerCase() === accountName.toLowerCase()
-          )
-          // Try partial match if exact match fails
-          if (!account) {
-            account = accounts.find((a) =>
-              a.name.toLowerCase().includes(accountName.toLowerCase())
-            )
-          }
+        const accountValue = String(row[accountHeader] || '').trim()
+        if (accountValue && !updatedRow['__asset_id__']) {
+          const account = findMatchingAccount(accountValue)
           if (account) {
             updatedRow['__asset_id__'] = account.id
+            updatedRow[accountHeader] = account.name
           }
         }
       }
@@ -159,6 +176,25 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
     }
 
     return 'expense'
+  }
+
+  const getAccountDisplayValue = (row: CSVRow): string => {
+    if (row['__asset_id__']) {
+      const account = accounts.find((a) => a.id === row['__asset_id__'])
+      if (account) return account.name
+    }
+
+    if (columnMapping.sourceAccount !== undefined) {
+      const headers = Object.keys(row)
+      const accountHeader = headers[columnMapping.sourceAccount]
+      const accountValue = String(row[accountHeader] || '').trim()
+      if (accountValue) {
+        const account = findMatchingAccount(accountValue)
+        if (account) return account.name
+      }
+    }
+
+    return ''
   }
 
   const getCategoryIdFromName = (categoryName: string, row?: CSVRow): number | '' => {
@@ -308,20 +344,12 @@ const PreviewDataStep: React.FC<PreviewDataStepProps> = ({
                   <TableCell sx={{ width: 180 }}>
                     <FormControl size="small" fullWidth>
                       <Select
-                        value={(() => {
-                          if (currentRow['__asset_id__']) {
-                            const acc = accounts.find((a) => a.id === currentRow['__asset_id__'])
-                            return acc ? acc.name : ''
-                          }
-                          return columnMapping.sourceAccount !== undefined
-                            ? String(currentRow[headers[columnMapping.sourceAccount]] || '')
-                            : ''
-                        })()}
+                        value={getAccountDisplayValue(currentRow)}
                         onChange={(e) => {
                           if (columnMapping.sourceAccount !== undefined) {
-                            const accountName = e.target.value
-                            const account = accounts.find(a => a.name === accountName)
-                            handleFieldChange(headers[columnMapping.sourceAccount], accountName, rowIndex)
+                            const selectedValue = e.target.value
+                            const account = accounts.find((a) => a.name === selectedValue)
+                            handleFieldChange(headers[columnMapping.sourceAccount], account?.name || selectedValue, rowIndex)
                             // Store asset_id in special field
                             if (account) {
                               handleFieldChange('__asset_id__', account.id, rowIndex)
