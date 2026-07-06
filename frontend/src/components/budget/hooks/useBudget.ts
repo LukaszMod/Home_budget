@@ -99,7 +99,23 @@ const useBudget = (selectedMonth: string) => {
           month: `${selectedMonth}-01`, // selectedMonth = YYYY-MM
         }));
 
-      await updateMutation.mutateAsync(updateData as CreateBudgetPayload[]);
+      const createData = data.budgets
+        .filter((item) => !item.id || item.id <= 0)
+        .filter((item) => item.planned !== 0 || item.description.trim() !== '')
+        .map((item) => ({
+          category_id: item.category_id,
+          planned_amount: item.planned,
+          description: item.description,
+          month: `${selectedMonth}-01`, // selectedMonth = YYYY-MM
+        }));
+
+      if (updateData.length > 0) {
+        await updateMutation.mutateAsync(updateData as CreateBudgetPayload[]);
+      }
+
+      for (const payload of createData) {
+        await createMutation.mutateAsync(payload as CreateBudgetPayload);
+      }
       // for (const item of data.budgets) {
       //   if (item.id && item.id > 0) {
       //     // update

@@ -47,61 +47,51 @@ pub async fn get_budget(
     Ok(Json(row))
 }
 
-
-
-// pub async fn update_budget(
-//     State(state): State<AppState>,
-//     Path(id): Path<i32>,
-//     Json(payload): Json<CreateBudget>,
-// ) -> Result<Json<Budget>, (axum::http::StatusCode, String)> {
-//     let row = sqlx::query_as::<_, Budget>(
-//         "UPDATE budgets SET category_id = $1, month = $2, planned_amount = $3, description = $4
-//          WHERE id = $5
-//          RETURNING id, category_id, month, planned_amount, description",
-//     )
-//     .bind(payload.category_id)
-//     .bind(payload.month)
-//     .bind(payload.planned_amount)
-//     .bind(payload.description)
-//     .bind(id)
-//     .fetch_one(&state.pool)
-//     .await
-//     .map_err(db_err)?;
-//     Ok(Json(row))
-// }
-
 pub async fn update_budgets(
     State(state): State<AppState>,
-    Json(payload): Json<Vec<Budget>>,
+    Json(payload): Json<Vec<CreateBudget>>,
 ) -> Result<Json<Vec<Budget>>, (axum::http::StatusCode, String)> {
     let mut updated = Vec::new();
 
     for item in payload {
-        let row = sqlx::query_as::<_, Budget>(
-            "UPDATE budgets
-             SET category_id = $1,
-                 month = $2,
-                 planned_amount = $3,
-                 description = $4
-             WHERE id = $5
-             RETURNING id, category_id, month, planned_amount, description"
-        )
-        .bind(item.category_id)
-        .bind(item.month)
-        .bind(item.planned_amount)
-        .bind(item.description)
-        .bind(item.id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(db_err)?;
+        let row = if let Some(id) = item.id {
+            sqlx::query_as::<_, Budget>(
+                "UPDATE budgets
+                 SET category_id = $1,
+                     month = $2,
+                     planned_amount = $3,
+                     description = $4
+                 WHERE id = $5
+                 RETURNING id, category_id, month, planned_amount, description",
+            )
+            .bind(item.category_id)
+            .bind(item.month)
+            .bind(item.planned_amount)
+            .bind(item.description)
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(db_err)?
+        } else {
+            sqlx::query_as::<_, Budget>(
+                "INSERT INTO budgets (category_id, month, planned_amount, description)
+                 VALUES ($1, $2, $3, $4)
+                 RETURNING id, category_id, month, planned_amount, description",
+            )
+            .bind(item.category_id)
+            .bind(item.month)
+            .bind(item.planned_amount)
+            .bind(item.description)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(db_err)?
+        };
 
         updated.push(row);
     }
 
     Ok(Json(updated))
 }
-
-
 
 pub async fn delete_budget(
     State(state): State<AppState>,

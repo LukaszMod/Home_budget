@@ -3,7 +3,6 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use std::collections::HashMap;
 
 pub async fn create_operation(
     State(state): State<AppState>,

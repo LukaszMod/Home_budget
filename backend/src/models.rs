@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
-use chrono::{NaiveDateTime, NaiveDate};
+use chrono::{NaiveDate, NaiveDateTime};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use sqlx::types::BigDecimal;
 
@@ -252,6 +252,7 @@ pub struct Budget {
 
 #[derive(Deserialize)]
 pub struct CreateBudget {
+    pub id: Option<i32>,
     pub category_id: i32,
     pub month: NaiveDate,
     pub planned_amount: BigDecimal,
@@ -394,13 +395,13 @@ pub struct TransferRequest {
     pub transfer_type: String, // "liquid_to_liquid", "liquid_to_investment", "liquid_to_property", etc.
     pub description: Option<String>,
     pub operation_date: String,
-    
+
     // For creating new assets
     pub new_asset: Option<NewAssetData>,
-    
+
     // For investment transactions
     pub investment_quantity: Option<f64>,
-    
+
     // For liability payments - interest amount
     pub interest_amount: Option<f64>,
 }
